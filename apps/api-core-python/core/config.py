@@ -4,8 +4,13 @@ from typing import Mapping
 
 from dotenv import load_dotenv
 
-ROOT_ENV = Path(__file__).resolve().parents[3] / ".env"
-load_dotenv(dotenv_path=ROOT_ENV)
+ROOT_DIR = Path(__file__).resolve().parents[3]
+ROOT_ENV_LOCAL = ROOT_DIR / ".env.local"
+ROOT_ENV = ROOT_DIR / ".env"
+
+# Local developer overrides should win over default repository values.
+load_dotenv(dotenv_path=ROOT_ENV_LOCAL, override=False)
+load_dotenv(dotenv_path=ROOT_ENV, override=False)
 
 
 class SettingsError(RuntimeError):
