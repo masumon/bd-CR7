@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").trim();
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const headers = new Headers(init.headers || {});
@@ -7,7 +7,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, token?
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  const requestUrl = API_BASE ? `${API_BASE}${path}` : path;
+
+  const response = await fetch(requestUrl, {
     ...init,
     headers,
     cache: "no-store",
