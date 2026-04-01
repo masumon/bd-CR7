@@ -19,4 +19,4 @@ class FundTransfer(BaseModel):
     from_account_id: str
     to_account_id: str
     amount: Decimal = Field(gt=0)
-    reference: str = Field(min_length=2, max_length=120)
+    reference: str = Field(min_length=2, max_length=120, pattern=r"^[a-zA-Z0-9\-_\s]+$")

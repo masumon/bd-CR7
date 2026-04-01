@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 
 from core.auth import UserContext, require_roles
 from core.db import fetch_all, tx
-from schemas.import_supply import LCRecordCreate, LandedCostInput
+from schemas.import_supply import LCRecordCreate, LCStatusUpdate, LandedCostInput
 
 router = APIRouter()
 
@@ -30,6 +30,16 @@ async def list_lc(user: UserContext = Depends(require_roles("admin", "maker", "c
         "SELECT id, supplier_name, lc_number, currency, amount, expected_arrival, status, created_at FROM lc_records ORDER BY created_at DESC"
     )
     return [dict(x) for x in rows]
+
+
+@router.patch("/lc-records/{lc_id}/status")
+async def update_lc_status(lc_id: str, payload: LCStatusUpdate, user: UserContext = Depends(require_roles("admin", "checker"))):
+    with tx() as conn:
+        conn.exec_driver_sql(
+            "UPDATE lc_records SET status = %s, updated_at = NOW() WHERE id = %s",
+            (payload.status, lc_id),
+        )
+    return {"id": lc_id, "status": payload.status}
 
 
 @router.post("/landed-costs")

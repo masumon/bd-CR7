@@ -41,7 +41,7 @@ export function AuthPanel() {
     }
     setIsLoading(true);
     try {
-      await register(email, password, fullName, "user");
+      await register(email, password, fullName, "viewer");
       setMessage("Registered and logged in");
     } catch (error) {
       setMessage((error as Error).message);

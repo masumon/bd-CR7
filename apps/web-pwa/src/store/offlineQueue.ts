@@ -1,7 +1,7 @@
 // Zustand offline store
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { OfflineQueueItemSchema, type OfflineQueueItem as OfflineQueueItemType } from '@/lib/validators';
+import { OfflineQueueItemSchema } from '@/lib/validators';
 
 export type QueueMethod = 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -11,6 +11,8 @@ export interface OfflineQueueItem {
   payload: Record<string, unknown>;
   method: QueueMethod;
   createdAt: number;
+  attempts?: number;
+  lastError?: string;
 }
 
 interface OfflineQueueState {
@@ -18,12 +20,14 @@ interface OfflineQueueState {
   addToQueue: (item: OfflineQueueItem) => void;
   addToQueueValidated: (item: OfflineQueueItem) => boolean;
   dequeue: () => OfflineQueueItem | null;
+  peek: () => OfflineQueueItem | null;
+  requeue: (item: OfflineQueueItem) => void;
   clearQueue: () => void;
 }
 
 const useOfflineQueue = create<OfflineQueueState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       queue: [],
       addToQueue: (item) =>
         set((state) => {
@@ -39,7 +43,7 @@ const useOfflineQueue = create<OfflineQueueState>()(
           });
           return true;
         } catch (error) {
-          console.error("Queue item validation failed:", error);
+          console.error('Queue item validation failed:', error);
           return false;
         }
       },
@@ -55,6 +59,15 @@ const useOfflineQueue = create<OfflineQueueState>()(
         });
         return first;
       },
+      peek: () => {
+        const state = get();
+        return state.queue.length ? state.queue[0] : null;
+      },
+      requeue: (item) =>
+        set((state) => {
+          const next = [...state.queue, item];
+          return { queue: next.slice(-500) };
+        }),
       clearQueue: () => set({ queue: [] }),
     }),
     { name: 'offline-queue' }

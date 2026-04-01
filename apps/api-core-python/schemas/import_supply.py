@@ -11,6 +11,10 @@ class LCRecordCreate(BaseModel):
     expected_arrival: str
 
 
+class LCStatusUpdate(BaseModel):
+    status: str = Field(pattern="^(draft|open|in_transit|received|closed|cancelled)$")
+
+
 class LandedCostInput(BaseModel):
     lc_record_id: str
     goods_cost: Decimal = Field(ge=0)

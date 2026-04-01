@@ -9,8 +9,20 @@ jobs:
   restart-drill:
     runs-on: ubuntu-latest
     steps:
-      - name: Simulate service restart drill
+      - name: Verify frontend health
+        env:
+          FRONTEND_HEALTH_URL: ${{ secrets.FRONTEND_HEALTH_URL }}
         run: |
-          echo "Running chaos drill: service recycle simulation"
-          sleep 2
-          echo "Health check simulation: OK"
+          if [ -z "$FRONTEND_HEALTH_URL" ]; then
+            echo "FRONTEND_HEALTH_URL secret is missing" && exit 1
+          fi
+          curl -fsSL "$FRONTEND_HEALTH_URL" >/dev/null
+      - name: Verify backend health (optional)
+        env:
+          BACKEND_HEALTH_URL: ${{ secrets.BACKEND_HEALTH_URL }}
+        run: |
+          if [ -z "$BACKEND_HEALTH_URL" ]; then
+            echo "BACKEND_HEALTH_URL not set, skipping backend check"
+            exit 0
+          fi
+          curl -fsSL "$BACKEND_HEALTH_URL" >/dev/null

@@ -24,10 +24,13 @@ def detect_risk(transaction: dict) -> dict:
         score += 20
         reasons.append("sensitive_category_large_amount")
 
+    score = max(0, min(score, 100))
+
     risk_level = "low"
     if score >= 60:
         risk_level = "high"
     elif score >= 30:
         risk_level = "medium"
 
-    return {"risk_score": score, "risk_level": risk_level, "reasons": reasons}
+    confidence = "high" if len(reasons) >= 2 else "medium" if reasons else "low"
+    return {"risk_score": score, "risk_level": risk_level, "confidence": confidence, "reasons": reasons}

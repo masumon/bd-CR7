@@ -19,6 +19,8 @@ class AIEmbedding(Base):
 
 class AgentEngine:
     def __init__(self, db_url: str):
+        if not db_url:
+            raise ValueError("DATABASE_URL is required for AgentEngine")
         self.engine = create_engine(db_url, pool_pre_ping=True, future=True)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
@@ -56,7 +58,9 @@ class AgentEngine:
 
 # Example usage
 if __name__ == "__main__":
-    db_url = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/db")
+    db_url = os.getenv("DATABASE_URL", "")
+    if not db_url:
+        raise RuntimeError("Set DATABASE_URL before running agent_engine directly")
     engine = AgentEngine(db_url)
     engine.add_embedding([0.1] * 1536, {"source": "example"})
     similar = engine.query_similar([0.1] * 1536)
