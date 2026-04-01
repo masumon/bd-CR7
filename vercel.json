@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "installCommand": "corepack enable; corepack prepare pnpm@10.17.1 --activate; if [ -f pnpm-lock.yaml ]; then NODE_OPTIONS=--no-deprecation pnpm install --frozen-lockfile; elif [ -f ../../pnpm-lock.yaml ]; then cd ../..; NODE_OPTIONS=--no-deprecation pnpm install --frozen-lockfile; fi",
+  "installCommand": "corepack enable && corepack prepare pnpm@10.17.1 --activate && pnpm install --frozen-lockfile",
   "buildCommand": "if [ -d apps/web-pwa ]; then cd apps/web-pwa; elif [ -d ../web-pwa ]; then cd ../web-pwa; fi; NODE_OPTIONS=--no-deprecation pnpm build",
   "devCommand": "if [ -d apps/web-pwa ]; then cd apps/web-pwa; elif [ -d ../web-pwa ]; then cd ../web-pwa; fi; NODE_OPTIONS=--no-deprecation pnpm dev",
   "functions": {

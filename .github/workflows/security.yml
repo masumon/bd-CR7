@@ -15,6 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure full history and valid HEAD parent for gitleaks
+        run: |
+          git fetch --force --tags --prune origin "+refs/heads/*:refs/remotes/origin/*"
+          git rev-parse --verify HEAD
+          git rev-parse --verify HEAD^ || true
       - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -38,6 +45,8 @@ jobs:
         language: ["javascript", "python"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
