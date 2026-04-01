@@ -1,6 +1,7 @@
 {
   "version": 2,
   "framework": "fastapi",
+  "installCommand": "bash vercel-install.sh",
   "functions": {
     "main.py": {
       "runtime": "python3.11"
