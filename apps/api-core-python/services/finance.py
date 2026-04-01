@@ -29,8 +29,6 @@ def score_risk(amount: Decimal) -> dict[str, int | str | list[str]]:
 
 
 def transfer_funds_atomic(payload: FundTransfer, user: UserContext) -> dict[str, str | int | None]:
-    if supabase_service is None:
-        raise RuntimeError("Supabase service client is not configured")
     if not re.match(r"^[a-zA-Z0-9\-_\s]{1,100}$", payload.reference or ""):
         raise ValueError("Reference contains invalid characters")
     if payload.from_account_id == payload.to_account_id:
@@ -41,6 +39,8 @@ def transfer_funds_atomic(payload: FundTransfer, user: UserContext) -> dict[str,
         raise ValueError("Amount must be greater than zero")
     if amount > Decimal("10000000"):
         raise ValueError("Amount exceeds maximum transfer limit")
+    if supabase_service is None:
+        raise RuntimeError("Supabase service client is not configured")
 
     try:
         result = supabase_service.rpc(
