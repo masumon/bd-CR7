@@ -18,6 +18,7 @@ fastapi_app = module.app
 app = fastapi_app
 
 
-@app.get("/")
-def root():
-    return {"status": "ok"}
+if hasattr(app, "get"):
+    @app.get("/")
+    def root():
+        return {"status": "ok"}

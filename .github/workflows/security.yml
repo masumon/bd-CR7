@@ -47,3 +47,5 @@ jobs:
         uses: github/codeql-action/autobuild@v3
       - name: Analyze
         uses: github/codeql-action/analyze@v3
+        with:
+          upload: false
