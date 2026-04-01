@@ -37,6 +37,12 @@ class Settings:
         self.database_url = env.get("DATABASE_URL", "").strip()
         self.cors_origins = _split_csv(env.get("CORS_ORIGINS", "http://localhost:3000"))
         self.redis_url = env.get("REDIS_URL", "").strip()
+        self.require_supabase_in_production = env.get("REQUIRE_SUPABASE_IN_PRODUCTION", "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         self.require_redis_in_production = env.get("REQUIRE_REDIS_IN_PRODUCTION", "false").strip().lower() in {
             "1",
             "true",
@@ -67,7 +73,7 @@ class Settings:
             raise SettingsError("RATE_LIMIT_REQUESTS_PER_MINUTE must be greater than zero")
 
         if not self.supabase_url or not self.supabase_anon_key or not self.supabase_service_role_key:
-            if self.is_production:
+            if self.is_production and self.require_supabase_in_production:
                 raise SettingsError("SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are required")
 
         if self.is_production and not self.cors_origins:

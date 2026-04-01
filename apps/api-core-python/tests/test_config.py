@@ -10,6 +10,25 @@ from core.config import Settings, SettingsError
 
 
 class SettingsTests(unittest.TestCase):
+    def test_production_allows_missing_supabase_by_default(self) -> None:
+        settings = Settings(
+            {
+                "APP_ENV": "production",
+                "CORS_ORIGINS": "https://app.example.com",
+            }
+        )
+        self.assertFalse(settings.require_supabase_in_production)
+
+    def test_production_requires_supabase_when_strict_flag_enabled(self) -> None:
+        with self.assertRaises(SettingsError):
+            Settings(
+                {
+                    "APP_ENV": "production",
+                    "CORS_ORIGINS": "https://app.example.com",
+                    "REQUIRE_SUPABASE_IN_PRODUCTION": "true",
+                }
+            )
+
     def test_production_allows_missing_redis_by_default(self) -> None:
         settings = Settings(
             {
