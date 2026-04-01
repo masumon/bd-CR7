@@ -1,9 +1,9 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "outputDirectory": "apps/web-pwa/.next",
+  "outputDirectory": "apps/api-core-python/.next",
   "installCommand": "corepack enable && corepack prepare pnpm@10.17.1 --activate && pnpm install --frozen-lockfile",
-  "buildCommand": "NODE_OPTIONS=--no-deprecation pnpm --filter web-pwa build",
+  "buildCommand": "NODE_OPTIONS=--no-deprecation pnpm --filter web-pwa build && rm -rf apps/api-core-python/.next && mkdir -p apps/api-core-python && cp -R apps/web-pwa/.next apps/api-core-python/.next",
   "devCommand": "NODE_OPTIONS=--no-deprecation pnpm --filter web-pwa dev",
   "functions": {
     "api/main.py": {
