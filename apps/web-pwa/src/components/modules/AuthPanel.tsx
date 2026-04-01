@@ -11,27 +11,42 @@ export function AuthPanel() {
   const role = useAuthStore((s) => s.role);
   const logout = useAuthStore((s) => s.logout);
 
-  const [email, setEmail] = useState("admin@bdcr7.local");
-  const [password, setPassword] = useState("StrongPass123");
-  const [fullName, setFullName] = useState("Admin User");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const onLogin = async (event: FormEvent) => {
     event.preventDefault();
+    if (!email || !password) {
+      setMessage("Email and password required");
+      return;
+    }
+    setIsLoading(true);
     try {
       await login(email, password);
-      setMessage("Logged in");
+      setMessage("Logged in successfully");
     } catch (error) {
       setMessage((error as Error).message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const onRegister = async () => {
+    if (!email || !password || !fullName) {
+      setMessage("All fields required");
+      return;
+    }
+    setIsLoading(true);
     try {
-      await register(email, password, fullName, "admin");
+      await register(email, password, fullName, "user");
       setMessage("Registered and logged in");
     } catch (error) {
       setMessage((error as Error).message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,8 +71,8 @@ export function AuthPanel() {
       </div>
       <p className="panelLead">Authenticate with your Supabase account to unlock finance, sales, and AI workflows.</p>
       <form onSubmit={onLogin} className="formGrid">
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" />
-        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" />
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" disabled={isLoading} />
+        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" disabled={isLoading} />
         <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" />
         <div className="actions">
           <button type="submit">Login</button>

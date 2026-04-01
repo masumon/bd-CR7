@@ -199,14 +199,35 @@ button:disabled {
 
 @media (max-width: 720px) {
   .page {
-    padding: 16px;
+    padding: 12px;
   }
 
   .card {
-    padding: 22px;
+    padding: 16px;
+    border-radius: 16px;
   }
 
   .dashboardStats {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .module {
+    padding: 12px;
+  }
+
+  .formGrid input,
+  .formGrid button {
+    padding: 9px 10px;
+    font-size: 14px;
+  }
+
+  .actions {
+    gap: 8px;
+  }
+
+  button {
+    padding: 9px 12px;
+    font-size: 13px;
   }
 }

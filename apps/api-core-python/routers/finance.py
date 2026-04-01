@@ -51,7 +51,11 @@ async def transfer_funds(payload: FundTransfer, user: UserContext = Depends(requ
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
     if payload.from_account_id == payload.to_account_id:
         raise HTTPException(status_code=400, detail="Source and destination accounts must differ")
+    if payload.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero")
     amount = Decimal(payload.amount)
+    if amount > Decimal("10000000"):
+        raise HTTPException(status_code=400, detail="Amount exceeds maximum transfer limit")
     try:
         result = supabase_service.rpc(
             "transfer_funds_atomic",
@@ -59,7 +63,7 @@ async def transfer_funds(payload: FundTransfer, user: UserContext = Depends(requ
                 "p_from_account_id": payload.from_account_id,
                 "p_to_account_id": payload.to_account_id,
                 "p_amount": str(amount),
-                "p_reference": payload.reference,
+                "p_reference": payload.reference[:100],
                 "p_actor_user_id": user.user_id,
                 "p_actor_role": user.role,
             },
@@ -86,6 +90,10 @@ async def transfer_funds(payload: FundTransfer, user: UserContext = Depends(requ
     target = account_map.get(payload.to_account_id)
     if not source or not target:
         raise HTTPException(status_code=404, detail="Account not found")
+    if source.get("is_locked"):
+        raise HTTPException(status_code=403, detail="Source account is locked")
+    if target.get("is_locked"):
+        raise HTTPException(status_code=403, detail="Target account is locked")
     if user.role not in ("admin", "checker") and str(source.get("owner_user_id")) != user.user_id:
         raise HTTPException(status_code=403, detail="Insufficient role for source account")
 

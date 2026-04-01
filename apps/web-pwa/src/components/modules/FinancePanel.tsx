@@ -15,7 +15,10 @@ export function FinancePanel() {
   const [message, setMessage] = useState("");
 
   const submitTransfer = async () => {
-    if (!token) return;
+    if (!token || !accountId || !targetAccountId || !amount) {
+      setMessage("All fields required for transfer");
+      return;
+    }
     try {
       const response = await apiRequest<{ message: string; transaction_id: string; from_balance: number | string; to_balance: number | string }>(
         "/finance/transfer",
@@ -68,8 +71,8 @@ export function FinancePanel() {
         <input value={accountId} onChange={(e) => setAccountId(e.target.value)} placeholder="Account ID" />
         <input value={targetAccountId} onChange={(e) => setTargetAccountId(e.target.value)} placeholder="Target Account ID (for transfer)" />
         <input value={categoryId} onChange={(e) => setCategoryId(e.target.value)} placeholder="Category ID" />
-        <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" type="number" />
-        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+        <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount (decimal)" type="number" step="0.01" min="0" />
+        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description/Ref" maxLength={100} />
         <div className="actions">
           <button type="submit" disabled={!token}>Create Expense</button>
           <button type="button" onClick={submitTransfer} disabled={!token || !targetAccountId}>Transfer Funds</button>
