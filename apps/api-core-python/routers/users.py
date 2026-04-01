@@ -1,0 +1,135 @@
+from fastapi import APIRouter, Depends, HTTPException
+
+from core.auth import UserContext, get_current_user, require_roles
+from core.supabase import supabase_service
+from schemas.users import UserCreate, UserUpdate
+
+router = APIRouter()
+
+
+@router.get("")
+async def list_users(user: UserContext = Depends(require_roles("admin", "checker"))):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    rows = supabase_service.table("users").select("id,email,full_name,is_active,role_id,created_at").limit(500).execute()
+    roles = supabase_service.table("roles").select("id,name").execute()
+    role_map = {str(r["id"]): r["name"] for r in (roles.data or [])}
+    return [
+        {
+            "id": r["id"],
+            "email": r.get("email"),
+            "full_name": r.get("full_name"),
+            "is_active": r.get("is_active", True),
+            "role": role_map.get(str(r.get("role_id")), "viewer"),
+            "created_at": r.get("created_at"),
+        }
+        for r in (rows.data or [])
+    ]
+
+
+@router.post("")
+async def create_user(payload: UserCreate, user: UserContext = Depends(require_roles("admin"))):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    role = supabase_service.table("roles").select("id,name").eq("name", payload.role_name).limit(1).execute()
+    if not role.data:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    role_row = role.data[0]
+
+    try:
+        created = supabase_service.auth.admin.create_user(
+            {
+                "email": payload.email,
+                "password": payload.password,
+                "email_confirm": True,
+                "user_metadata": {"full_name": payload.full_name},
+            }
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail="Supabase user creation failed") from exc
+
+    if not created.user:
+        raise HTTPException(status_code=500, detail="Supabase returned no user")
+
+    supabase_service.table("users").upsert(
+        {
+            "id": str(created.user.id),
+            "email": payload.email,
+            "full_name": payload.full_name,
+            "password_hash": "supabase_managed",
+            "role_id": role_row["id"],
+            "is_active": True,
+        },
+        on_conflict="id",
+    ).execute()
+
+    return {"id": str(created.user.id), "email": payload.email, "role": role_row["name"]}
+
+
+@router.get("/{user_id}")
+async def get_user(user_id: str, actor: UserContext = Depends(get_current_user)):
+    if actor.role not in ("admin", "checker") and actor.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Insufficient role")
+
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    row = supabase_service.table("users").select("id,email,full_name,is_active,role_id,created_at,updated_at").eq("id", user_id).limit(1).execute()
+    if not row.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    role_res = supabase_service.table("roles").select("name").eq("id", row.data[0].get("role_id")).limit(1).execute()
+    role_name = role_res.data[0]["name"] if role_res.data else "viewer"
+    profile = dict(row.data[0])
+    profile["role"] = role_name
+    profile.pop("role_id", None)
+    return profile
+
+
+@router.patch("/{user_id}")
+async def update_user(user_id: str, payload: UserUpdate, user: UserContext = Depends(require_roles("admin"))):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    existing = supabase_service.table("users").select("id,role_id").eq("id", user_id).limit(1).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    role_id = existing.data[0].get("role_id")
+    if payload.role_name:
+        role = supabase_service.table("roles").select("id").eq("name", payload.role_name).limit(1).execute()
+        if not role.data:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        role_id = role.data[0]["id"]
+
+    update_payload: dict[str, object] = {"role_id": role_id}
+    if payload.full_name is not None:
+        update_payload["full_name"] = payload.full_name
+    if payload.is_active is not None:
+        update_payload["is_active"] = payload.is_active
+
+    supabase_service.table("users").update(update_payload).eq("id", user_id).execute()
+
+    return {"message": "user updated"}
+
+
+@router.delete("/{user_id}")
+async def delete_user(user_id: str, user: UserContext = Depends(require_roles("admin"))):
+    if user.user_id == user_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    deleted = supabase_service.table("users").delete().eq("id", user_id).execute()
+    if not deleted.data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Keep operation resilient even if Supabase admin deletion fails.
+    if supabase_service is not None:
+        try:
+            supabase_service.auth.admin.delete_user(user_id)
+        except Exception:  # noqa: BLE001
+            pass
+
+    return {"message": "user deleted"}

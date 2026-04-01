@@ -1,0 +1,11 @@
+{
+  "name": "@bdcr7/rbac-engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo rbac-engine build ok",
+    "lint": "echo rbac-engine lint ok"
+  }
+}

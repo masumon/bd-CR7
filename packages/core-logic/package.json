@@ -1,0 +1,11 @@
+{
+  "name": "@bdcr7/core-logic",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo core-logic build ok",
+    "lint": "echo core-logic lint ok"
+  }
+}

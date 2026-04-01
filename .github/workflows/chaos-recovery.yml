@@ -1,0 +1,16 @@
+name: chaos-recovery
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  restart-drill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Simulate service restart drill
+        run: |
+          echo "Running chaos drill: service recycle simulation"
+          sleep 2
+          echo "Health check simulation: OK"

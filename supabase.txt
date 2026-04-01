@@ -1,0 +1,10 @@
+Supabase project settings template
+
+SUPABASE_URL=<set-in-local-env>
+SUPABASE_ANON_KEY=<set-in-local-env>
+SUPABASE_SERVICE_ROLE_KEY=<set-in-local-env>
+SUPABASE_DB_PASSWORD=<set-in-local-env>
+
+Security note:
+- Do not commit real keys/passwords to git.
+- Store secrets in local `.env` files or secret managers.

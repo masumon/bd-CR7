@@ -1,0 +1,48 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; if \\(Get-Command rg -ErrorAction SilentlyContinue\\) \\{ rg --files \\} else \\{ Get-ChildItem -Recurse -File \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\} \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; if \\(Get-Command rg -ErrorAction SilentlyContinue\\) \\{ rg --files -g \"!\\*\\*/venv/\\*\\*\" -g \"!\\*\\*/node_modules/\\*\\*\" -g \"!\\*\\*/\\.next/\\*\\*\" -g \"!\\*\\*/dist/\\*\\*\" -g \"!\\*\\*/build/\\*\\*\" \\} else \\{ Get-ChildItem -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch \"\\\\\\\\venv\\\\\\\\\\|\\\\\\\\node_modules\\\\\\\\\\|\\\\\\\\\\.next\\\\\\\\\\|\\\\\\\\dist\\\\\\\\\\|\\\\\\\\build\\\\\\\\\" \\} \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\} \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; if \\(Test-Path \\.\\\\\\.github\\) \\{ Get-ChildItem -Recurse -File \\.\\\\\\.github\\\\\\* \\| Select-Object -ExpandProperty FullName \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; if \\(Test-Path \\.\\\\packages\\) \\{ Get-ChildItem -Recurse -File \\.\\\\packages\\\\\\* \\| Select-Object -ExpandProperty FullName \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; python -m compileall apps/api-core-python sumonix_ai$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; pnpm install$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; if \\(Get-Command rg -ErrorAction SilentlyContinue\\) \\{ rg --files -g \"!\\*\\*/venv/\\*\\*\" -g \"!\\*\\*/node_modules/\\*\\*\" -g \"!\\*\\*/\\.next/\\*\\*\" \\} else \\{ Get-ChildItem -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch '\\\\\\\\venv\\\\\\\\\\|\\\\\\\\node_modules\\\\\\\\\\|\\\\\\\\\\.next\\\\\\\\' \\} \\| ForEach-Object FullName \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\apps\\\\api-core-python -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch '\\\\\\\\venv\\\\\\\\\\|\\\\\\\\__pycache__\\\\\\\\\\|\\\\\\\\\\.turbo\\\\\\\\' \\} \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\apps\\\\web-pwa -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch '\\\\\\\\node_modules\\\\\\\\\\|\\\\\\\\\\.next\\\\\\\\' \\} \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\sumonix_ai -Recurse -File \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\supabase\\\\migrations -File \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

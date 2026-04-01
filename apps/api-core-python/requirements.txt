@@ -1,0 +1,8 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.11.7
+email-validator==2.2.0
+sqlalchemy==2.0.35
+pgvector==0.3.6
+psycopg[binary]==3.2.12
+supabase==2.18.1
