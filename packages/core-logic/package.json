@@ -6,6 +6,7 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "echo core-logic build ok",
-    "lint": "echo core-logic lint ok"
+    "lint": "echo core-logic lint ok",
+    "type-check": "echo core-logic type-check ok"
   }
 }

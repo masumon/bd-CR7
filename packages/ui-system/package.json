@@ -6,7 +6,8 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "echo ui-system build ok",
-    "lint": "echo ui-system lint ok"
+    "lint": "echo ui-system lint ok",
+    "type-check": "echo ui-system type-check ok"
   },
   "peerDependencies": {
     "react": "^18.3.1"

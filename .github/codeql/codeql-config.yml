@@ -1,0 +1,9 @@
+name: "bd-cr7-codeql"
+
+paths-ignore:
+  - "**/.next/**"
+  - "**/.turbo/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/coverage/**"

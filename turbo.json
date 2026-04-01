@@ -32,6 +32,10 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "type-check": {
+      "dependsOn": ["^type-check"],
+      "outputs": []
+    },
     "dev": {
       "cache": false,
       "persistent": true

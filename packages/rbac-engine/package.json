@@ -6,6 +6,7 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "echo rbac-engine build ok",
-    "lint": "echo rbac-engine lint ok"
+    "lint": "echo rbac-engine lint ok",
+    "type-check": "echo rbac-engine type-check ok"
   }
 }
