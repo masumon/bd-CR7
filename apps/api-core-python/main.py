@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from core.supabase import supabase_service
+from core.middleware import RateLimitMiddleware
 from routers import ai, auth, finance, hr, import_supply, pos, users
 
 
@@ -23,6 +24,7 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=10)
 
     app.include_router(auth.router, prefix="/auth", tags=["auth"])
     app.include_router(finance.router, prefix="/finance", tags=["finance"])

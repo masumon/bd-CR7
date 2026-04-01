@@ -1,6 +1,7 @@
 from decimal import Decimal
 from datetime import datetime, timezone
 from uuid import uuid4
+import re
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -49,6 +50,9 @@ async def list_accounts(user: UserContext = Depends(get_current_user)):
 async def transfer_funds(payload: FundTransfer, user: UserContext = Depends(require_roles("admin", "maker"))):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    # Validate reference field: alphanumeric, hyphens, underscores only (SQL injection protection).
+    if not re.match(r"^[a-zA-Z0-9\-_\s]{1,100}$", payload.reference or ""):
+        raise HTTPException(status_code=400, detail="Reference contains invalid characters")
     if payload.from_account_id == payload.to_account_id:
         raise HTTPException(status_code=400, detail="Source and destination accounts must differ")
     if payload.amount <= 0:
@@ -217,19 +221,30 @@ async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserCo
 
 
 @router.get("/expenses")
-async def list_expenses(user: UserContext = Depends(get_current_user)):
+async def list_expenses(user: UserContext = Depends(get_current_user), limit: int = 20, offset: int = 0):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    if limit <= 0 or limit > 500:
+        limit = 20
+    if offset < 0:
+        offset = 0
     query = (
         supabase_service.table("expenses")
         .select("id,account_id,category_id,amount,description,status,maker_id,checker_id,risk_level,risk_score,created_at")
         .order("created_at", desc=True)
-        .limit(200)
+        .limit(limit + 1)
+        .offset(offset)
     )
     if user.role not in ("admin", "checker"):
         query = query.eq("maker_id", user.user_id)
     rows = query.execute()
-    return rows.data or []
+    data = rows.data or []
+    has_more = len(data) > limit
+    return {
+        "expenses": data[:limit],
+        "has_more": has_more,
+        "next_cursor": f"offset_{offset + limit}" if has_more else None,
+    }
 
 
 @router.get("/expenses/{expense_id}")

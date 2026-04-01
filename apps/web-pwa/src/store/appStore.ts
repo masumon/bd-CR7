@@ -41,3 +41,56 @@ export const useAppStore = create<AppState>((set) => ({
     }
   },
 }));
+
+type AppStateWithPolling = AppState & {
+  pollInterval: NodeJS.Timeout | null;
+  retryCount: number;
+  startPolling: (token: string) => void;
+  stopPolling: () => void;
+  retryLoad: (token: string) => Promise<void>;
+};
+
+export const useAppStoreWithPolling = create<AppStateWithPolling>((set, get) => ({
+  dashboard: null,
+  loading: false,
+  error: null,
+  pollInterval: null,
+  retryCount: 0,
+  loadDashboard: async (token) => {
+    try {
+      set({ loading: true, error: null, retryCount: 0 });
+      const dashboard = await apiRequest<Dashboard>("/ai/dashboard", { method: "GET" }, token);
+      set({ dashboard: normalizeDashboard(dashboard), loading: false, error: null });
+    } catch (error) {
+      set({ error: (error as Error).message, loading: false });
+    }
+  },
+  retryLoad: async (token) => {
+    const { retryCount } = get();
+    const backoffMs = Math.min(1000 * Math.pow(2, retryCount), 10000); // exponential backoff, max 10s
+    await new Promise((resolve) => setTimeout(resolve, backoffMs));
+    try {
+      set({ loading: true });
+      const dashboard = await apiRequest<Dashboard>("/ai/dashboard", { method: "GET" }, token);
+      set({ dashboard: normalizeDashboard(dashboard), loading: false, error: null, retryCount: 0 });
+    } catch (error) {
+      set({ error: (error as Error).message, loading: false, retryCount: retryCount + 1 });
+    }
+  },
+  startPolling: (token) => {
+    const state = get();
+    if (state.pollInterval) return; // already polling
+    state.loadDashboard(token);
+    const interval = setInterval(() => {
+      state.loadDashboard(token);
+    }, 30000); // poll every 30 seconds
+    set({ pollInterval: interval });
+  },
+  stopPolling: () => {
+    const state = get();
+    if (state.pollInterval) {
+      clearInterval(state.pollInterval);
+      set({ pollInterval: null });
+    }
+  },
+}));

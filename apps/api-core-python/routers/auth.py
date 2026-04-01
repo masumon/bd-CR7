@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user
 from core.supabase import supabase_anon, supabase_service
+from core.exceptions import AuthError, RoleNotFoundError, MetadataError
 from schemas.auth import AuthResponse, LoginRequest, RegisterRequest
 
 router = APIRouter()
@@ -32,6 +33,8 @@ async def register(payload: RegisterRequest):
                 "user_metadata": {"full_name": payload.full_name},
             }
         )
+    except AuthError as exc:
+        raise HTTPException(status_code=400, detail=f"Registration failed: {str(exc)}") from exc
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail="Supabase registration failed") from exc
 
@@ -97,6 +100,8 @@ async def login(payload: LoginRequest):
         role_name = viewer_role["name"]
     else:
         role_id = local_user.data[0].get("role_id")
+        if role_id is None:
+            raise HTTPException(status_code=500, detail="User role_id is null (data corruption)")
         role_res = supabase_service.table("roles").select("name").eq("id", role_id).limit(1).execute()
         role_name = role_res.data[0]["name"] if role_res.data else "viewer"
 
