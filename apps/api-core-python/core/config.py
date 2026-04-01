@@ -20,7 +20,15 @@ class Settings:
     def __init__(self, env_map: Mapping[str, str] | None = None) -> None:
         env = env_map or os.environ
         self.app_name = env.get("APP_NAME", "BD CR7 API Core")
-        self.env = env.get("APP_ENV", "development").strip().lower()
+        resolved_env = (
+            env.get("APP_ENV")
+            or env.get("VERCEL_ENV")
+            or env.get("ENVIRONMENT")
+            or "development"
+        )
+        self.env = resolved_env.strip().lower()
+        if self.env == "preview":
+            self.env = "staging"
         self.log_level = env.get("LOG_LEVEL", "INFO").strip().upper()
         self.supabase_url = env.get("SUPABASE_URL", "").strip()
         self.supabase_anon_key = env.get("SUPABASE_ANON_KEY", "").strip()
