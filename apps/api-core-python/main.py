@@ -74,6 +74,14 @@ def create_app() -> Any:
     app.include_router(ai.router, prefix="/ai", tags=["ai"])
     app.include_router(users.router, prefix="/users", tags=["users"])
 
+    @app.get("/")
+    async def root() -> dict[str, str]:
+        return {"status": "ok", "service": "bd-cr7-api", "env": settings.env}
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon() -> Response:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok", "env": settings.env}
