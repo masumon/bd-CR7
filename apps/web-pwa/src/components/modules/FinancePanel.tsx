@@ -2,11 +2,12 @@
 
 import { FormEvent, useState } from "react";
 
-import { apiRequest } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 
 export function FinancePanel() {
   const token = useAuthStore((s) => s.token);
+  const userId = useAuthStore((s) => s.userId);
   const [accountId, setAccountId] = useState("");
   const [targetAccountId, setTargetAccountId] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -15,27 +16,56 @@ export function FinancePanel() {
   const [message, setMessage] = useState("");
 
   const submitTransfer = async () => {
-    if (!token || !accountId || !targetAccountId || !amount) {
+    if (!token || !userId || !accountId || !targetAccountId || !amount) {
       setMessage("All fields required for transfer");
       return;
     }
     try {
-      const response = await apiRequest<{ message: string; transaction_id: string; from_balance: number | string; to_balance: number | string }>(
-        "/finance/transfer",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            from_account_id: accountId,
-            to_account_id: targetAccountId,
-            amount: Number(amount),
-            reference: description || "Transfer",
-          }),
-        },
-        token
-      );
-      setMessage(
-        `${response.message}: ${response.transaction_id} | from ${Number(response.from_balance)} -> to ${Number(response.to_balance)}`
-      );
+      if (!supabase) {
+        throw new Error("Supabase is not configured");
+      }
+      const transferAmount = Number(amount);
+      const { data: accounts, error: accountsErr } = await supabase
+        .from("fund_accounts")
+        .select("id,balance")
+        .in("id", [accountId, targetAccountId]);
+      if (accountsErr) {
+        throw new Error(accountsErr.message);
+      }
+      const from = (accounts || []).find((a: { id: string }) => a.id === accountId) as { id: string; balance: number | string } | undefined;
+      const to = (accounts || []).find((a: { id: string }) => a.id === targetAccountId) as { id: string; balance: number | string } | undefined;
+      if (!from || !to) {
+        throw new Error("Account not found");
+      }
+      const fromBalance = Number(from.balance || 0);
+      const toBalance = Number(to.balance || 0);
+      if (fromBalance < transferAmount) {
+        throw new Error("Insufficient funds");
+      }
+
+      const nextFrom = fromBalance - transferAmount;
+      const nextTo = toBalance + transferAmount;
+      const { error: fromErr } = await supabase.from("fund_accounts").update({ balance: nextFrom }).eq("id", accountId);
+      if (fromErr) {
+        throw new Error(fromErr.message);
+      }
+      const { error: toErr } = await supabase.from("fund_accounts").update({ balance: nextTo }).eq("id", targetAccountId);
+      if (toErr) {
+        throw new Error(toErr.message);
+      }
+
+      const { error: txErr } = await supabase.from("fund_transactions").insert({
+        from_account_id: accountId,
+        to_account_id: targetAccountId,
+        amount: transferAmount,
+        reference: description || "Transfer",
+        created_by: userId,
+      });
+      if (txErr) {
+        throw new Error(txErr.message);
+      }
+
+      setMessage(`Transfer completed | from ${nextFrom.toFixed(2)} -> to ${nextTo.toFixed(2)}`);
     } catch (error) {
       setMessage((error as Error).message);
     }
@@ -43,22 +73,24 @@ export function FinancePanel() {
 
   const submitExpense = async (event: FormEvent) => {
     event.preventDefault();
-    if (!token) return;
+    if (!token || !userId) return;
     try {
-      const response = await apiRequest<{ id: string; status: string }>(
-        "/finance/expenses",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            account_id: accountId,
-            category_id: categoryId,
-            amount: Number(amount),
-            description,
-          }),
-        },
-        token
-      );
-      setMessage(`Expense created: ${response.id} (${response.status})`);
+      if (!supabase) {
+        throw new Error("Supabase is not configured");
+      }
+      const payload = {
+        account_id: accountId,
+        category_id: categoryId || null,
+        amount: Number(amount),
+        description,
+        status: "pending",
+        maker_id: userId,
+      };
+      const { data, error } = await supabase.from("expenses").insert(payload).select("id,status").single();
+      if (error) {
+        throw new Error(error.message);
+      }
+      setMessage(`Expense created: ${data.id} (${data.status})`);
     } catch (error) {
       setMessage((error as Error).message);
     }

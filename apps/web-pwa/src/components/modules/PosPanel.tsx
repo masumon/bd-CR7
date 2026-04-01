@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 
-import { apiRequest } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 
 type CartLine = { product_id: string; quantity: number; label: string; price?: number };
 
 export function PosPanel() {
   const token = useAuthStore((s) => s.token);
+  const userId = useAuthStore((s) => s.userId);
   const [barcode, setBarcode] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [message, setMessage] = useState("");
@@ -16,7 +17,17 @@ export function PosPanel() {
   const addByBarcode = async () => {
     if (!token || !barcode) return;
     try {
-      const product = await apiRequest<{ id: string; name: string; price?: number }>(`/pos/products/barcode/${barcode}`, {}, token);
+      if (!supabase) {
+        throw new Error("Supabase is not configured");
+      }
+      const { data: product, error } = await supabase
+        .from("products")
+        .select("id,name,sell_price")
+        .eq("barcode", barcode)
+        .maybeSingle();
+      if (error || !product) {
+        throw new Error(error?.message || "Product not found");
+      }
       setCart((prev) => {
         const idx = prev.findIndex((x) => x.product_id === product.id);
         if (idx >= 0) {
@@ -24,7 +35,7 @@ export function PosPanel() {
           next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
           return next;
         }
-        return [...prev, { product_id: product.id, quantity: 1, label: product.name, price: product.price }];
+        return [...prev, { product_id: product.id, quantity: 1, label: product.name, price: Number(product.sell_price || 0) }];
       });
       setBarcode("");
       setMessage("");
@@ -38,17 +49,34 @@ export function PosPanel() {
   };
 
   const checkout = async () => {
-    if (!token || cart.length === 0) return;
+    if (!token || !userId || cart.length === 0) return;
     try {
-      const response = await apiRequest<{ id: string; total_amount: string }>(
-        "/pos/sales",
-        {
-          method: "POST",
-          body: JSON.stringify({ items: cart.map((c) => ({ product_id: c.product_id, quantity: c.quantity })) }),
-        },
-        token
-      );
-      setMessage(`Sale ${response.id} completed. Total ${response.total_amount}`);
+      if (!supabase) {
+        throw new Error("Supabase is not configured");
+      }
+      const total = cart.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
+      const { data: sale, error: saleErr } = await supabase
+        .from("sales")
+        .insert({ cashier_id: userId, total_amount: total })
+        .select("id,total_amount")
+        .single();
+      if (saleErr || !sale) {
+        throw new Error(saleErr?.message || "Sale insert failed");
+      }
+
+      const saleItems = cart.map((c) => ({
+        sale_id: sale.id,
+        product_id: c.product_id,
+        quantity: c.quantity,
+        unit_price: Number(c.price || 0),
+        line_total: Number(c.price || 0) * c.quantity,
+      }));
+      const { error: itemErr } = await supabase.from("sale_items").insert(saleItems);
+      if (itemErr) {
+        throw new Error(itemErr.message);
+      }
+
+      setMessage(`Sale ${sale.id} completed. Total ${sale.total_amount}`);
       setCart([]);
     } catch (error) {
       setMessage((error as Error).message);

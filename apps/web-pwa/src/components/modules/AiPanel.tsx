@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
 export function AiPanel() {
@@ -13,23 +12,13 @@ export function AiPanel() {
 
   const loadAnomalies = async () => {
     if (!token) return;
-    try {
-      const rows = await apiRequest<Array<Record<string, unknown>>>("/ai/anomalies", {}, token);
-      setAnomalies(rows);
-      setMessage(`Loaded ${rows.length} anomalies`);
-    } catch (error) {
-      setMessage((error as Error).message);
-    }
+    setAnomalies([]);
+    setMessage("AI anomaly API requires backend deployment. Supabase-only mode is active.");
   };
 
   const searchMemory = async () => {
     if (!token) return;
-    try {
-      const rows = await apiRequest<Array<Record<string, unknown>>>(`/ai/memory/search?vector=${encodeURIComponent(vector)}`, {}, token);
-      setMessage(`Memory hits: ${rows.length}`);
-    } catch (error) {
-      setMessage((error as Error).message);
-    }
+    setMessage("AI memory search requires backend deployment. Supabase-only mode is active.");
   };
 
   return (
