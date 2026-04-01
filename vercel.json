@@ -1,9 +1,10 @@
 {
   "version": 2,
   "framework": "nextjs",
+  "outputDirectory": "apps/web-pwa/.next",
   "installCommand": "corepack enable && corepack prepare pnpm@10.17.1 --activate && pnpm install --frozen-lockfile",
-  "buildCommand": "if [ -d apps/web-pwa ]; then cd apps/web-pwa; elif [ -d ../web-pwa ]; then cd ../web-pwa; fi; NODE_OPTIONS=--no-deprecation pnpm build",
-  "devCommand": "if [ -d apps/web-pwa ]; then cd apps/web-pwa; elif [ -d ../web-pwa ]; then cd ../web-pwa; fi; NODE_OPTIONS=--no-deprecation pnpm dev",
+  "buildCommand": "NODE_OPTIONS=--no-deprecation pnpm --filter web-pwa build",
+  "devCommand": "NODE_OPTIONS=--no-deprecation pnpm --filter web-pwa dev",
   "functions": {
     "api/main.py": {
       "runtime": "python3.11"
