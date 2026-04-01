@@ -17,6 +17,18 @@
     "api-core-python#build": {
       "outputs": []
     },
+    "@bdcr7/core-logic#build": {
+      "outputs": []
+    },
+    "@bdcr7/media-engine#build": {
+      "outputs": []
+    },
+    "@bdcr7/rbac-engine#build": {
+      "outputs": []
+    },
+    "@bdcr7/ui-system#build": {
+      "outputs": []
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
