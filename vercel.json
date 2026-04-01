@@ -2,14 +2,14 @@
   "version": 2,
   "framework": "fastapi",
   "functions": {
-    "api/main.py": {
+    "main.py": {
       "runtime": "python3.11"
     }
   },
   "rewrites": [
     {
       "source": "/:path*",
-      "destination": "/api/main.py"
+      "destination": "/main.py"
     }
   ]
 }
