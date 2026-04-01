@@ -10,7 +10,19 @@ from core.config import Settings, SettingsError
 
 
 class SettingsTests(unittest.TestCase):
-    def test_production_requires_redis(self) -> None:
+    def test_production_allows_missing_redis_by_default(self) -> None:
+        settings = Settings(
+            {
+                "APP_ENV": "production",
+                "SUPABASE_URL": "https://demo.supabase.co",
+                "SUPABASE_ANON_KEY": "anon",
+                "SUPABASE_SERVICE_ROLE_KEY": "service",
+                "CORS_ORIGINS": "https://app.example.com",
+            }
+        )
+        self.assertFalse(settings.require_redis_in_production)
+
+    def test_production_requires_redis_when_strict_flag_enabled(self) -> None:
         with self.assertRaises(SettingsError):
             Settings(
                 {
@@ -19,6 +31,7 @@ class SettingsTests(unittest.TestCase):
                     "SUPABASE_ANON_KEY": "anon",
                     "SUPABASE_SERVICE_ROLE_KEY": "service",
                     "CORS_ORIGINS": "https://app.example.com",
+                    "REQUIRE_REDIS_IN_PRODUCTION": "true",
                 }
             )
 

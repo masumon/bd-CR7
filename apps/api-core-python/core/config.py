@@ -37,6 +37,12 @@ class Settings:
         self.database_url = env.get("DATABASE_URL", "").strip()
         self.cors_origins = _split_csv(env.get("CORS_ORIGINS", "http://localhost:3000"))
         self.redis_url = env.get("REDIS_URL", "").strip()
+        self.require_redis_in_production = env.get("REQUIRE_REDIS_IN_PRODUCTION", "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         self.rate_limit_requests_per_minute = int(env.get("RATE_LIMIT_REQUESTS_PER_MINUTE", "60"))
         self.is_production = self.env in {"production", "staging"}
         self.database_url = self._resolve_database_url()
@@ -67,7 +73,7 @@ class Settings:
         if self.is_production and not self.cors_origins:
             raise SettingsError("CORS_ORIGINS must be configured in production")
 
-        if self.is_production and not self.redis_url:
+        if self.is_production and self.require_redis_in_production and not self.redis_url:
             raise SettingsError("REDIS_URL is required in production for distributed rate limiting")
 
 
