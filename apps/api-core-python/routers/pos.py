@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from core.auth import UserContext, get_current_user, require_roles
 from core.supabase import supabase_service
 from schemas.pos import CustomerCreate, ProductUpsert, SaleCreate
+from services.pos import create_sale_atomic
 
 router = APIRouter()
 
@@ -140,59 +141,10 @@ async def create_customer(payload: CustomerCreate, user: UserContext = Depends(g
 
 @router.post("/sales")
 async def create_sale(payload: SaleCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    sale_id = str(uuid4())
-    total_amount = Decimal("0")
-    product_ids = [item.product_id for item in payload.items]
-    products = (
-        supabase_service.table("products")
-        .select("id,stock_qty,sell_price")
-        .in_("id", product_ids)
-        .execute()
-    )
-    product_map = {row["id"]: row for row in (products.data or [])}
-    sale_items: list[dict[str, str]] = []
-
-    for item in payload.items:
-        product = product_map.get(item.product_id)
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Product not found: {item.product_id}")
-
-        stock_qty = Decimal(str(product["stock_qty"]))
-        qty = Decimal(item.quantity)
-        if stock_qty < qty:
-            raise HTTPException(status_code=400, detail=f"Insufficient stock for product {item.product_id}")
-
-        unit_price = Decimal(str(product["sell_price"]))
-        line_total = qty * unit_price
-        total_amount += line_total
-
-        supabase_service.table("products").update(
-            {"stock_qty": str(stock_qty - qty)}
-        ).eq("id", item.product_id).execute()
-        sale_items.append(
-            {
-                "id": str(uuid4()),
-                "sale_id": sale_id,
-                "product_id": item.product_id,
-                "quantity": str(qty),
-                "unit_price": str(unit_price),
-                "line_total": str(line_total),
-            }
-        )
-
-    supabase_service.table("sales").insert(
-        {
-            "id": sale_id,
-            "customer_id": payload.customer_id,
-            "cashier_id": user.user_id,
-            "total_amount": str(total_amount),
-        }
-    ).execute()
-    supabase_service.table("sale_items").insert(sale_items).execute()
-
-    return {"id": sale_id, "total_amount": str(total_amount)}
+    try:
+        return create_sale_atomic(payload, user)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.get("/sales")

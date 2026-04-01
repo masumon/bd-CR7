@@ -27,6 +27,30 @@ type AppState = {
   loadDashboard: (token: string) => Promise<void>;
 };
 
+async function fetchDashboard(): Promise<Dashboard> {
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const [{ data: accounts }, { data: sales }, { count: pendingCount }, { data: recent }] = await Promise.all([
+    supabase.from("fund_accounts").select("balance"),
+    supabase.from("sales").select("total_amount,created_at").gte("created_at", monthStart.toISOString()),
+    supabase.from("expenses").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("expenses").select("id,description,amount,status,created_at").order("created_at", { ascending: false }).limit(20),
+  ]);
+
+  return normalizeDashboard({
+    total_balance: (accounts || []).reduce((sum, a: { balance?: number | string }) => sum + Number(a.balance || 0), 0),
+    monthly_sales: (sales || []).reduce((sum, s: { total_amount?: number | string }) => sum + Number(s.total_amount || 0), 0),
+    pending_expenses: Number(pendingCount || 0),
+    recent_expenses: (recent || []) as Array<Record<string, unknown>>,
+  });
+}
+
 export const useAppStore = create<AppState>((set) => ({
   dashboard: null,
   loading: false,
@@ -34,30 +58,7 @@ export const useAppStore = create<AppState>((set) => ({
   loadDashboard: async () => {
     try {
       set({ loading: true, error: null });
-      if (!supabase) {
-        throw new Error("Supabase is not configured");
-      }
-
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-
-      const [{ data: accounts }, { data: sales }, { count: pendingCount }, { data: recent }] = await Promise.all([
-        supabase.from("fund_accounts").select("balance"),
-        supabase.from("sales").select("total_amount,created_at").gte("created_at", monthStart.toISOString()),
-        supabase.from("expenses").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("expenses").select("id,description,amount,status,created_at").order("created_at", { ascending: false }).limit(20),
-      ]);
-
-      const totalBalance = (accounts || []).reduce((sum, a: { balance?: number | string }) => sum + Number(a.balance || 0), 0);
-      const monthlySales = (sales || []).reduce((sum, s: { total_amount?: number | string }) => sum + Number(s.total_amount || 0), 0);
-      const dashboard: Dashboard = {
-        total_balance: totalBalance,
-        monthly_sales: monthlySales,
-        pending_expenses: Number(pendingCount || 0),
-        recent_expenses: (recent || []) as Array<Record<string, unknown>>,
-      };
-      set({ dashboard: normalizeDashboard(dashboard), loading: false });
+      set({ dashboard: await fetchDashboard(), loading: false });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
@@ -81,30 +82,7 @@ export const useAppStoreWithPolling = create<AppStateWithPolling>((set, get) => 
   loadDashboard: async () => {
     try {
       set({ loading: true, error: null, retryCount: 0 });
-      if (!supabase) {
-        throw new Error("Supabase is not configured");
-      }
-
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-
-      const [{ data: accounts }, { data: sales }, { count: pendingCount }, { data: recent }] = await Promise.all([
-        supabase.from("fund_accounts").select("balance"),
-        supabase.from("sales").select("total_amount,created_at").gte("created_at", monthStart.toISOString()),
-        supabase.from("expenses").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("expenses").select("id,description,amount,status,created_at").order("created_at", { ascending: false }).limit(20),
-      ]);
-
-      const totalBalance = (accounts || []).reduce((sum, a: { balance?: number | string }) => sum + Number(a.balance || 0), 0);
-      const monthlySales = (sales || []).reduce((sum, s: { total_amount?: number | string }) => sum + Number(s.total_amount || 0), 0);
-      const dashboard: Dashboard = {
-        total_balance: totalBalance,
-        monthly_sales: monthlySales,
-        pending_expenses: Number(pendingCount || 0),
-        recent_expenses: (recent || []) as Array<Record<string, unknown>>,
-      };
-      set({ dashboard: normalizeDashboard(dashboard), loading: false, error: null });
+      set({ dashboard: await fetchDashboard(), loading: false, error: null });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
@@ -115,30 +93,7 @@ export const useAppStoreWithPolling = create<AppStateWithPolling>((set, get) => 
     await new Promise((resolve) => setTimeout(resolve, backoffMs));
     try {
       set({ loading: true });
-      if (!supabase) {
-        throw new Error("Supabase is not configured");
-      }
-
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-
-      const [{ data: accounts }, { data: sales }, { count: pendingCount }, { data: recent }] = await Promise.all([
-        supabase.from("fund_accounts").select("balance"),
-        supabase.from("sales").select("total_amount,created_at").gte("created_at", monthStart.toISOString()),
-        supabase.from("expenses").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("expenses").select("id,description,amount,status,created_at").order("created_at", { ascending: false }).limit(20),
-      ]);
-
-      const totalBalance = (accounts || []).reduce((sum, a: { balance?: number | string }) => sum + Number(a.balance || 0), 0);
-      const monthlySales = (sales || []).reduce((sum, s: { total_amount?: number | string }) => sum + Number(s.total_amount || 0), 0);
-      const dashboard: Dashboard = {
-        total_balance: totalBalance,
-        monthly_sales: monthlySales,
-        pending_expenses: Number(pendingCount || 0),
-        recent_expenses: (recent || []) as Array<Record<string, unknown>>,
-      };
-      set({ dashboard: normalizeDashboard(dashboard), loading: false, error: null, retryCount: 0 });
+      set({ dashboard: await fetchDashboard(), loading: false, error: null, retryCount: 0 });
     } catch (error) {
       set({ error: (error as Error).message, loading: false, retryCount: retryCount + 1 });
     }

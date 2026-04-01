@@ -7,6 +7,8 @@ from schemas.auth import AuthResponse, LoginRequest, RegisterRequest
 
 router = APIRouter()
 
+SELF_SERVICE_ROLE = "viewer"
+
 
 @router.post("/register", response_model=AuthResponse)
 async def register(payload: RegisterRequest):
@@ -17,9 +19,7 @@ async def register(payload: RegisterRequest):
     if existing.data:
         raise HTTPException(status_code=409, detail="Email already exists")
 
-    role = supabase_service.table("roles").select("id,name").eq("name", payload.role_name).limit(1).execute()
-    if not role.data:
-        role = supabase_service.table("roles").select("id,name").eq("name", "viewer").limit(1).execute()
+    role = supabase_service.table("roles").select("id,name").eq("name", SELF_SERVICE_ROLE).limit(1).execute()
     if not role.data:
         raise HTTPException(status_code=500, detail="Required roles are missing")
     role_row = role.data[0]
@@ -70,6 +70,8 @@ async def register(payload: RegisterRequest):
 async def login(payload: LoginRequest):
     if supabase_anon is None:
         raise HTTPException(status_code=500, detail="Supabase client is not configured")
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
     try:
         auth_result = supabase_anon.auth.sign_in_with_password({"email": payload.email, "password": payload.password})

@@ -6,3 +6,5 @@ sqlalchemy==2.0.35
 pgvector==0.3.6
 psycopg[binary]==3.2.12
 supabase==2.18.1
+python-dotenv==1.0.1
+redis[hiredis]==5.2.1

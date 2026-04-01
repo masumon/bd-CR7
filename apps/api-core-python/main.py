@@ -4,6 +4,7 @@ from typing import Any
 
 try:
     from fastapi import FastAPI
+    from fastapi import Response, status
     from fastapi.middleware.cors import CORSMiddleware
 
     FASTAPI_AVAILABLE = True
@@ -12,17 +13,15 @@ except ModuleNotFoundError:
     FastAPI = Any  # type: ignore[misc,assignment]
 
 
-def create_app() -> FastAPI:
+def create_app() -> Any:
     if not FASTAPI_AVAILABLE:
         async def fallback_app(scope, receive, send):
             if scope.get("type") != "http":
                 return
             status_code = 503
-            if scope.get("path") in {"/", "/health"}:
-                status_code = 200
             body = json.dumps(
                 {
-                    "status": "ok" if status_code == 200 else "error",
+                    "status": "error",
                     "message": "FastAPI dependency missing in runtime",
                 }
             ).encode("utf-8")
@@ -38,9 +37,12 @@ def create_app() -> FastAPI:
         return fallback_app  # type: ignore[return-value]
 
     from core.config import settings
+    from core.logging import configure_logging
     from core.middleware import RateLimitMiddleware
     from core.supabase import supabase_service
     from routers import ai, auth, finance, hr, import_supply, pos, users
+
+    configure_logging(settings.log_level)
 
     app = FastAPI(
         title=settings.app_name,
@@ -49,7 +51,7 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    allowed_origins = [x.strip() for x in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if x.strip()]
+    allowed_origins = list(settings.cors_origins)
 
     app.add_middleware(
         CORSMiddleware,
@@ -58,7 +60,11 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
-    app.add_middleware(RateLimitMiddleware, requests_per_minute=10)
+    app.add_middleware(
+        RateLimitMiddleware,
+        requests_per_minute=settings.rate_limit_requests_per_minute,
+        redis_url=settings.redis_url or None,
+    )
 
     app.include_router(auth.router, prefix="/auth", tags=["auth"])
     app.include_router(finance.router, prefix="/finance", tags=["finance"])
@@ -71,6 +77,18 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok", "env": settings.env}
+
+    @app.get("/ready")
+    async def readiness(response: Response) -> dict[str, str]:
+        if supabase_service is None:
+            response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+            return {"status": "error", "reason": "supabase_service_not_configured"}
+        try:
+            supabase_service.table("roles").select("id", count="exact").limit(1).execute()
+        except Exception:  # noqa: BLE001
+            response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+            return {"status": "error", "reason": "dependency_check_failed"}
+        return {"status": "ready", "env": settings.env}
 
     @app.get("/health/db")
     async def health_db() -> dict[str, str | int]:

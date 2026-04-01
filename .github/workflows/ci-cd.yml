@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: 8.15.0
+          version: 10.17.1
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -25,7 +25,6 @@ jobs:
         run: pnpm type-check
       - name: Build
         run: pnpm build
-
   python-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -33,7 +32,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -r apps/api-core-python/requirements.txt
       - name: Compile Python API and AI modules
         run: |
           python -m compileall apps/api-core-python
           python -m compileall sumonix_ai
+      - name: Backend unit tests
+        run: python -m unittest discover apps/api-core-python/tests
