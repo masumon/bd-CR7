@@ -182,6 +182,54 @@ body {
   font-size: 1.2rem;
 }
 
+.statValueBalance {
+  color: var(--accent);
+}
+
+.statValueSales {
+  color: var(--accent-strong);
+}
+
+.statValuePending {
+  color: var(--warm);
+}
+
+.retryButton {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: var(--warm);
+  font-size: 12px;
+}
+
+.recentActivity {
+  margin-top: 16px;
+}
+
+.recentActivityTitle {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.recentActivityList {
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.recentActivityItem {
+  margin-bottom: 4px;
+  border-left: 2px solid var(--accent);
+  padding: 6px;
+}
+
+.recentActivityMeta {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 button {
   border: 0;
   border-radius: 12px;
