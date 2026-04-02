@@ -6,7 +6,7 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "functions": {
     "api/main.py": {
-      "runtime": "python3.11",
+      "runtime": "@vercel/python@3.2.4",
       "maxDuration": 30
     }
   },
