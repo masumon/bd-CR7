@@ -5,6 +5,8 @@ import { Camera, HardHat, MapPinned, PackageCheck } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
+import { WorkerLogsFeature } from "./worker_logs/WorkerLogsFeature";
+import { MaterialTrackFeature } from "./material_track/MaterialTrackFeature";
 
 const workers = [
   { name: "Rakib", zone: "A1", status: "Present" },
@@ -147,6 +149,11 @@ export function ConstructionView() {
         </Card>
         </motion.div>
       </motion.div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <WorkerLogsFeature />
+        <MaterialTrackFeature />
+      </div>
     </div>
   );
 }

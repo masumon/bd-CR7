@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Table, Td, Th } from "@/components/ui/table";
+import { FundManagerFeature } from "./fund_manager/FundManagerFeature";
+import { ExpenseEngineFeature } from "./expense_engine/ExpenseEngineFeature";
 
 const rows = [
   { id: "EXP-1001", category: "Materials", amount: 5600, status: "Pending" },
@@ -73,7 +75,9 @@ export function FinanceExpenseView() {
               <CardTitle>Expense Ledger</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">Detailed category-level records with quick status scanning.</p>
             </div>
-            <Button onClick={() => setOpen(true)} className="w-full sm:w-auto">Add Expense</Button>
+            <Button onClick={() => setOpen(!open)} className="w-full sm:w-auto">
+              {open ? "Close Forms" : "Add Fund / Expense"}
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -133,29 +137,11 @@ export function FinanceExpenseView() {
         </Card>
       </div>
 
-      <Dialog open={open} onClose={() => setOpen(false)} title="Add Expense">
-        <form className="space-y-3">
-          <div className="space-y-2">
-            <label htmlFor="expenseCategory" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Category</label>
-            <input id="expenseCategory" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none" placeholder="Category" />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="expenseAmount" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Amount</label>
-            <input id="expenseAmount" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none" type="number" placeholder="Amount" />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="expenseStatus" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Approval Status</label>
-            <select id="expenseStatus" title="Approval status" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none" defaultValue="Pending">
-              <option>Pending</option>
-              <option>Approved</option>
-            </select>
-          </div>
-          <label className="block rounded-xl border border-dashed border-border bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
-            Cloudinary Receipt Upload
-            <input className="hidden" type="file" />
-          </label>
-          <Button className="w-full">Save Expense</Button>
-        </form>
+      <Dialog open={open} onClose={() => setOpen(false)} title="Finance Actions">
+        <div className="space-y-4">
+          <FundManagerFeature />
+          <ExpenseEngineFeature />
+        </div>
       </Dialog>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Package } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -20,7 +20,7 @@ interface StockRow {
 }
 
 export function MaterialTrackFeature() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [materialName, setMaterialName] = useState("");
   const [movementType, setMovementType] = useState<MovementType>("in");
@@ -37,15 +37,15 @@ export function MaterialTrackFeature() {
     [quantity, unitPrice],
   );
 
-  async function fetchStock() {
+  const fetchStock = useCallback(async () => {
     const { data } = await supabase
       .from("materials_stock")
       .select("id,material_name,current_qty,unit,low_stock_threshold")
       .order("material_name");
     if (data) setStockList(data as StockRow[]);
-  }
+  }, [supabase]);
 
-  useEffect(() => { fetchStock(); }, []);
+  useEffect(() => { fetchStock(); }, [fetchStock]);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();

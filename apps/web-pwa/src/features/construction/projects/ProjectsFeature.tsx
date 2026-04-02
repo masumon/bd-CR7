@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
@@ -68,7 +68,7 @@ const EMPTY_FORM = {
 };
 
 export function ProjectsFeature() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [projects, setProjects]     = useState<Project[]>([]);
   const [loading, setLoading]       = useState(true);

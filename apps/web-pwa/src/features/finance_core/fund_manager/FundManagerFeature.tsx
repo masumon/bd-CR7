@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Landmark, Link2, WalletCards } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -19,7 +19,7 @@ const METHOD_OPTIONS = [
 ];
 
 export function FundManagerFeature() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const userId = useAuthStore((s) => s.userId);
   const token  = useAuthStore((s) => s.token);
 
@@ -39,7 +39,7 @@ export function FundManagerFeature() {
       if (data?.id) setAccountId(data.id);
       else setNoAccount(true);
     })();
-  }, []);
+  }, [supabase]);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();

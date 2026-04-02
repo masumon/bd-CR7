@@ -14,7 +14,7 @@ const ROLES = [
 const ATTENDANCE = ["Present", "Absent", "Half"] as const;
 
 export function WorkerLogsFeature() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [workerName, setWorkerName]         = useState("");
   const [phone, setPhone]                   = useState("");
