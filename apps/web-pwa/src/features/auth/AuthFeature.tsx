@@ -123,9 +123,9 @@ export function AuthFeature() {
       </div>
 
       <form onSubmit={onEmailLogin} className="formGrid">
-        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" />
-        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name" />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" />
+        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" placeholder="Email" />
+        <input value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" placeholder="Full Name" />
+        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" placeholder="Password" />
         <div className="actions">
           <button type="submit">Login</button>
           <button type="button" onClick={onRegister}>Register</button>
@@ -146,7 +146,7 @@ export function AuthFeature() {
         </div>
       </div>
 
-      {message ? <p className="panelMessage">{message}</p> : null}
+      {message ? <p className="panelMessage">{message}</p> : <p className="panelMessage">No default seeded login exists in Supabase Auth. Use Register or OTP/Google sign-in.</p>}
     </section>
   );
 }

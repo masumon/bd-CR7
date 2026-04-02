@@ -23,8 +23,10 @@ const socialLinks = [
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
   const [tab, setTab] = useState("Google");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
@@ -44,6 +46,28 @@ export default function LoginPage() {
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/dashboard` } });
     if (error) setMessage(error.message);
+  };
+
+  const onRegister = async () => {
+    try {
+      const name = fullName.trim() || email.split("@")[0] || "New User";
+      await register(email, password, name, "worker");
+      setMessage("Account created successfully. If email confirmation is enabled, confirm it first, then sign in.");
+    } catch (error) {
+      setMessage((error as Error).message);
+    }
+  };
+
+  const onResetPassword = async () => {
+    if (!supabase) return;
+    if (!email.trim()) {
+      setMessage("Enter your email first, then use reset password.");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    setMessage(error ? error.message : "Password reset email sent.");
   };
 
   const sendOtp = async () => {
@@ -107,17 +131,25 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={onEmailLogin} className="space-y-3">
+              <label className="block text-xs text-muted-foreground">Full Name</label>
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+                <input className="w-full bg-transparent text-sm outline-none" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" />
+              </div>
               <label className="block text-xs text-muted-foreground">Email</label>
               <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <input className="w-full bg-transparent text-sm outline-none" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" />
+                <input className="w-full bg-transparent text-sm outline-none" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" />
               </div>
               <label className="block text-xs text-muted-foreground">Password</label>
               <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
                 <KeyRound className="h-4 w-4 text-muted-foreground" />
-                <input className="w-full bg-transparent text-sm outline-none" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                <input className="w-full bg-transparent text-sm outline-none" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
               </div>
               <Button type="submit" className="w-full">Sign in</Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" className="w-full" onClick={onRegister}>Create account</Button>
+                <Button type="button" variant="ghost" className="w-full" onClick={onResetPassword}>Reset password</Button>
+              </div>
             </form>
 
             <div className="space-y-3 border-t border-border pt-4">
