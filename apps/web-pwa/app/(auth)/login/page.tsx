@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo, FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
+  ArrowRight,
   ArrowLeft,
   Eye,
   EyeOff,
@@ -27,6 +28,7 @@ import {
   Languages,
   KeyRound,
   PanelsTopLeft,
+  Fingerprint,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
