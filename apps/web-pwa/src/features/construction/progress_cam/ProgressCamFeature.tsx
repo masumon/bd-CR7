@@ -46,8 +46,8 @@ export function ProgressCamFeature() {
     <section className="module">
       <h3>Progress Visualizer</h3>
       <form onSubmit={onSubmit} className="formGrid">
-        <input type="file" accept="image/*,video/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-        <select value={phaseCategory} onChange={(e) => setPhaseCategory(e.target.value)}>
+        <input type="file" title="Photo or video upload" accept="image/*,video/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        <select title="Phase category" value={phaseCategory} onChange={(e) => setPhaseCategory(e.target.value)}>
           {PHASES.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption" rows={2} />

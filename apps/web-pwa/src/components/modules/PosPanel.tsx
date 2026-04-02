@@ -91,26 +91,26 @@ export function PosPanel() {
         <button onClick={addByBarcode} disabled={!token}>Add to cart</button>
         <button onClick={checkout} disabled={!token || cart.length === 0}>Checkout</button>
       </div>
-      <div style={{marginTop:'12px'}}>
+      <div className="posCartWrap">
         {cart.length > 0 ? (
           <>
-            <h3 style={{fontSize:'12px',color:'var(--muted)',margin:'8px 0'}}>Cart ({cart.length} items)</h3>
-            <div style={{fontSize:'12px',maxHeight:'160px',overflowY:'auto'}}>
+            <h3 className="posCartTitle">Cart ({cart.length} items)</h3>
+            <div className="posCartList">
               {cart.map((item) => (
-                <div key={item.product_id} style={{display:'flex',justifyContent:'space-between',padding:'6px',borderBottom:'1px solid var(--line)',alignItems:'center'}}>
+                <div key={item.product_id} className="posCartItem">
                   <div>{item.label} x{item.quantity}</div>
-                  <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                  <div className="posCartItemMeta">
                     {item.price && <span>${(item.price * item.quantity).toFixed(2)}</span>}
-                    <button onClick={() => removeFromCart(item.product_id)} style={{padding:'2px 6px',fontSize:'11px',background:'#a2402f',color:'white'}}>Remove</button>
+                    <button className="posRemoveButton" onClick={() => removeFromCart(item.product_id)}>Remove</button>
                   </div>
                 </div>
               ))}
-              <div style={{padding:'8px',borderTop:'2px solid var(--accent)',marginTop:'8px',fontWeight:'700'}}>
+              <div className="posCartTotal">
                 Total: ${cart.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0).toFixed(2)}
               </div>
             </div>
           </>
-        ) : <p style={{color:'var(--muted)',fontSize:'12px'}}>Cart empty</p>}
+        ) : <p className="posCartEmpty">Cart empty</p>}
       </div>
       {message ? <p>{message}</p> : null}
     </section>

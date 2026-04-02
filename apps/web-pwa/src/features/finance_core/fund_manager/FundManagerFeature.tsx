@@ -55,13 +55,13 @@ export function FundManagerFeature() {
       <h3>Fund Management</h3>
       <form onSubmit={onSubmit} className="formGrid">
         <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount (Number)" required />
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-        <select value={sourceSender} onChange={(e) => setSourceSender(e.target.value)}>
+        <input type="date" title="Transaction date" value={date} onChange={(e) => setDate(e.target.value)} required />
+        <select title="Source or sender" value={sourceSender} onChange={(e) => setSourceSender(e.target.value)}>
           {SOURCE_OPTIONS.map((item) => (
             <option key={item} value={item}>{item}</option>
           ))}
         </select>
-        <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+        <select title="Payment method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
           {METHOD_OPTIONS.map((item) => (
             <option key={item} value={item}>{item}</option>
           ))}

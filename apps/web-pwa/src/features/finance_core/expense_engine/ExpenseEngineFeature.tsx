@@ -79,21 +79,21 @@ export function ExpenseEngineFeature() {
       <h3>Expense Tracking</h3>
       <form onSubmit={onSubmit} className="formGrid">
         <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount (Number)" required />
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-        <select value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
+        <input type="date" title="Expense date" value={date} onChange={(e) => setDate(e.target.value)} required />
+        <select title="Paid by" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
           {USERS.map((item) => (
             <option key={item} value={item}>{item}</option>
           ))}
         </select>
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select title="Expense category" value={category} onChange={(e) => setCategory(e.target.value)}>
           {CATEGORIES.map((item) => (
             <option key={item} value={item}>{item}</option>
           ))}
         </select>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} />
-        <input type="file" accept="image/*,.pdf" onChange={(e) => setReceipt(e.target.files?.[0] || null)} />
+        <input type="file" title="Receipt upload" accept="image/*,.pdf" onChange={(e) => setReceipt(e.target.files?.[0] || null)} />
 
-        <select value={status} onChange={(e) => setStatus(e.target.value as ExpenseStatus)}>
+        <select title="Approval status" value={status} onChange={(e) => setStatus(e.target.value as ExpenseStatus)}>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
         </select>

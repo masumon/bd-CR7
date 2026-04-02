@@ -65,7 +65,7 @@ export function WorkerLogsFeature() {
         <input value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="Worker Name" required />
         <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" required />
         <input type="number" min="0" value={dailyWage} onChange={(e) => setDailyWage(e.target.value)} placeholder="Daily Wage" required />
-        <select value={attendanceStatus} onChange={(e) => setAttendanceStatus(e.target.value as (typeof ATTENDANCE)[number])}>
+        <select title="Attendance status" value={attendanceStatus} onChange={(e) => setAttendanceStatus(e.target.value as (typeof ATTENDANCE)[number])}>
           {ATTENDANCE.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <input type="number" min="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Paid Amount" required />

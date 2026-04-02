@@ -56,14 +56,12 @@ export function DashboardFeature() {
         </div>
       </div>
 
-      <div className="mt-4">
-        <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
+      <div className="dashboardProgressWrap">
+        <div className="dashboardProgressMeta">
           <span>Progress</span>
           <span>{completion}%</span>
         </div>
-        <div className="h-2 w-full rounded bg-slate-200">
-          <div className="h-2 rounded bg-emerald-600" style={{ width: `${completion}%` }} />
-        </div>
+        <progress className="dashboardProgress" max={100} value={completion} aria-label="Project completion" />
       </div>
 
       <div className="recentActivity mt-4">
