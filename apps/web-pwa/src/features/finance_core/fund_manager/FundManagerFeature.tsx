@@ -1,53 +1,76 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { CalendarDays, Landmark, WalletCards } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { CalendarDays, Landmark, Link2, WalletCards } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
 
 const SOURCE_OPTIONS = ["Client", "Owner", "Bank", "Investor", "Other"];
-const METHOD_OPTIONS = ["Cash", "Bank", "bKash"];
+const METHOD_OPTIONS = [
+  "bKash",
+  "Nagad",
+  "Bank Transfer",
+  "Western Union",
+  "MoneyGram",
+  "Wise",
+  "Cash",
+  "Other",
+];
 
 export function FundManagerFeature() {
+  const supabase = createClient();
   const userId = useAuthStore((s) => s.userId);
-  const token = useAuthStore((s) => s.token);
+  const token  = useAuthStore((s) => s.token);
 
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [sourceSender, setSourceSender] = useState(SOURCE_OPTIONS[0]);
+  const [amount, setAmount]               = useState("");
+  const [date, setDate]                   = useState(new Date().toISOString().slice(0, 10));
+  const [sourceSender, setSourceSender]   = useState(SOURCE_OPTIONS[0]);
   const [paymentMethod, setPaymentMethod] = useState(METHOD_OPTIONS[0]);
-  const [description, setDescription] = useState("");
-  const [message, setMessage] = useState("");
+  const [description, setDescription]     = useState("");
+  const [receiptUrl, setReceiptUrl]       = useState("");
+  const [message, setMessage]             = useState("");
+  const [accountId, setAccountId]         = useState<string | null>(null);
+  const [noAccount, setNoAccount]         = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("fund_accounts").select("id").limit(1).maybeSingle();
+      if (data?.id) setAccountId(data.id);
+      else setNoAccount(true);
+    })();
+  }, []);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!token || !userId) return;
-    if (!amount || Number(amount) <= 0) {
-      setMessage("Amount must be greater than zero");
-      return;
-    }
+    if (!amount || Number(amount) <= 0) { setMessage("Amount must be greater than zero"); return; }
+    if (!accountId) { setMessage("No fund account found. Ask your admin to create one first."); return; }
 
     try {
-      if (!supabase) throw new Error("Supabase is not configured");
       const payload = {
-        amount: Number(amount),
+        from_account_id: accountId,
+        to_account_id:   accountId,
+        amount:    Number(amount),
+        direction: "credit" as const,
+        payment_method: paymentMethod,
         reference: `${sourceSender}-${paymentMethod}`,
+        receipt_url: receiptUrl.trim() || null,
         metadata: {
           date,
           source_sender: sourceSender,
-          payment_method: paymentMethod,
           description,
           created_by: userId,
         },
       };
       const { error } = await supabase.from("fund_transactions").insert(payload);
       if (error) throw error;
-      setMessage("Fund entry created successfully");
+      setMessage("Fund entry created successfully.");
       setAmount("");
       setDescription("");
-    } catch (error) {
-      setMessage((error as Error).message);
+      setReceiptUrl("");
+    } catch (err) {
+      setMessage((err as Error).message);
     }
   };
 
@@ -63,6 +86,11 @@ export function FundManagerFeature() {
         </div>
       </div>
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
+          {noAccount && (
+            <div className="md:col-span-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+              No fund account configured. Ask admin to create one before saving fund entries.
+            </div>
+          )}
         <label className="space-y-2 text-sm text-muted-foreground md:col-span-2">
           <span className="text-xs font-medium uppercase tracking-[0.14em]">Amount</span>
           <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" required />
@@ -91,7 +119,11 @@ export function FundManagerFeature() {
           <span className="text-xs font-medium uppercase tracking-[0.14em]">Description</span>
           <textarea className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} />
         </label>
-        <button className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 disabled:pointer-events-none disabled:opacity-60 md:col-span-2" type="submit" disabled={!token}>Save Fund Entry</button>
+          <label className="space-y-2 text-sm text-muted-foreground md:col-span-2">
+            <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em]"><Link2 className="h-3.5 w-3.5" /> Receipt URL (optional)</span>
+            <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="url" value={receiptUrl} onChange={(e) => setReceiptUrl(e.target.value)} placeholder="https://..." />
+          </label>
+          <button className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 disabled:pointer-events-none disabled:opacity-60 md:col-span-2" type="submit" disabled={!token || noAccount}>Save Fund Entry</button>
       </form>
       {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
     </section>

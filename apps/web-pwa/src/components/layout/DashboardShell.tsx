@@ -7,6 +7,7 @@ import {
   BadgeDollarSign,
   Building2,
   Factory,
+  FolderKanban,
   Home,
   Import,
   Menu,
@@ -62,6 +63,7 @@ const copy = {
       { href: "/dashboard/finance", label: "Finance", icon: BadgeDollarSign },
       { href: "/dashboard/import", label: "Import", icon: Import },
       { href: "/dashboard/pos", label: "POS", icon: ShoppingCart },
+        { href: "/dashboard/construction/projects", label: "Projects", icon: FolderKanban },
     ],
   },
   bn: {
@@ -96,6 +98,7 @@ const copy = {
       { href: "/dashboard/finance", label: "ফাইন্যান্স", icon: BadgeDollarSign },
       { href: "/dashboard/import", label: "ইমপোর্ট", icon: Import },
       { href: "/dashboard/pos", label: "পস", icon: ShoppingCart },
+        { href: "/dashboard/construction/projects", label: "প্রজেক্ট", icon: FolderKanban },
     ],
   },
 } as const;
@@ -298,7 +301,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-lg safe-bottom safe-x lg:hidden">
-        <div className="mx-auto grid max-w-3xl grid-cols-5 gap-2">
+          <div className="mx-auto grid max-w-3xl grid-cols-6 gap-2">
           {nav.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} className={cn("flex min-h-14 flex-col items-center justify-center rounded-2xl px-1 text-[11px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
               <Icon className="mb-1 h-4 w-4" />

@@ -2,27 +2,27 @@
 > web-pwa@ build D:\BD CR7 Project\apps\web-pwa
 > next build
 
-  ▲ Next.js 14.2.10
+   ▲ Next.js 15.5.14
 
    Creating an optimized production build ...
- ✓ Compiled successfully
+ ✓ Compiled successfully in 3.3s
    Linting and checking validity of types ...
    Collecting page data ...
-   Generating static pages (0/4) ...
-   Generating static pages (1/4) 
-   Generating static pages (2/4) 
-   Generating static pages (3/4) 
- ✓ Generating static pages (4/4)
+   Generating static pages (0/5) ...
+   Generating static pages (1/5) 
+   Generating static pages (2/5) 
+   Generating static pages (3/5) 
+ ✓ Generating static pages (5/5)
    Finalizing page optimization ...
    Collecting build traces ...
 
-Route (app)                              Size     First Load JS
-┌ ○ /                                    6.04 kB        93.2 kB
-└ ○ /_not-found                          872 B            88 kB
-+ First Load JS shared by all            87.1 kB
-  ├ chunks/53410698-06d29a0b69b1d952.js  53.6 kB
-  ├ chunks/692-3d959fbc61868ce1.js       31.6 kB
-  └ other shared chunks (total)          1.92 kB
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      52 kB         154 kB
+└ ○ /_not-found                            993 B         103 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/250-55a575f2450baa03.js       45.9 kB
+  ├ chunks/507cd84f-7356fe6854887d8a.js  54.2 kB
+  └ other shared chunks (total)          1.97 kB
 
 
 ○  (Static)  prerendered as static content

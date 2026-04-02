@@ -43,6 +43,10 @@
         "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\supabase\\\\migrations -File \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^cd \"d:\\\\\\\\BD CR7 Project\" ; git add \"apps/web-pwa/app/\\(auth\\)/login/page\\.tsx\" ; git commit -m \"fix\\(web-pwa\\): add missing ArrowRight and Fingerprint imports in login page\"$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }
