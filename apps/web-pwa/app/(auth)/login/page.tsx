@@ -2,518 +2,294 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useMemo, FormEvent } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, FormEvent } from "react";
 import {
-  ArrowRight,
-  ArrowLeft,
   Eye,
   EyeOff,
-  Loader,
-  Check,
-  AlertCircle,
-  Smartphone,
+  Loader2,
   Mail,
   Lock,
-  Send,
+  Fingerprint,
   Facebook,
   Globe,
   MessageCircle,
-  BadgeCheck,
-  Building2,
-  ShieldCheck,
-  Sparkles,
-  Sun,
-  Moon,
-  Languages,
-  KeyRound,
-  PanelsTopLeft,
-  Fingerprint,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs } from "@/components/ui/tabs";
-import { BiometricButton } from "@/components/auth/BiometricButton";
-import { SocialLinks } from "@/components/auth/SocialLinks";
-import { AuthLayout, AuthCard } from "@/components/auth/AuthLayout";
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
-
-const authTabs = ["Google", "OTP", "FaceID"];
-const socialLinks = [
-  { href: "https://www.facebook.com/sumon.mumain", label: "Facebook", icon: Facebook },
-  { href: "https://mumainsumon.netlify.app", label: "Website", icon: Globe },
-  { href: "https://wa.me/8801825007977", label: "WhatsApp", icon: MessageCircle },
-  { href: "mailto:m.a.sumon92@gmail.com", label: "Gmail", icon: Mail },
-];
-
-const copy = {
-  en: {
-    secureTag: "Secure Mobile-First PWA",
-    heroTitle: "BD CR7 command center built for field teams, finance ops, and installed PWA use.",
-    heroBody: "Every screen is tuned for phone, tablet, and standalone install mode so login, dashboard, and operational modules stay edge-to-edge without cropped headers, hidden buttons, or bottom overlap.",
-    installReady: "Install-ready",
-    coverage: "Coverage",
-    access: "Access",
-    highlights: "Operational Highlights",
-    highlightsTitle: "One interface for online and offline work",
-    highlightsNote: "Installed app mode keeps header, actions, and navigation visible on small devices.",
-    fitLabel: "Fit-to-screen",
-    fitValue: "Phone, tablet, install mode",
-    welcome: "Welcome Back",
-    loginTitle: "Login to BD CR7 Ultra Enterprise",
-    loginBody: "Sign in quickly, switch theme or language instantly, and keep every login action clear on mobile or installed mode.",
-    noSeeded: "Use your administrator account or continue with Create account, OTP, Google, or Reset password.",
-    fullName: "Full Name",
-    email: "Email",
-    password: "Password",
-    fullNamePlaceholder: "Your full name",
-    emailPlaceholder: "you@company.com",
-    passwordPlaceholder: "••••••••",
-    signIn: "Sign in",
-    resetPassword: "Reset password",
-    createAccount: "Create account with this email",
-    alternative: "Alternative Access",
-    alternativeBody: "Use secure fallback methods when email sign-in is unavailable.",
-    mobileNumber: "Mobile Number",
-    sendOtp: "Send OTP",
-    enterOtp: "Enter OTP",
-    verify: "Verify",
-    faceId: "Use Face ID / Fingerprint",
-    developerBadge: "Lead Developer",
-    developerName: "MUMAIN AHMED",
-    developerRole: "Full-stack architect, UI systems designer, and deployment lead for BD CR7.",
-    developerMeta: "Powered by SUMONIX AI | Solution by ABO ENTERPRISE",
-    appearance: "Appearance",
-    language: "Language",
-    light: "Light",
-    dark: "Dark",
-    bangla: "বাংলা",
-    english: "English",
-    socials: "Official Channels",
-    interfaceStrip: "Quick Interface Controls",
-    primaryFlow: "Primary Login",
-    recoveryFlow: "Recovery & Alternative Access",
-    statusTitle: "Login Ready",
-    statusBody: "Theme, language, and recovery actions stay visible without compressing the form.",
-    bullets: [
-      "Login card remains fully visible inside short mobile viewports.",
-      "Safe-area padding prevents clipping under Android and iPhone system bars.",
-      "Drawer navigation and floating chat avoid bottom-nav overlap.",
-      "Auth recovery is built in, so missing seeded users no longer dead-end the flow.",
-    ],
-  },
-  bn: {
-    secureTag: "নিরাপদ মোবাইল-ফার্স্ট PWA",
-    heroTitle: "BD CR7 কমান্ড সেন্টার ফিল্ড টিম, ফাইন্যান্স অপস এবং ইনস্টল করা PWA ব্যবহারের জন্য তৈরি।",
-    heroBody: "প্রতিটি স্ক্রিন ফোন, ট্যাবলেট এবং standalone install mode অনুযায়ী টিউন করা হয়েছে যাতে login, dashboard এবং operations module edge-to-edge ফিট থাকে।",
-    installReady: "ইনস্টল-রেডি",
-    coverage: "কভারেজ",
-    access: "অ্যাক্সেস",
-    highlights: "অপারেশনাল হাইলাইটস",
-    highlightsTitle: "অনলাইন ও অফলাইন উভয়ের জন্য একটাই ইন্টারফেস",
-    highlightsNote: "ইনস্টল করা app mode-এ ছোট ডিভাইসেও header, action এবং navigation দেখা যায়।",
-    fitLabel: "ফিট-টু-স্ক্রিন",
-    fitValue: "ফোন, ট্যাবলেট, ইনস্টল মোড",
-    welcome: "স্বাগতম",
-    loginTitle: "BD CR7 Ultra Enterprise-এ লগিন করুন",
-    loginBody: "দ্রুত sign in করুন, সাথে সাথে theme বা language বদলান, এবং mobile বা installed mode-এ login action পরিষ্কার রাখুন।",
-    noSeeded: "আপনার administrator account ব্যবহার করুন, অথবা Create account, OTP, Google কিংবা Reset password ব্যবহার করুন।",
-    fullName: "পূর্ণ নাম",
-    email: "ইমেইল",
-    password: "পাসওয়ার্ড",
-    fullNamePlaceholder: "আপনার পূর্ণ নাম",
-    emailPlaceholder: "you@company.com",
-    passwordPlaceholder: "••••••••",
-    signIn: "লগিন",
-    resetPassword: "পাসওয়ার্ড রিসেট",
-    createAccount: "এই ইমেইল দিয়ে একাউন্ট তৈরি করুন",
-    alternative: "বিকল্প অ্যাক্সেস",
-    alternativeBody: "ইমেইল sign-in unavailable হলে secure fallback method ব্যবহার করুন।",
-    mobileNumber: "মোবাইল নম্বর",
-    sendOtp: "OTP পাঠান",
-    enterOtp: "OTP লিখুন",
-    verify: "ভেরিফাই",
-    faceId: "Face ID / Fingerprint ব্যবহার করুন",
-    developerBadge: "Lead Developer",
-    developerName: "MUMAIN AHMED",
-    developerRole: "BD CR7-এর জন্য full-stack architect, UI systems designer এবং deployment lead।",
-    developerMeta: "Powered by SUMONIX AI | Solution by ABO ENTERPRISE",
-    appearance: "থিম",
-    language: "ভাষা",
-    light: "লাইট",
-    dark: "ডার্ক",
-    bangla: "বাংলা",
-    english: "English",
-    socials: "অফিশিয়াল চ্যানেল",
-    interfaceStrip: "দ্রুত ইন্টারফেস কন্ট্রোল",
-    primaryFlow: "মূল লগিন",
-    recoveryFlow: "রিকভারি ও বিকল্প অ্যাক্সেস",
-    statusTitle: "লগিন প্রস্তুত",
-    statusBody: "Theme, language এবং recovery action ফর্ম compress না করেই সবসময় visible থাকে।",
-    bullets: [
-      "ছোট mobile viewport-এও login card সম্পূর্ণ দেখা যায়।",
-      "Android ও iPhone system bar-এর নিচে clipping ঠেকাতে safe-area padding দেওয়া হয়েছে।",
-      "Drawer navigation ও floating chat bottom overlap এড়ায়।",
-      "Auth recovery built-in হওয়ায় missing seeded user থাকলেও flow dead-end হয় না।",
-    ],
-  },
-} as const;
+import { DEVELOPER_CONFIG } from "@/lib/developers";
 
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
-  const register = useAuthStore((s) => s.register);
-  const [dark, setDark] = useState(false);
-  const [language, setLanguage] = useState<"en" | "bn">("en");
-  const [tab, setTab] = useState("Google");
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [password, setPassword] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [otp, setOtp] = useState("");
-  const [message, setMessage] = useState("");
-  const [messageTone, setMessageTone] = useState<"error" | "success">("error");
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Restore theme preference
   useEffect(() => {
-    const storedTheme = window.localStorage.getItem("bdcr7-theme");
-    const storedLanguage = window.localStorage.getItem("bdcr7-language");
-    if (storedTheme === "dark") {
-      setDark(true);
-    } else if (storedTheme === "light") {
-      setDark(false);
-    } else {
-      setDark(window.matchMedia("(prefers-color-scheme: dark)").matches);
-    }
-    if (storedLanguage === "bn" || storedLanguage === "en") {
-      setLanguage(storedLanguage);
-    }
+    const stored = window.localStorage.getItem("bdcr7-theme");
+    const prefersDark =
+      stored === "dark" ||
+      (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", prefersDark);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    window.localStorage.setItem("bdcr7-theme", dark ? "dark" : "light");
-  }, [dark]);
-
-  useEffect(() => {
-    document.documentElement.lang = language;
-    window.localStorage.setItem("bdcr7-language", language);
-  }, [language]);
-
-  const text = useMemo(() => copy[language], [language]);
-
-  const onEmailLogin = async (event: FormEvent) => {
-    event.preventDefault();
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       await login(email, password);
-      setMessageTone("success");
       router.push("/dashboard");
-    } catch (error) {
-      setMessageTone("error");
-      setMessage((error as Error).message);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const onGoogle = async () => {
-    if (!supabase) return;
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/dashboard` } });
-    setMessageTone(error ? "error" : "success");
-    if (error) setMessage(error.message);
-  };
-
-  const onRegister = async () => {
-    try {
-      const name = fullName.trim() || email.split("@")[0] || "New User";
-      await register(email, password, name, "worker");
-      setMessageTone("success");
-      setMessage("Account created successfully. If email confirmation is enabled, confirm it first, then sign in.");
-    } catch (error) {
-      setMessageTone("error");
-      setMessage((error as Error).message);
-    }
-  };
-
-  const onResetPassword = async () => {
-    if (!supabase) return;
+  const handleForgotPassword = async () => {
     if (!email.trim()) {
-      setMessageTone("error");
-      setMessage("Enter your email first, then use reset password.");
+      setError("Enter your email first, then tap Forgot password.");
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    if (!supabase) return;
+    setLoading(true);
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/login`,
     });
-    setMessageTone(error ? "error" : "success");
-    setMessage(error ? error.message : "Password reset email sent.");
+    setLoading(false);
+    setError(
+      resetErr ? resetErr.message : "Password reset email sent. Check your inbox."
+    );
   };
 
-  const sendOtp = async () => {
-    if (!supabase) return;
-    const { error } = await supabase.auth.signInWithOtp({ phone: mobile });
-    setMessageTone(error ? "error" : "success");
-    setMessage(error ? error.message : "OTP sent");
-  };
-
-  const verifyOtp = async () => {
-    if (!supabase) return;
-    const { data, error } = await supabase.auth.verifyOtp({ phone: mobile, token: otp, type: "sms" });
-    if (error || !data.session || !data.user) {
-      setMessageTone("error");
-      setMessage(error?.message || "OTP failed");
-      return;
-    }
-    useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: "worker" });
-    setMessageTone("success");
-    router.push("/dashboard");
-  };
-
-  const onWebAuthn = async () => {
+  const handleBiometric = async () => {
     if (!("credentials" in navigator)) {
-      setMessageTone("error");
-      setMessage("WebAuthn not supported");
+      setError("Biometric login is not supported on this device.");
       return;
     }
+    setBiometricLoading(true);
+    setError("");
     try {
       const challenge = crypto.getRandomValues(new Uint8Array(32));
-      await navigator.credentials.get({ publicKey: { challenge, timeout: 60000, userVerification: "required", allowCredentials: [] } });
-      setMessageTone("success");
+      await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          timeout: 60000,
+          userVerification: "required",
+          allowCredentials: [],
+        },
+      });
       router.push("/dashboard");
-    } catch (error) {
-      setMessageTone("error");
-      setMessage((error as Error).message);
+    } catch (err) {
+      setError((err as Error).message || "Biometric authentication failed.");
+    } finally {
+      setBiometricLoading(false);
     }
   };
 
   return (
-    <main className="relative min-h-[100svh] overflow-hidden bg-aura">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(15,108,90,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(201,127,58,0.12),transparent_24%)]" />
-      <div className="relative mx-auto grid min-h-[100svh] w-full max-w-7xl gap-6 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+1rem)] sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8">
-        <section className="flex flex-col justify-between gap-6 py-3 lg:py-8">
-          <div className="space-y-5">
-            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/75 px-4 py-2 text-xs font-semibold text-primary shadow-soft dark:bg-slate-950/55">
-              <ShieldCheck className="h-4 w-4" /> {text.secureTag}
-            </motion.div>
-            <div className="max-w-2xl space-y-4">
-              <h1 className="text-4xl font-semibold leading-tight text-foreground sm:text-5xl lg:text-6xl">
-                {text.heroTitle}
-              </h1>
-              <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-                {text.heroBody}
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { label: text.installReady, value: "PWA Standalone", icon: Sparkles },
-                { label: text.coverage, value: "Finance + Site + POS", icon: Building2 },
-                { label: text.access, value: "Password, OTP, Biometrics", icon: BadgeCheck },
-              ].map(({ label, value, icon: Icon }) => (
-                <motion.div key={label} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-[1.4rem] p-4 shadow-soft">
-                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-                  <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
-                </motion.div>
-              ))}
-            </div>
+    <main
+      className="flex flex-col bg-gradient-to-br from-[#eef2ec] via-white to-[#e8f5ec] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+      style={{
+        minHeight: "100dvh",
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
+      {/* TOP SECTION: Greeting & Branding */}
+      <div className="flex-none px-6 pt-10 pb-2 text-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/70 mb-4">
+          Welcome back
+        </p>
+        <div className="inline-flex flex-col items-center gap-2">
+          <div className="h-16 w-16 rounded-3xl border border-primary/15 bg-white/90 p-2 shadow-[0_4px_20px_rgba(15,108,90,0.15)] dark:bg-slate-900/80">
+            <Image
+              src="/icons/icon.svg"
+              alt="BD CR7 Logo"
+              width={48}
+              height={48}
+              className="h-full w-full object-contain"
+              priority
+            />
           </div>
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-[1.75rem] p-5 shadow-soft sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.highlights}</p>
-                <h2 className="mt-2 text-2xl font-semibold text-foreground">{text.highlightsTitle}</h2>
-              </div>
-              <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm text-primary">
-                {text.highlightsNote}
-              </div>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {text.bullets.map((item) => (
-                <div key={item} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-white/55 p-4 text-sm text-muted-foreground dark:bg-slate-950/35">
-                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-primary" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </section>
-
-        <section className="flex items-center justify-center py-2 lg:py-8">
-          <Card className="w-full max-w-xl overflow-hidden border-white/55 bg-white/78 shadow-[0_28px_90px_rgba(23,33,28,0.14)] dark:bg-slate-950/58">
-            <CardHeader className="space-y-4 border-b border-border/60 pb-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.welcome}</p>
-                  <CardTitle className="mt-2 text-2xl sm:text-[1.9rem]">{text.loginTitle}</CardTitle>
-                  <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{text.loginBody}</p>
-                </div>
-                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2 text-right text-xs text-primary">
-                  <div className="font-semibold">{text.fitLabel}</div>
-                  <div>{text.fitValue}</div>
-                </div>
-              </div>
-              <div className="rounded-[1.35rem] border border-border/70 bg-background/75 p-3">
-                <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  <PanelsTopLeft className="h-3.5 w-3.5" /> {text.interfaceStrip}
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-background/75 p-2.5">
-                  <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {dark ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />} {text.appearance}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" variant={dark ? "ghost" : "outline"} className="min-h-9" onClick={() => setDark(false)}>{text.light}</Button>
-                    <Button type="button" variant={dark ? "outline" : "ghost"} className="min-h-9" onClick={() => setDark(true)}>{text.dark}</Button>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-background/75 p-2.5">
-                  <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    <Languages className="h-3.5 w-3.5" /> {text.language}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" variant={language === "bn" ? "outline" : "ghost"} className="min-h-9" onClick={() => setLanguage("bn")}>{text.bangla}</Button>
-                    <Button type="button" variant={language === "en" ? "outline" : "ghost"} className="min-h-9" onClick={() => setLanguage("en")}>{text.english}</Button>
-                  </div>
-                </div>
-                </div>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-muted/35 px-4 py-3 text-sm text-muted-foreground">
-                  {text.noSeeded}
-                </div>
-                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm text-primary">
-                  <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]">
-                    <Smartphone className="h-3.5 w-3.5" /> {text.statusTitle}
-                  </div>
-                  <p>{text.statusBody}</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5 p-5 sm:p-6">
-              <form onSubmit={onEmailLogin} className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.primaryFlow}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{text.signIn} with your administrator or approved team account.</p>
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
-                    <label htmlFor="fullName" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{text.fullName}</label>
-                    <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 px-4 py-3">
-                      <input id="fullName" name="fullName" className="w-full bg-transparent text-sm outline-none" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={text.fullNamePlaceholder} />
-                    </div>
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <label htmlFor="email" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{text.email}</label>
-                    <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 px-4 py-3">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <input id="email" name="email" className="w-full bg-transparent text-sm outline-none" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={text.emailPlaceholder} />
-                    </div>
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <label htmlFor="password" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{text.password}</label>
-                    <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 px-4 py-3">
-                      <KeyRound className="h-4 w-4 text-muted-foreground" />
-                      <input id="password" name="password" className="w-full bg-transparent text-sm outline-none" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={text.passwordPlaceholder} />
-                    </div>
-                  </div>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                  <Button type="submit" className="w-full gap-2">
-                    {text.signIn} <ArrowRight className="h-4 w-4" />
-                  </Button>
-                  <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onResetPassword}>{text.resetPassword}</Button>
-                </div>
-                <Button type="button" variant="ghost" className="w-full" onClick={onRegister}>{text.createAccount}</Button>
-              </form>
-
-              <div className="space-y-4 border-t border-border pt-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.recoveryFlow}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{text.alternativeBody}</p>
-                  </div>
-                  <Tabs tabs={authTabs} value={tab} onChange={setTab} />
-                </div>
-                {tab === "Google" ? (
-                  <Button variant="outline" className="w-full" onClick={onGoogle}>Continue with Google</Button>
-                ) : null}
-
-                {tab === "OTP" ? (
-                  <div className="grid gap-3">
-                    <div className="space-y-2">
-                      <label htmlFor="mobile" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{text.mobileNumber}</label>
-                      <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 px-4 py-3">
-                        <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                        <input id="mobile" name="mobile" className="w-full bg-transparent text-sm outline-none" autoComplete="tel" placeholder="+8801XXXXXXXXX" value={mobile} onChange={(e) => setMobile(e.target.value)} />
-                      </div>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-[auto_1fr_auto]">
-                      <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={sendOtp}>{text.sendOtp}</Button>
-                      <input id="otp" name="otp" className="w-full rounded-2xl border border-border bg-background/90 px-4 py-3 text-sm outline-none" autoComplete="one-time-code" placeholder={text.enterOtp} value={otp} onChange={(e) => setOtp(e.target.value)} />
-                      <Button type="button" className="w-full sm:w-auto" onClick={verifyOtp}>{text.verify}</Button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {tab === "FaceID" ? (
-                  <Button variant="outline" className="w-full" onClick={onWebAuthn}>
-                    <Fingerprint className="mr-2 h-4 w-4" /> {text.faceId}
-                  </Button>
-                ) : null}
-              </div>
-
-              {message ? (
-                <div className={messageTone === "success" ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/25 dark:text-emerald-200" : "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/25 dark:text-rose-200"}>
-                  {message}
-                </div>
-              ) : null}
-
-              <div className="rounded-[1.65rem] border border-border/70 bg-muted/30 p-4 text-left sm:p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.8rem] border border-white/40 bg-white/90 shadow-soft dark:bg-slate-900/80">
-                    <Image src="/icons/icon.svg" alt="BD CR7 original logo" width={88} height={88} className="h-16 w-16 object-contain" priority />
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                      {text.developerBadge}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-semibold tracking-[0.08em] text-foreground sm:text-[1.9rem]">{text.developerName}</h3>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{text.developerRole}</p>
-                    </div>
-                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{text.developerMeta}</p>
-                  </div>
-                </div>
-                <div className="mt-5 border-t border-border/70 pt-4">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{text.socials}</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {socialLinks.map(({ href, label, icon: Icon }) => (
-                      <motion.a
-                        key={label}
-                        href={href}
-                        target="_blank"
-                        rel="noreferrer"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="flex items-center gap-3 rounded-2xl border border-border bg-background/80 px-4 py-3 text-sm text-foreground transition-all hover:border-primary/40 hover:bg-background"
-                        aria-label={label}
-                      >
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white/85 text-primary dark:bg-slate-900/80">
-                          <Icon className="h-4.5 w-4.5" />
-                        </span>
-                        <span className="font-medium">{label}</span>
-                      </motion.a>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            BD CR7
+          </h1>
+          <p className="text-xs text-muted-foreground">Smart · Secure · AI Powered</p>
+        </div>
       </div>
+
+      {/* MIDDLE SECTION: Login Form */}
+      <div className="flex flex-1 items-center justify-center px-6 py-4">
+        <div className="w-full max-w-sm space-y-4">
+          {error && (
+            <div
+              className={`rounded-2xl border px-4 py-3 text-sm ${
+                error.includes("sent") || error.includes("successfully")
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-300"
+                  : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-300"
+              }`}
+            >
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Email
+              </label>
+              <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
+                <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-[11px] text-primary/80 hover:text-primary underline-offset-2 hover:underline transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
+                <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <input
+                  type={showPass ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((v) => !v)}
+                  aria-label={showPass ? "Hide password" : "Show password"}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_4px_14px_rgba(15,108,90,0.35)] transition-all active:scale-[0.98] disabled:opacity-60"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-muted-foreground">
+            No account?{" "}
+            <a
+              href="/register"
+              className="font-medium text-primary hover:underline underline-offset-2"
+            >
+              Create one
+            </a>
+          </p>
+        </div>
+      </div>
+
+      {/* LOWER SECTION: Biometrics */}
+      <div className="flex-none px-6 py-3 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-3 w-full max-w-sm">
+          <span className="flex-1 h-px bg-border/60" />
+          <span className="text-[11px] text-muted-foreground tracking-wider uppercase">
+            or biometric
+          </span>
+          <span className="flex-1 h-px bg-border/60" />
+        </div>
+        <button
+          type="button"
+          onClick={handleBiometric}
+          disabled={biometricLoading}
+          className="inline-flex items-center gap-2.5 rounded-2xl border border-primary/20 bg-primary/5 px-7 py-3 text-sm font-medium text-primary transition-all active:scale-[0.97] hover:bg-primary/10 disabled:opacity-60"
+        >
+          {biometricLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Fingerprint className="h-5 w-5" />
+          )}
+          {biometricLoading ? "Scanning..." : "Fingerprint / Face ID"}
+        </button>
+      </div>
+
+      {/* FOOTER SECTION: Developer Info & Socials */}
+      <footer className="flex-none px-6 pb-5 pt-3">
+        <div className="border-t border-border/40 pt-4 text-center space-y-1.5">
+          <p className="text-[11px] font-bold tracking-[0.22em] uppercase text-foreground/80">
+            {DEVELOPER_CONFIG.name}
+          </p>
+          <p className="text-[10px] leading-relaxed text-muted-foreground max-w-xs mx-auto">
+            {DEVELOPER_CONFIG.role}
+          </p>
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground/70">
+            {DEVELOPER_CONFIG.powerLine}
+          </p>
+          <div className="flex items-center justify-center gap-4 pt-1">
+            <a
+              href={DEVELOPER_CONFIG.facebook}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Facebook"
+              className="text-muted-foreground/60 hover:text-primary transition-colors"
+            >
+              <Facebook className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href={DEVELOPER_CONFIG.whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="WhatsApp"
+              className="text-muted-foreground/60 hover:text-primary transition-colors"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href={`mailto:${DEVELOPER_CONFIG.email}`}
+              aria-label="Email"
+              className="text-muted-foreground/60 hover:text-primary transition-colors"
+            >
+              <Mail className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href={DEVELOPER_CONFIG.website}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Website"
+              className="text-muted-foreground/60 hover:text-primary transition-colors"
+            >
+              <Globe className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
