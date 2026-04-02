@@ -26,6 +26,12 @@ importers:
 
   apps/web-pwa:
     dependencies:
+      '@bdcr7/media-engine':
+        specifier: workspace:*
+        version: link:../../packages/media-engine
+      '@bdcr7/rbac-engine':
+        specifier: workspace:*
+        version: link:../../packages/rbac-engine
       '@supabase/supabase-js':
         specifier: 2.56.0
         version: 2.56.0

@@ -8,6 +8,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@bdcr7/media-engine": "workspace:*",
+    "@bdcr7/rbac-engine": "workspace:*",
     "@supabase/supabase-js": "2.56.0",
     "next": "15.5.14",
     "react": "18.3.1",

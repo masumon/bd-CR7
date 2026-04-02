@@ -1,4 +1,5 @@
 import React from "react";
+import DeveloperBadge from "../DeveloperBadge";
 
 export type AppCardProps = {
   title: string;
@@ -15,3 +16,5 @@ export function AppCard({ title, subtitle, children }: AppCardProps) {
     </section>
   );
 }
+
+export { DeveloperBadge };
