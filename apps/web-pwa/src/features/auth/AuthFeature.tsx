@@ -146,7 +146,7 @@ export function AuthFeature() {
         </div>
       </div>
 
-      {message ? <p className="panelMessage">{message}</p> : <p className="panelMessage">No default seeded login exists in Supabase Auth. Use Register or OTP/Google sign-in.</p>}
+      {message ? <p className="panelMessage">{message}</p> : <p className="panelMessage">Use your administrator credentials, or continue with Register or OTP/Google sign-in.</p>}
     </section>
   );
 }
