@@ -17,7 +17,7 @@ export function ImportSupplyPanel() {
     if (!token) return;
     try {
       const response = await apiRequest<{ id: string }>(
-        "/import-supply/lc-records",
+        "/api/import-supply/lc-records",
         {
           method: "POST",
           body: JSON.stringify({

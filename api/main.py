@@ -16,9 +16,3 @@ spec.loader.exec_module(module)
 fastapi_app = module.app
 
 app = fastapi_app
-
-
-if hasattr(app, "get"):
-    @app.get("/")
-    def root():
-        return {"status": "ok"}

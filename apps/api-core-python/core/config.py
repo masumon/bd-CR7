@@ -40,7 +40,7 @@ class Settings:
         self.supabase_service_role_key = env.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
         self.supabase_db_password = env.get("SUPABASE_DB_PASSWORD", "").strip()
         self.database_url = env.get("DATABASE_URL", "").strip()
-        self.cors_origins = _split_csv(env.get("CORS_ORIGINS", "http://localhost:3000"))
+        self.cors_origins = _split_csv(env.get("CORS_ORIGINS", "http://localhost:3000,https://bd-cr7.vercel.app"))
         self.redis_url = env.get("REDIS_URL", "").strip()
         self.require_supabase_in_production = env.get("REQUIRE_SUPABASE_IN_PRODUCTION", "false").strip().lower() in {
             "1",

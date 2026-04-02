@@ -17,7 +17,7 @@ export function ConstructionPanel() {
     if (!token) return;
     try {
       const result = await apiRequest<{ message: string; distance_km: number }>(
-        "/construction/attendance",
+        "/api/construction/attendance",
         {
           method: "POST",
           body: JSON.stringify({ worker_id: workerId, latitude: Number(lat), longitude: Number(lng) }),

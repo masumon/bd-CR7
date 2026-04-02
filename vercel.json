@@ -1,16 +1,17 @@
 {
   "version": 2,
-  "framework": "fastapi",
-  "installCommand": "bash vercel-install.sh",
+  "framework": "nextjs",
+  "buildCommand": "pnpm --filter web-pwa run build",
+  "outputDirectory": "apps/web-pwa/.next",
+  "installCommand": "pnpm install --frozen-lockfile",
   "functions": {
-    "main.py": {
-      "runtime": "python3.11"
+    "api/main.py": {
+      "runtime": "python3.11",
+      "maxDuration": 30
     }
   },
   "rewrites": [
-    {
-      "source": "/:path*",
-      "destination": "/main.py"
-    }
+    { "source": "/api", "destination": "/api/main.py" },
+    { "source": "/api/:path*", "destination": "/api/main.py" }
   ]
 }

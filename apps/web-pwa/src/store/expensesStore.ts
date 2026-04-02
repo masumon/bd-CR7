@@ -36,7 +36,7 @@ export const useExpensesStore = create<ExpensesState>((set, get) => ({
       set({ loading: true, error: null, pageSize });
       // Assuming backend supports ?limit=20&offset=0 or cursor-based pagination
       const expenses = await apiRequest<{ expenses: Expense[]; has_more: boolean; next_cursor?: string }>(
-        `/finance/expenses?limit=${pageSize}&offset=0`,
+        `/api/finance/expenses?limit=${pageSize}&offset=0`,
         { method: "GET" },
         token
       );
@@ -55,8 +55,8 @@ export const useExpensesStore = create<ExpensesState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       const query = cursor
-        ? `/finance/expenses?limit=${pageSize}&cursor=${cursor}`
-        : `/finance/expenses?limit=${pageSize}&offset=${expenses.length}`;
+        ? `/api/finance/expenses?limit=${pageSize}&cursor=${cursor}`
+        : `/api/finance/expenses?limit=${pageSize}&offset=${expenses.length}`;
       const moreExpenses = await apiRequest<{ expenses: Expense[]; has_more: boolean; next_cursor?: string }>(
         query,
         { method: "GET" },

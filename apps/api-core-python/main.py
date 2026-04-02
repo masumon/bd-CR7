@@ -66,15 +66,15 @@ def create_app() -> Any:
         redis_url=settings.redis_url or None,
     )
 
-    app.include_router(auth.router, prefix="/auth", tags=["auth"])
-    app.include_router(finance.router, prefix="/finance", tags=["finance"])
-    app.include_router(hr.router, prefix="/construction", tags=["construction"])
-    app.include_router(pos.router, prefix="/pos", tags=["pos"])
-    app.include_router(import_supply.router, prefix="/import-supply", tags=["import_supply"])
-    app.include_router(ai.router, prefix="/ai", tags=["ai"])
-    app.include_router(users.router, prefix="/users", tags=["users"])
+    app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+    app.include_router(finance.router, prefix="/api/finance", tags=["finance"])
+    app.include_router(hr.router, prefix="/api/construction", tags=["construction"])
+    app.include_router(pos.router, prefix="/api/pos", tags=["pos"])
+    app.include_router(import_supply.router, prefix="/api/import-supply", tags=["import_supply"])
+    app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+    app.include_router(users.router, prefix="/api/users", tags=["users"])
 
-    @app.get("/")
+    @app.get("/api")
     async def root() -> dict[str, str]:
         return {"status": "ok", "service": "bd-cr7-api", "env": settings.env}
 
@@ -82,11 +82,11 @@ def create_app() -> Any:
     async def favicon() -> Response:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @app.get("/health")
+    @app.get("/api/health")
     async def health() -> dict[str, str]:
         return {"status": "ok", "env": settings.env}
 
-    @app.get("/ready")
+    @app.get("/api/ready")
     async def readiness(response: Response) -> dict[str, str]:
         if supabase_service is None:
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
@@ -98,7 +98,7 @@ def create_app() -> Any:
             return {"status": "error", "reason": "dependency_check_failed"}
         return {"status": "ready", "env": settings.env}
 
-    @app.get("/health/db")
+    @app.get("/api/health/db")
     async def health_db() -> dict[str, str | int]:
         if supabase_service is None:
             return {"status": "error", "roles": 0}
