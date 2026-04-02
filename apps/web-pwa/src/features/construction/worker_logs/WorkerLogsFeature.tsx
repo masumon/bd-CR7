@@ -59,24 +59,34 @@ export function WorkerLogsFeature() {
   };
 
   return (
-    <section className="module">
-      <h3>Worker & HR</h3>
-      <form onSubmit={onSubmit} className="formGrid">
-        <input value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="Worker Name" required />
-        <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" required />
-        <input type="number" min="0" value={dailyWage} onChange={(e) => setDailyWage(e.target.value)} placeholder="Daily Wage" required />
-        <select title="Attendance status" value={attendanceStatus} onChange={(e) => setAttendanceStatus(e.target.value as (typeof ATTENDANCE)[number])}>
+    <section className="module rounded-[1.5rem] border border-border/70 bg-white/80 p-5 shadow-soft dark:bg-slate-950/45">
+      <div className="mb-4">
+        <h3 className="text-xl font-semibold text-foreground">Worker & HR</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Track attendance, wage exposure, and geofence compliance with clearer grouped fields.</p>
+      </div>
+      <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
+        <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="Worker Name" required />
+        <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" required />
+        <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" min="0" value={dailyWage} onChange={(e) => setDailyWage(e.target.value)} placeholder="Daily Wage" required />
+        <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Attendance status" value={attendanceStatus} onChange={(e) => setAttendanceStatus(e.target.value as (typeof ATTENDANCE)[number])}>
           {ATTENDANCE.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <input type="number" min="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Paid Amount" required />
-        <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude" />
-        <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude" />
+        <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" min="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Paid Amount" required />
+        <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude" />
+        <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none md:col-span-2" type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude" />
 
-        <p className="text-xs text-slate-600">Unpaid Balance: {unpaidBalance.toFixed(2)}</p>
-        <p className="text-xs text-slate-600">Geofenced Attendance: {geoDistanceKm <= 0.5 ? "Inside" : "Outside"} ({geoDistanceKm.toFixed(2)} km)</p>
-        <button type="submit">Save Worker Log</button>
+        <div className="rounded-2xl border border-border/70 bg-background/75 p-4 text-sm text-muted-foreground">
+          <p className="text-xs uppercase tracking-[0.14em]">Unpaid Balance</p>
+          <p className="mt-2 text-xl font-semibold text-foreground">{unpaidBalance.toFixed(2)}</p>
+        </div>
+        <div className="rounded-2xl border border-border/70 bg-background/75 p-4 text-sm text-muted-foreground">
+          <p className="text-xs uppercase tracking-[0.14em]">Geofence Status</p>
+          <p className="mt-2 text-xl font-semibold text-foreground">{geoDistanceKm <= 0.5 ? "Inside" : "Outside"}</p>
+          <p className="mt-1 text-xs">{geoDistanceKm.toFixed(2)} km from site</p>
+        </div>
+        <button className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 md:col-span-2" type="submit">Save Worker Log</button>
       </form>
-      {message ? <p>{message}</p> : null}
+      {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
     </section>
   );
 }
