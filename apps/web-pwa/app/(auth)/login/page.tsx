@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BadgeCheck, Building2, Facebook, Fingerprint, Globe, KeyRound, Languages, Mail, MessageCircle, Moon, ShieldCheck, Sparkles, Sun } from "lucide-react";
+import { ArrowRight, BadgeCheck, Building2, Facebook, Fingerprint, Globe, KeyRound, Languages, Mail, MessageCircle, Moon, ShieldCheck, Sparkles, Sun, Smartphone, PanelsTopLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
@@ -35,10 +35,14 @@ const copy = {
     fitValue: "Phone, tablet, install mode",
     welcome: "Welcome Back",
     loginTitle: "Login to BD CR7 Ultra Enterprise",
+    loginBody: "Sign in quickly, switch theme or language instantly, and keep every login action clear on mobile or installed mode.",
     noSeeded: "Use your administrator account or continue with Create account, OTP, Google, or Reset password.",
     fullName: "Full Name",
     email: "Email",
     password: "Password",
+    fullNamePlaceholder: "Your full name",
+    emailPlaceholder: "you@company.com",
+    passwordPlaceholder: "••••••••",
     signIn: "Sign in",
     resetPassword: "Reset password",
     createAccount: "Create account with this email",
@@ -60,6 +64,11 @@ const copy = {
     bangla: "বাংলা",
     english: "English",
     socials: "Official Channels",
+    interfaceStrip: "Quick Interface Controls",
+    primaryFlow: "Primary Login",
+    recoveryFlow: "Recovery & Alternative Access",
+    statusTitle: "Login Ready",
+    statusBody: "Theme, language, and recovery actions stay visible without compressing the form.",
     bullets: [
       "Login card remains fully visible inside short mobile viewports.",
       "Safe-area padding prevents clipping under Android and iPhone system bars.",
@@ -81,10 +90,14 @@ const copy = {
     fitValue: "ফোন, ট্যাবলেট, ইনস্টল মোড",
     welcome: "স্বাগতম",
     loginTitle: "BD CR7 Ultra Enterprise-এ লগিন করুন",
+    loginBody: "দ্রুত sign in করুন, সাথে সাথে theme বা language বদলান, এবং mobile বা installed mode-এ login action পরিষ্কার রাখুন।",
     noSeeded: "আপনার administrator account ব্যবহার করুন, অথবা Create account, OTP, Google কিংবা Reset password ব্যবহার করুন।",
     fullName: "পূর্ণ নাম",
     email: "ইমেইল",
     password: "পাসওয়ার্ড",
+    fullNamePlaceholder: "আপনার পূর্ণ নাম",
+    emailPlaceholder: "you@company.com",
+    passwordPlaceholder: "••••••••",
     signIn: "লগিন",
     resetPassword: "পাসওয়ার্ড রিসেট",
     createAccount: "এই ইমেইল দিয়ে একাউন্ট তৈরি করুন",
@@ -106,6 +119,11 @@ const copy = {
     bangla: "বাংলা",
     english: "English",
     socials: "অফিশিয়াল চ্যানেল",
+    interfaceStrip: "দ্রুত ইন্টারফেস কন্ট্রোল",
+    primaryFlow: "মূল লগিন",
+    recoveryFlow: "রিকভারি ও বিকল্প অ্যাক্সেস",
+    statusTitle: "লগিন প্রস্তুত",
+    statusBody: "Theme, language এবং recovery action ফর্ম compress না করেই সবসময় visible থাকে।",
     bullets: [
       "ছোট mobile viewport-এও login card সম্পূর্ণ দেখা যায়।",
       "Android ও iPhone system bar-এর নিচে clipping ঠেকাতে safe-area padding দেওয়া হয়েছে।",
@@ -128,6 +146,7 @@ export default function LoginPage() {
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"error" | "success">("error");
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("bdcr7-theme");
@@ -150,6 +169,7 @@ export default function LoginPage() {
   }, [dark]);
 
   useEffect(() => {
+    document.documentElement.lang = language;
     window.localStorage.setItem("bdcr7-language", language);
   }, [language]);
 
@@ -159,8 +179,10 @@ export default function LoginPage() {
     event.preventDefault();
     try {
       await login(email, password);
+      setMessageTone("success");
       router.push("/dashboard");
     } catch (error) {
+      setMessageTone("error");
       setMessage((error as Error).message);
     }
   };
@@ -168,6 +190,7 @@ export default function LoginPage() {
   const onGoogle = async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/dashboard` } });
+    setMessageTone(error ? "error" : "success");
     if (error) setMessage(error.message);
   };
 
@@ -175,8 +198,10 @@ export default function LoginPage() {
     try {
       const name = fullName.trim() || email.split("@")[0] || "New User";
       await register(email, password, name, "worker");
+      setMessageTone("success");
       setMessage("Account created successfully. If email confirmation is enabled, confirm it first, then sign in.");
     } catch (error) {
+      setMessageTone("error");
       setMessage((error as Error).message);
     }
   };
@@ -184,18 +209,21 @@ export default function LoginPage() {
   const onResetPassword = async () => {
     if (!supabase) return;
     if (!email.trim()) {
+      setMessageTone("error");
       setMessage("Enter your email first, then use reset password.");
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/login`,
     });
+    setMessageTone(error ? "error" : "success");
     setMessage(error ? error.message : "Password reset email sent.");
   };
 
   const sendOtp = async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOtp({ phone: mobile });
+    setMessageTone(error ? "error" : "success");
     setMessage(error ? error.message : "OTP sent");
   };
 
@@ -203,23 +231,28 @@ export default function LoginPage() {
     if (!supabase) return;
     const { data, error } = await supabase.auth.verifyOtp({ phone: mobile, token: otp, type: "sms" });
     if (error || !data.session || !data.user) {
+      setMessageTone("error");
       setMessage(error?.message || "OTP failed");
       return;
     }
     useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: "worker" });
+    setMessageTone("success");
     router.push("/dashboard");
   };
 
   const onWebAuthn = async () => {
     if (!("credentials" in navigator)) {
+      setMessageTone("error");
       setMessage("WebAuthn not supported");
       return;
     }
     try {
       const challenge = crypto.getRandomValues(new Uint8Array(32));
       await navigator.credentials.get({ publicKey: { challenge, timeout: 60000, userVerification: "required", allowCredentials: [] } });
+      setMessageTone("success");
       router.push("/dashboard");
     } catch (error) {
+      setMessageTone("error");
       setMessage((error as Error).message);
     }
   };
@@ -286,13 +319,18 @@ export default function LoginPage() {
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.welcome}</p>
                   <CardTitle className="mt-2 text-2xl sm:text-[1.9rem]">{text.loginTitle}</CardTitle>
+                  <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{text.loginBody}</p>
                 </div>
                 <div className="rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2 text-right text-xs text-primary">
                   <div className="font-semibold">{text.fitLabel}</div>
                   <div>{text.fitValue}</div>
                 </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-[1.35rem] border border-border/70 bg-background/75 p-3">
+                <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <PanelsTopLeft className="h-3.5 w-3.5" /> {text.interfaceStrip}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
                 <div className="rounded-2xl border border-border/70 bg-background/75 p-2.5">
                   <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {dark ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />} {text.appearance}
@@ -311,32 +349,47 @@ export default function LoginPage() {
                     <Button type="button" variant={language === "en" ? "outline" : "ghost"} className="min-h-9" onClick={() => setLanguage("en")}>{text.english}</Button>
                   </div>
                 </div>
+                </div>
               </div>
-              <div className="rounded-2xl border border-border/70 bg-muted/35 px-4 py-3 text-sm text-muted-foreground">
-                {text.noSeeded}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border/70 bg-muted/35 px-4 py-3 text-sm text-muted-foreground">
+                  {text.noSeeded}
+                </div>
+                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm text-primary">
+                  <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                    <Smartphone className="h-3.5 w-3.5" /> {text.statusTitle}
+                  </div>
+                  <p>{text.statusBody}</p>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-5 p-5 sm:p-6">
               <form onSubmit={onEmailLogin} className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.primaryFlow}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{text.signIn} with your administrator or approved team account.</p>
+                  </div>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <label htmlFor="fullName" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{text.fullName}</label>
                     <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 px-4 py-3">
-                      <input id="fullName" name="fullName" className="w-full bg-transparent text-sm outline-none" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" />
+                      <input id="fullName" name="fullName" className="w-full bg-transparent text-sm outline-none" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={text.fullNamePlaceholder} />
                     </div>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <label htmlFor="email" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{text.email}</label>
                     <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 px-4 py-3">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <input id="email" name="email" className="w-full bg-transparent text-sm outline-none" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" />
+                      <input id="email" name="email" className="w-full bg-transparent text-sm outline-none" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={text.emailPlaceholder} />
                     </div>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <label htmlFor="password" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{text.password}</label>
                     <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/90 px-4 py-3">
                       <KeyRound className="h-4 w-4 text-muted-foreground" />
-                      <input id="password" name="password" className="w-full bg-transparent text-sm outline-none" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                      <input id="password" name="password" className="w-full bg-transparent text-sm outline-none" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={text.passwordPlaceholder} />
                     </div>
                   </div>
                 </div>
@@ -352,7 +405,7 @@ export default function LoginPage() {
               <div className="space-y-4 border-t border-border pt-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.alternative}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.recoveryFlow}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{text.alternativeBody}</p>
                   </div>
                   <Tabs tabs={authTabs} value={tab} onChange={setTab} />
@@ -386,7 +439,7 @@ export default function LoginPage() {
               </div>
 
               {message ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/25 dark:text-rose-200">
+                <div className={messageTone === "success" ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/25 dark:text-emerald-200" : "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/25 dark:text-rose-200"}>
                   {message}
                 </div>
               ) : null}
