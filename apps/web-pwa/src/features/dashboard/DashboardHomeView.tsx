@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Activity, DollarSign, Gauge, Wallet } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -25,14 +26,20 @@ const activities = [
 export function DashboardHomeView() {
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
         {[
           { label: "Total Fund", value: "$400,000", icon: Wallet },
           { label: "Total Expense", value: "$212,500", icon: DollarSign },
           { label: "Balance", value: "$187,500", icon: Gauge },
           { label: "Project Completion", value: "68%", icon: Activity },
         ].map((item) => (
-          <Card key={item.label} className="overflow-hidden">
+          <motion.div key={item.label} variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}>
+          <Card className="overflow-hidden">
             <CardHeader className="flex items-center justify-between">
               <CardTitle className="text-xs text-muted-foreground">{item.label}</CardTitle>
               <item.icon className="h-4 w-4 text-primary" />
@@ -47,8 +54,9 @@ export function DashboardHomeView() {
               />
             </CardContent>
           </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
@@ -84,10 +92,10 @@ export function DashboardHomeView() {
           </CardHeader>
           <CardContent className="space-y-4">
             {activities.map((item) => (
-              <div key={item} className="relative pl-5 text-sm text-muted-foreground">
+              <motion.div key={item} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className="relative pl-5 text-sm text-muted-foreground">
                 <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary" />
                 {item}
-              </div>
+              </motion.div>
             ))}
           </CardContent>
         </Card>

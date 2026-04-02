@@ -1,3 +1,7 @@
+"use client";
+
+import { motion } from "framer-motion";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 
@@ -17,7 +21,13 @@ const materials = [
 
 export function ConstructionView() {
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+      className="grid gap-4 xl:grid-cols-2"
+    >
+      <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
       <Card>
         <CardHeader>
           <CardTitle>Worker Logs</CardTitle>
@@ -48,7 +58,9 @@ export function ConstructionView() {
           </Table>
         </CardContent>
       </Card>
+      </motion.div>
 
+      <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
       <Card>
         <CardHeader>
           <CardTitle>Material Inventory</CardTitle>
@@ -70,6 +82,7 @@ export function ConstructionView() {
           ))}
         </CardContent>
       </Card>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

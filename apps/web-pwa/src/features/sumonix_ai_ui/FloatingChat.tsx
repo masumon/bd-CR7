@@ -28,14 +28,14 @@ export function FloatingChat() {
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16 }}
-          className="fixed bottom-24 right-6 z-50 w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
+          className="fixed bottom-24 right-6 z-50 w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-white/20 bg-card/85 shadow-soft backdrop-blur-sm"
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h4 className="text-sm font-semibold">SUMONIX AI</h4>
             <button
               type="button"
               onClick={() => setVoice((v) => !v)}
-              className={`relative rounded-full p-2 ${voice ? "bg-rose-100 text-rose-600" : "bg-muted text-muted-foreground"}`}
+              className={`relative rounded-full p-2 transition-all active:scale-95 ${voice ? "bg-rose-100 text-rose-600" : "bg-muted text-muted-foreground"}`}
             >
               <Mic className="h-4 w-4" />
               {voice ? <span className="absolute inset-0 animate-ping rounded-full border border-rose-400" /> : null}

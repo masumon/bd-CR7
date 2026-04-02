@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Minus, Plus, ScanLine } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -36,9 +37,14 @@ export function RetailPOSView() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {products.map((product) => (
-              <div key={product.id} className="rounded-xl border border-border bg-background p-3">
+              <motion.div key={product.id} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }} className="rounded-xl border border-border bg-background p-3 transition-all hover:-translate-y-0.5 hover:shadow-soft">
                 <p className="font-medium">{product.name}</p>
                 <p className="text-sm text-muted-foreground">${product.price}</p>
                 <div className="mt-3 flex items-center gap-2">
@@ -50,9 +56,9 @@ export function RetailPOSView() {
                     <Plus className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </CardContent>
       </Card>
 
@@ -64,10 +70,10 @@ export function RetailPOSView() {
           {products
             .filter((p) => (cart[p.id] || 0) > 0)
             .map((p) => (
-              <div key={p.id} className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm">
+              <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm transition-all hover:shadow-soft">
                 <span>{p.name} x {cart[p.id]}</span>
                 <span>${(p.price * (cart[p.id] || 0)).toFixed(2)}</span>
-              </div>
+              </motion.div>
             ))}
 
           <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-3">

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 type CardProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function Card({ className, ...props }: CardProps) {
-  return <div className={cn("glass rounded-2xl shadow-soft", className)} {...props} />;
+  return <div className={cn("glass rounded-2xl shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl active:scale-[0.99]", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: CardProps) {

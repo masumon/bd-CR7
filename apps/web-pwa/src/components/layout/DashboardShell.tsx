@@ -80,7 +80,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm",
+                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all active:scale-95",
                   pathname === href ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
@@ -119,7 +119,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {online ? <Wifi className="h-4 w-4 text-emerald-500" /> : <WifiOff className="h-4 w-4 text-rose-500" />}
                 {online ? "Online" : "Offline"}
               </div>
-              <button className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
+              <button className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm transition-all active:scale-95 hover:shadow-soft">
                 <UserCircle2 className="h-4 w-4" />
                 Admin
               </button>
@@ -130,7 +130,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="border-b border-border bg-card p-3 lg:hidden">
               <nav className="grid gap-2">
                 {nav.map(({ href, label }) => (
-                  <Link key={href} href={href} className="rounded-lg border border-border px-3 py-2 text-sm" onClick={() => setMenuOpen(false)}>
+                  <Link key={href} href={href} className="rounded-lg border border-border px-3 py-2 text-sm transition-all active:scale-95 hover:bg-muted" onClick={() => setMenuOpen(false)}>
                     {label}
                   </Link>
                 ))}
