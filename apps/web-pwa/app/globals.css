@@ -3,37 +3,113 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
+  --background: 48 30% 97%;
+  --foreground: 163 24% 13%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --muted: 215 25% 94%;
-  --muted-foreground: 215 16% 47%;
-  --border: 214 26% 90%;
-  --primary: 221 83% 53%;
-  --primary-foreground: 210 40% 98%;
+  --card-foreground: 163 24% 13%;
+  --muted: 150 15% 92%;
+  --muted-foreground: 163 10% 38%;
+  --border: 152 18% 86%;
+  --primary: 164 75% 28%;
+  --primary-foreground: 48 33% 98%;
 }
 
 .dark {
-  --background: 222 47% 8%;
-  --foreground: 210 40% 98%;
-  --card: 223 35% 12%;
-  --card-foreground: 210 40% 98%;
-  --muted: 223 30% 16%;
-  --muted-foreground: 217 14% 70%;
-  --border: 223 26% 22%;
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
+  --background: 162 23% 8%;
+  --foreground: 48 23% 95%;
+  --card: 164 24% 11%;
+  --card-foreground: 48 23% 95%;
+  --muted: 163 18% 16%;
+  --muted-foreground: 150 10% 72%;
+  --border: 163 18% 22%;
+  --primary: 43 81% 63%;
+  --primary-foreground: 164 32% 10%;
+}
+
+html {
+  min-height: 100%;
+  background: hsl(var(--background));
 }
 
 body {
-  @apply bg-background text-foreground antialiased;
+  min-height: 100svh;
+  overflow-x: hidden;
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(15, 108, 90, 0.18), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(201, 127, 58, 0.16), transparent 24%),
+    linear-gradient(180deg, #f7f5ee 0%, hsl(var(--background)) 100%);
+  @apply text-foreground antialiased;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at top left, rgba(250, 204, 21, 0.12), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.14), transparent 24%),
+    linear-gradient(180deg, #091411 0%, hsl(var(--background)) 100%);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.18);
+}
+
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.5);
+  outline-offset: 2px;
+}
+
+.screen-shell {
+  min-height: 100svh;
 }
 
 .glass {
-  @apply bg-white/70 dark:bg-slate-900/60 backdrop-blur-md border border-white/30 dark:border-slate-800;
+  @apply border border-white/45 bg-white/70 backdrop-blur-md dark:border-emerald-950/80 dark:bg-slate-950/50;
 }
 
 .skeleton {
   @apply animate-pulse rounded-md bg-muted;
+}
+
+.safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.safe-x {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

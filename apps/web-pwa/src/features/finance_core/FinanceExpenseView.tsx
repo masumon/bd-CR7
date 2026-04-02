@@ -19,9 +19,9 @@ export function FinanceExpenseView() {
 
   return (
     <Card>
-      <CardHeader className="flex items-center justify-between">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle>Expense Engine</CardTitle>
-        <Button onClick={() => setOpen(true)}>Add Expense</Button>
+        <Button onClick={() => setOpen(true)} className="w-full sm:w-auto">Add Expense</Button>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -54,12 +54,21 @@ export function FinanceExpenseView() {
 
       <Dialog open={open} onClose={() => setOpen(false)} title="Add Expense">
         <form className="space-y-3">
-          <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none" placeholder="Category" />
-          <input className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none" type="number" placeholder="Amount" />
-          <select title="Approval status" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none" defaultValue="Pending">
+          <div className="space-y-2">
+            <label htmlFor="expenseCategory" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Category</label>
+            <input id="expenseCategory" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none" placeholder="Category" />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="expenseAmount" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Amount</label>
+            <input id="expenseAmount" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none" type="number" placeholder="Amount" />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="expenseStatus" className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Approval Status</label>
+            <select id="expenseStatus" title="Approval status" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none" defaultValue="Pending">
             <option>Pending</option>
             <option>Approved</option>
-          </select>
+            </select>
+          </div>
           <label className="block rounded-xl border border-dashed border-border bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
             Cloudinary Receipt Upload
             <input className="hidden" type="file" />

@@ -20,10 +20,10 @@ const config: Config = {
         "primary-foreground": "hsl(var(--primary-foreground))",
       },
       boxShadow: {
-        soft: "0 10px 35px rgba(2, 6, 23, 0.08)",
+        soft: "0 18px 48px rgba(12, 38, 31, 0.12)",
       },
       backgroundImage: {
-        aura: "radial-gradient(circle at 20% 0%, rgba(56,189,248,.15), transparent 35%), radial-gradient(circle at 90% 100%, rgba(99,102,241,.12), transparent 35%)",
+        aura: "radial-gradient(circle at 15% 0%, rgba(15,108,90,.18), transparent 34%), radial-gradient(circle at 100% 100%, rgba(201,127,58,.14), transparent 30%), linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0))",
       },
     },
   },
