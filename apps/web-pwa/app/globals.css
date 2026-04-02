@@ -78,6 +78,73 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.4s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 .screen-shell {
   min-height: 100svh;
 }
@@ -101,6 +168,21 @@ a:focus-visible {
 .safe-x {
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* Auth Layout Backgrounds */
+.auth-bg-light {
+  background:
+    radial-gradient(circle at top left, rgba(15, 108, 90, 0.18), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(201, 127, 58, 0.16), transparent 24%),
+    linear-gradient(180deg, #f7f5ee 0%, hsl(48 30% 97%) 100%);
+}
+
+.auth-bg-dark {
+  background:
+    radial-gradient(circle at top left, rgba(250, 204, 21, 0.12), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.14), transparent 24%),
+    linear-gradient(180deg, #091411 0%, hsl(162 23% 8%) 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {

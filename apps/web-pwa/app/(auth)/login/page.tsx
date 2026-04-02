@@ -2,15 +2,40 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BadgeCheck, Building2, Facebook, Fingerprint, Globe, KeyRound, Languages, Mail, MessageCircle, Moon, ShieldCheck, Sparkles, Sun, Smartphone, PanelsTopLeft } from "lucide-react";
+import { useState, useEffect, useMemo, FormEvent } from "react";
 import { motion } from "framer-motion";
-import { FormEvent, useEffect, useMemo, useState } from "react";
-
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Loader,
+  Check,
+  AlertCircle,
+  Smartphone,
+  Mail,
+  Lock,
+  Send,
+  Facebook,
+  Globe,
+  MessageCircle,
+  BadgeCheck,
+  Building2,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  Moon,
+  Languages,
+  KeyRound,
+  PanelsTopLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
-import { supabase } from "@/lib/supabase";
+import { BiometricButton } from "@/components/auth/BiometricButton";
+import { SocialLinks } from "@/components/auth/SocialLinks";
+import { AuthLayout, AuthCard } from "@/components/auth/AuthLayout";
 import { useAuthStore } from "@/store/authStore";
+import { supabase } from "@/lib/supabase";
 
 const authTabs = ["Google", "OTP", "FaceID"];
 const socialLinks = [
