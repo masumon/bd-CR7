@@ -5,42 +5,25 @@
    ▲ Next.js 15.5.14
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 8.4s
+ ✓ Compiled successfully in 3.3s
    Linting and checking validity of types ...
    Collecting page data ...
-   Generating static pages (0/12) ...
-   Generating static pages (3/12) 
-   Generating static pages (6/12) 
-   Generating static pages (9/12) 
- ✓ Generating static pages (12/12)
+   Generating static pages (0/5) ...
+   Generating static pages (1/5) 
+   Generating static pages (2/5) 
+   Generating static pages (3/5) 
+ ✓ Generating static pages (5/5)
    Finalizing page optimization ...
    Collecting build traces ...
 
 Route (app)                                 Size  First Load JS
-┌ ○ /                                      141 B         103 kB
-├ ○ /_not-found                            996 B         103 kB
-├ ○ /auth                                  141 B         103 kB
-├ ○ /auth/login                            141 B         103 kB
-├ ○ /auth/register                         141 B         103 kB
-├ ○ /auth/welcome                          141 B         103 kB
-├ ƒ /dashboard                            109 kB         293 kB
-├ ƒ /dashboard/ai                        6.37 kB         153 kB
-├ ƒ /dashboard/construction              7.11 kB         197 kB
-├ ƒ /dashboard/construction/projects     7.98 kB         194 kB
-├ ƒ /dashboard/finance                   6.61 kB         157 kB
-├ ƒ /dashboard/import                    6.62 kB         187 kB
-├ ƒ /dashboard/pos                       9.25 kB         192 kB
-├ ƒ /dashboard/reports                   6.49 kB         187 kB
-├ ƒ /dashboard/settings                  7.28 kB         154 kB
-├ ○ /login                               10.8 kB         194 kB
-├ ○ /register                            7.67 kB         155 kB
-└ ○ /welcome                               141 B         103 kB
+┌ ○ /                                      52 kB         154 kB
+└ ○ /_not-found                            993 B         103 kB
 + First Load JS shared by all             102 kB
-  ├ chunks/250-94fe9d997c90ec8a.js       46.1 kB
-  ├ chunks/507cd84f-a4ce82cf9ab329ae.js  54.2 kB
-  └ other shared chunks (total)          2.04 kB
+  ├ chunks/250-55a575f2450baa03.js       45.9 kB
+  ├ chunks/507cd84f-7356fe6854887d8a.js  54.2 kB
+  └ other shared chunks (total)          1.97 kB
 
 
-○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand
+○  (Static)  prerendered as static content
 
