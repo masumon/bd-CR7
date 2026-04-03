@@ -6,16 +6,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeDollarSign,
   BarChart3,
+  ChevronLeft,
   Bell,
   Bot,
   Building2,
-  Factory,
   FolderKanban,
   Home,
   Import,
-  Menu,
   Moon,
-  Search,
   Settings2,
   ShoppingCart,
   Sun,
@@ -33,6 +31,7 @@ import { FloatingChat } from "@/features/sumonix_ai_ui/FloatingChat";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import useOfflineQueue from "@/store/offlineQueue";
 import { useAuthStore } from "@/store/authStore";
 
 const copy = {
@@ -148,7 +147,7 @@ const copy = {
   },
 } as const;
 
-const QUICK_MOBILE_ROUTES = ["/dashboard", "/dashboard/construction", "/dashboard/finance", "/dashboard/pos", "/dashboard/reports"] as const;
+const QUICK_MOBILE_ROUTES = ["/dashboard", "/dashboard/construction/projects", "/dashboard/finance", "/dashboard/pos", "/dashboard/settings"] as const;
 
 type DashboardNotification = {
   id: string;
@@ -164,15 +163,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const logout = useAuthStore((state) => state.logout);
   const role = useAuthStore((state) => state.role);
   const userId = useAuthStore((state) => state.userId);
+  const offlineQueueCount = useOfflineQueue((state: any) => state.queue?.length ?? 0);
   const authLoading = useAuthStore((state) => state.loading);
   const hydrated = useAuthStore((state) => state.hydrated);
-  const [collapsed, setCollapsed] = useState(false);
   const [dark, setDark] = useState(false);
   const [online, setOnline] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
+  const [syncToast, setSyncToast] = useState(false);
   const [language, setLanguage] = useState<"en" | "bn">("en");
 
   const unreadCount = notifications.length;
@@ -219,8 +218,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   useEffect(() => {
-    setMenuOpen(false);
+    setNotificationsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (offlineQueueCount === 0 && online) {
+      setSyncToast(true);
+      const timer = window.setTimeout(() => setSyncToast(false), 2200);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [offlineQueueCount, online]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -314,17 +322,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return nav.slice(0, 5);
   }, [nav]);
 
-  const iconTone = (href: string) => {
-    if (href.includes("finance")) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-300";
-    if (href.includes("construction")) return "bg-sky-100 text-sky-700 dark:bg-sky-900/35 dark:text-sky-300";
-    if (href.includes("import")) return "bg-violet-100 text-violet-700 dark:bg-violet-900/35 dark:text-violet-300";
-    if (href.includes("pos")) return "bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-300";
-    if (href.includes("reports")) return "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/35 dark:text-fuchsia-300";
-    if (href.includes("ai")) return "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/35 dark:text-cyan-300";
-    if (href.includes("settings")) return "bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200";
-    return "bg-primary/10 text-primary";
-  };
-
   const crumb = useMemo(() => {
     const activeItem = nav.find((item) => item.href === pathname);
     if (activeItem) return activeItem.label;
@@ -336,7 +333,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     logout();
     setSettingsOpen(false);
-    setMenuOpen(false);
     router.push("/login");
   };
 
@@ -352,73 +348,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100svh] bg-aura">
-      {menuOpen ? <button type="button" aria-label="Close navigation drawer" className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] lg:hidden" onClick={() => setMenuOpen(false)} /> : null}
-
       <div className="mx-auto flex min-h-[100svh] max-w-[1700px]">
-        <aside
-          className={cn(
-            "sticky top-0 hidden h-[100svh] border-r border-border/70 bg-card/72 p-3 backdrop-blur-xl lg:block",
-            collapsed ? "w-20" : "w-64"
-          )}
-        >
-          <div className="mb-5 rounded-[1.5rem] border border-border/70 bg-background/72 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Factory className="h-5 w-5" />
-              </span>
-              {!collapsed ? (
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold">{text.brand}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">{text.moduleFlow}</span>
-                </span>
-              ) : null}
-            </div>
-            {!collapsed ? (
-              <div className="mt-4 rounded-2xl border border-primary/15 bg-primary/6 px-3 py-3 text-xs text-muted-foreground">
-                <p className="uppercase tracking-[0.16em]">{text.activeRole}</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{role || "unassigned"}</p>
-              </div>
-            ) : null}
-          </div>
-          <nav className="space-y-3">
-            {navSections.map((section) => (
-              <div key={section.title}>
-                {!collapsed ? <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{section.title}</p> : null}
-                <div className="space-y-1">
-                  {section.items.map(({ href, label, sublabel, icon: Icon }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all active:scale-95",
-                        pathname === href ? "bg-primary text-primary-foreground shadow-[0_16px_34px_rgba(15,108,90,0.22)]" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {!collapsed ? (
-                        <span className="min-w-0">
-                          <span className="block truncate font-medium">{label}</span>
-                          <span className={cn("block truncate text-[11px]", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
-                        </span>
-                      ) : null}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
-          <div className="mt-4 space-y-2">
-            <Button variant="outline" className="w-full" onClick={() => setCollapsed((v) => !v)}>
-              {collapsed ? text.expand : text.collapse}
-            </Button>
-            {!collapsed ? (
-              <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setSettingsOpen(true)}>
-                <Settings2 className="h-4 w-4" /> {text.settings}
-              </Button>
-            ) : null}
-          </div>
-        </aside>
-
         <div className="min-h-[100svh] flex-1">
           <header className="sticky top-0 z-30 border-b border-border/70 bg-card/72 px-4 py-3 backdrop-blur-xl safe-top safe-x">
             {!online ? (
@@ -427,24 +357,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
             ) : null}
             <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3">
-              <Button variant="ghost" className="px-3 lg:hidden" aria-label="Open navigation drawer" onClick={() => setMenuOpen((v) => !v)}>
-                <Menu className="h-4 w-4" />
-              </Button>
-              <div className="min-w-0 flex-1 md:flex-none">
+              <div className="min-w-0 flex-1">
+                {pathname !== "/dashboard" ? (
+                  <Button variant="ghost" className="mb-1 h-11 px-2" onClick={() => router.back()} aria-label="Go back">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                ) : null}
                 <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{text.controlRoom}</p>
                 <div className="truncate text-sm text-muted-foreground">{text.home} / <span className="font-medium text-foreground">{crumb}</span></div>
               </div>
-              <div className="order-last flex w-full items-center gap-2 rounded-[1.35rem] border border-border bg-background/88 px-3 py-3 md:order-none md:mx-auto md:max-w-md md:flex-1">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <input className="w-full bg-transparent text-sm outline-none" placeholder={text.searchPlaceholder} aria-label="Global search" />
-              </div>
-              <Button variant="ghost" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setDark((v) => !v)}>
+              <Button variant="ghost" className="h-11 w-11 p-0" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setDark((v) => !v)}>
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" aria-label={text.language} onClick={() => setLanguage((value) => (value === "en" ? "bn" : "en"))}>
-                <Languages className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" aria-label="Open notifications" className="relative" onClick={() => setNotificationsOpen((value) => !value)}>
+              <Button
+                variant="ghost"
+                className="relative h-11 w-11 p-0"
+                aria-label="Open notifications"
+                aria-expanded={notificationsOpen}
+                aria-controls="dashboard-notifications-panel"
+                onClick={() => setNotificationsOpen((value) => !value)}
+              >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 ? (
                   <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
@@ -452,23 +384,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   </span>
                 ) : null}
               </Button>
-              <div className="hidden items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs md:flex">
-                {online ? <Wifi className="h-4 w-4 text-emerald-500" /> : <WifiOff className="h-4 w-4 text-rose-500" />}
-                {online ? text.online : text.offline}
+              <div className="hidden items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs sm:flex">
+                {online ? <Wifi className="h-4 w-4 text-emerald-500" /> : <WifiOff className="h-4 w-4 text-rose-500" />} {online ? text.online : text.offline}
+                {offlineQueueCount > 0 ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">Q:{offlineQueueCount}</span> : null}
               </div>
-              <button type="button" className="hidden items-center gap-2 rounded-[1.15rem] border border-border bg-background px-3 py-2 text-sm transition-all active:scale-95 hover:shadow-soft sm:flex" onClick={() => setSettingsOpen(true)}>
+              <button type="button" className="hidden items-center gap-2 rounded-[1.15rem] border border-border bg-background px-3 py-2 text-sm transition-all active:scale-95 hover:shadow-soft md:flex" onClick={() => setSettingsOpen(true)}>
                 <UserCircle2 className="h-4 w-4" />
                 {role || "unassigned"}
               </button>
             </div>
 
             {notificationsOpen ? (
-              <div className="mx-auto mt-3 w-full max-w-7xl rounded-2xl border border-border/70 bg-background/95 p-3 shadow-soft">
+              <div id="dashboard-notifications-panel" className="mx-auto mt-3 w-full max-w-7xl rounded-2xl border border-border/70 bg-background/95 p-3 shadow-soft" role="region" aria-label="Realtime notifications">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-foreground">Realtime Notifications</p>
                   <Button
                     variant="outline"
-                    className="h-7 px-2 text-xs"
+                    className="h-11 px-3 text-xs"
                     onClick={() => setNotifications([])}
                   >
                     Clear
@@ -495,50 +427,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             ) : null}
           </header>
 
-          {menuOpen ? (
-            <div className="fixed inset-y-0 left-0 z-50 w-[min(86vw,22rem)] border-r border-border bg-card/95 p-4 backdrop-blur-lg lg:hidden safe-top safe-bottom safe-x">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{text.navigation}</p>
-                  <p className="mt-1 text-lg font-semibold text-foreground">{text.brand}</p>
-                </div>
-                <Button variant="ghost" className="px-3" onClick={() => setMenuOpen(false)} aria-label="Close navigation drawer">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </div>
-              <nav className="grid gap-3">
-                {navSections.map((section) => (
-                  <div key={section.title}>
-                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{section.title}</p>
-                    <div className="grid gap-2">
-                      {section.items.map(({ href, label, sublabel, icon: Icon }) => (
-                        <Link key={href} href={href} className={cn("rounded-2xl border px-3 py-2.5 text-sm transition-all active:scale-95", pathname === href ? "border-primary/25 bg-primary/10 text-foreground" : "border-border bg-background/85 text-muted-foreground hover:bg-muted hover:text-foreground")}>
-                          <span className="flex items-center gap-2.5">
-                            <span className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl", iconTone(href))}>
-                              <Icon className="h-3.5 w-3.5" />
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block truncate font-medium">{label}</span>
-                              <span className="block truncate text-[11px] text-muted-foreground">{sublabel}</span>
-                            </span>
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </nav>
-              <div className="mt-4 grid gap-2">
-                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setSettingsOpen(true)}>
-                  <Settings2 className="h-4 w-4" /> {text.settings}
-                </Button>
-                <Button variant="ghost" className="w-full justify-start gap-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-300 dark:hover:bg-rose-950/25" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" /> {text.logout}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
           <AnimatePresence mode="wait">
             <motion.main
               key={pathname}
@@ -564,6 +452,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
       </nav>
+
+      {syncToast ? (
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.2rem)] left-1/2 z-50 -translate-x-1/2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-soft">
+          Synced successfully
+        </div>
+      ) : null}
 
       <FloatingChat />
 
@@ -600,7 +494,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 aria-label={text.light}
                 onClick={() => setDark(false)}
                 className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
                   dark ? "border-border bg-background text-muted-foreground" : "border-primary/35 bg-primary/10 text-primary"
                 )}
               >
@@ -612,7 +506,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 aria-label={text.dark}
                 onClick={() => setDark(true)}
                 className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
                   dark ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
                 )}
               >
@@ -636,7 +530,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 aria-label={text.bangla}
                 onClick={() => setLanguage("bn")}
                 className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
                   language === "bn" ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
                 )}
               >
@@ -648,7 +542,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 aria-label={text.english}
                 onClick={() => setLanguage("en")}
                 className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
                   language === "en" ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
                 )}
               >

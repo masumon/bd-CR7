@@ -242,9 +242,9 @@ export function FloatingChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+9rem)] top-auto z-50 flex max-h-[min(74svh,44rem)] flex-col overflow-hidden rounded-[1.65rem] border border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,249,247,0.95))] shadow-2xl backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(15,24,21,0.97),rgba(10,19,17,0.96))] sm:inset-x-auto sm:bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] sm:right-6 sm:w-[min(460px,calc(100vw-2rem))] lg:bottom-24"
+            className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,249,247,0.96))] backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(15,24,21,0.98),rgba(10,19,17,0.97))] sm:inset-x-auto sm:bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] sm:right-6 sm:top-auto sm:max-h-[min(74svh,44rem)] sm:w-[min(460px,calc(100vw-2rem))] sm:rounded-[1.65rem] sm:border sm:border-white/20 sm:shadow-2xl lg:bottom-24"
           >
-            <div className="flex items-center justify-between border-b border-border/70 bg-primary/8 px-4 py-3">
+            <div className="safe-top flex items-center justify-between border-b border-border/70 bg-primary/8 px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
                   <Bot className="h-3.5 w-3.5 text-primary" />
@@ -267,14 +267,14 @@ export function FloatingChat() {
                   }
                 }}
                 aria-label={voice ? "Disable voice mode" : "Enable voice mode"}
-                className={`relative rounded-full p-2 transition-all active:scale-95 ${voice ? "bg-rose-100 text-rose-600 dark:bg-rose-900/40" : "bg-muted text-muted-foreground"} ${speechSupported ? "" : "cursor-not-allowed opacity-50"}`}
+                className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-all active:scale-95 ${voice ? "bg-rose-100 text-rose-600 dark:bg-rose-900/40" : "bg-muted text-muted-foreground"} ${speechSupported ? "" : "cursor-not-allowed opacity-50"}`}
               >
                 <Mic className="h-4 w-4" />
                 {voice && <span className="absolute inset-0 animate-ping rounded-full border border-rose-400" />}
               </button>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto p-4 text-[13px] sm:text-sm">
+            <div className="flex-1 space-y-3 overflow-y-auto p-4 pb-40 text-[13px] sm:pb-4 sm:text-sm">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "ai" && (
@@ -317,14 +317,14 @@ export function FloatingChat() {
               ))}
             </div>
 
-            <div className="border-t border-border p-3">
-              <div className="flex items-center gap-2 rounded-[1.2rem] border border-border bg-background px-3 py-2">
+            <div className="safe-bottom fixed inset-x-0 bottom-0 border-t border-border bg-background/96 p-3 backdrop-blur sm:static sm:bg-transparent sm:p-3 sm:backdrop-blur-0">
+              <div className="mx-auto flex w-full max-w-[28rem] items-center gap-2 rounded-[1.2rem] border border-border bg-background px-3 py-2">
                 {voice ? (
                   <button
                     type="button"
                     onClick={toggleListening}
                     disabled={!speechSupported}
-                    className={`rounded-full p-1.5 transition ${listening ? "bg-rose-100 text-rose-600 dark:bg-rose-900/40" : "bg-muted text-muted-foreground"}`}
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition ${listening ? "bg-rose-100 text-rose-600 dark:bg-rose-900/40" : "bg-muted text-muted-foreground"}`}
                     aria-label={listening ? "Stop listening" : "Start voice input"}
                   >
                     <Mic className="h-3.5 w-3.5" />
@@ -334,7 +334,7 @@ export function FloatingChat() {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={onKeyDown}
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  className="w-full bg-transparent text-sm placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/60 focus-visible:outline-offset-2"
                   placeholder="জিজ্ঞেস করুন... / Ask anything"
                   aria-label="Message SUMONIX AI"
                 />
@@ -342,7 +342,7 @@ export function FloatingChat() {
                   type="button"
                   onClick={sendMessage}
                   disabled={!text.trim()}
-                  className="h-8 w-8 shrink-0 p-0"
+                  className="h-11 w-11 shrink-0 p-0"
                   aria-label="Send message"
                 >
                   <Send className="h-3.5 w-3.5" />

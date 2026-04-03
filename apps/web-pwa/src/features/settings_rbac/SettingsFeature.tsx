@@ -21,6 +21,16 @@ interface UserProfile {
 type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
 type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Advanced";
 
+const TAB_LABELS: Record<SettingsTab, string> = {
+  Profile: "General",
+  Workspace: "Approval",
+  Notifications: "Users",
+  Security: "Categories",
+  Data: "Audit",
+  Integrations: "Guide",
+  Advanced: "About",
+};
+
 type SettingItem = {
   id: string;
   category: SettingCategory;
@@ -270,7 +280,7 @@ export function SettingsFeature() {
                     : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                {tab}
+                {TAB_LABELS[tab]}
               </button>
             ))}
           </div>
@@ -284,7 +294,7 @@ export function SettingsFeature() {
             <Settings2 className="h-4 w-4 text-primary" />
             <CardTitle>Account Profile</CardTitle>
           </div>
-          <Button variant="outline" className="h-8 px-3 text-xs" onClick={loadProfile} disabled={loading}>
+          <Button variant="outline" className="h-11 px-3 text-xs" onClick={loadProfile} disabled={loading}>
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           </Button>
         </CardHeader>
@@ -349,7 +359,7 @@ export function SettingsFeature() {
               ) : null}
               {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
-              <Button type="submit" className="h-9 px-4" disabled={saving || loading}>
+              <Button type="submit" className="h-11 px-4" disabled={saving || loading}>
                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserRound className="mr-2 h-4 w-4" />}
                 {saving ? "Saving..." : "Save Profile"}
               </Button>
@@ -528,7 +538,7 @@ export function SettingsFeature() {
           <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
             <p className="text-sm font-medium text-foreground">Reset Local Workspace Preferences</p>
             <p className="mt-1 text-xs text-muted-foreground">Clears theme, language, settings catalog, integration toggles, and notification cache from this device.</p>
-            <Button className="mt-3 h-9 px-4" variant="outline" onClick={resetWorkspacePreferences}>Reset Local Preferences</Button>
+            <Button className="mt-3 h-11 px-4" variant="outline" onClick={resetWorkspacePreferences}>Reset Local Preferences</Button>
           </div>
 
           <div className="rounded-2xl border border-border/70 bg-background/75 p-4">

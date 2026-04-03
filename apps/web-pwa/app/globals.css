@@ -39,11 +39,12 @@
 html {
   min-height: 100%;
   background: hsl(var(--background));
+  overflow-x: clip;
 }
 
 body {
   min-height: 100svh;
-  overflow-x: hidden;
+  overflow-x: clip;
   font-family: var(--font-body), var(--font-bengali), "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at 0% 0%, rgba(18, 119, 102, 0.18), transparent 28%),
@@ -87,6 +88,21 @@ input,
 select,
 textarea {
   -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+a,
+button,
+[role="button"] {
+  min-height: 44px;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
 }
 
 input:focus-visible,
