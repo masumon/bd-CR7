@@ -58,15 +58,30 @@ const copy = {
     navigation: "Navigation",
     collapse: "Collapse",
     expand: "Expand",
-    categories: [
-      { href: "/dashboard", label: "Dashboard", icon: Home },
-      { href: "/dashboard/construction", label: "Construction", icon: Building2 },
-      { href: "/dashboard/finance", label: "Finance", icon: BadgeDollarSign },
-      { href: "/dashboard/import", label: "Import", icon: Import },
-      { href: "/dashboard/pos", label: "POS", icon: ShoppingCart },
-      { href: "/dashboard/construction/projects", label: "Projects", icon: FolderKanban },
-      { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
-      { href: "/dashboard/settings", label: "Settings", icon: Settings2 },
+    sections: [
+      {
+        title: "Core",
+        items: [
+          { href: "/dashboard", label: "Dashboard", sublabel: "Overview & KPI", icon: Home },
+          { href: "/dashboard/reports", label: "Reports", sublabel: "Analytics & Export", icon: BarChart3 },
+          { href: "/dashboard/settings", label: "Settings", sublabel: "Profile & Preferences", icon: Settings2 },
+        ],
+      },
+      {
+        title: "Operations",
+        items: [
+          { href: "/dashboard/construction", label: "Construction", sublabel: "Workers, Materials, Progress", icon: Building2 },
+          { href: "/dashboard/construction/projects", label: "Projects", sublabel: "Project Pipeline", icon: FolderKanban },
+          { href: "/dashboard/import", label: "Import", sublabel: "L/C and Shipment", icon: Import },
+          { href: "/dashboard/pos", label: "POS", sublabel: "Sales & Checkout", icon: ShoppingCart },
+        ],
+      },
+      {
+        title: "Finance",
+        items: [
+          { href: "/dashboard/finance", label: "Finance", sublabel: "Funds & Expenses", icon: BadgeDollarSign },
+        ],
+      },
     ],
   },
   bn: {
@@ -95,15 +110,30 @@ const copy = {
     navigation: "নেভিগেশন",
     collapse: "ছোট করুন",
     expand: "বড় করুন",
-    categories: [
-      { href: "/dashboard", label: "ড্যাশবোর্ড", icon: Home },
-      { href: "/dashboard/construction", label: "কনস্ট্রাকশন", icon: Building2 },
-      { href: "/dashboard/finance", label: "ফাইন্যান্স", icon: BadgeDollarSign },
-      { href: "/dashboard/import", label: "ইমপোর্ট", icon: Import },
-      { href: "/dashboard/pos", label: "পস", icon: ShoppingCart },
-      { href: "/dashboard/construction/projects", label: "প্রজেক্ট", icon: FolderKanban },
-      { href: "/dashboard/reports", label: "রিপোর্ট", icon: BarChart3 },
-      { href: "/dashboard/settings", label: "সেটিংস", icon: Settings2 },
+    sections: [
+      {
+        title: "মূল",
+        items: [
+          { href: "/dashboard", label: "ড্যাশবোর্ড", sublabel: "সারাংশ ও KPI", icon: Home },
+          { href: "/dashboard/reports", label: "রিপোর্ট", sublabel: "বিশ্লেষণ ও এক্সপোর্ট", icon: BarChart3 },
+          { href: "/dashboard/settings", label: "সেটিংস", sublabel: "প্রোফাইল ও পছন্দ", icon: Settings2 },
+        ],
+      },
+      {
+        title: "অপারেশন",
+        items: [
+          { href: "/dashboard/construction", label: "কনস্ট্রাকশন", sublabel: "শ্রমিক, উপকরণ, অগ্রগতি", icon: Building2 },
+          { href: "/dashboard/construction/projects", label: "প্রজেক্ট", sublabel: "প্রজেক্ট পাইপলাইন", icon: FolderKanban },
+          { href: "/dashboard/import", label: "ইমপোর্ট", sublabel: "L/C ও শিপমেন্ট", icon: Import },
+          { href: "/dashboard/pos", label: "পস", sublabel: "বিক্রয় ও চেকআউট", icon: ShoppingCart },
+        ],
+      },
+      {
+        title: "ফাইন্যান্স",
+        items: [
+          { href: "/dashboard/finance", label: "ফাইন্যান্স", sublabel: "ফান্ড ও ব্যয়", icon: BadgeDollarSign },
+        ],
+      },
     ],
   },
 } as const;
@@ -207,7 +237,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const text = copy[language];
   const normalizedRole = (role || "viewer").toLowerCase();
   const allowed = rolePermissions[normalizedRole] || rolePermissions.viewer;
-  const nav = text.categories.filter((item) => allowed.includes(item.href));
+  const navSections = text.sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => allowed.includes(item.href)),
+    }))
+    .filter((section) => section.items.length > 0);
+  const nav = navSections.flatMap((section) => section.items);
 
   const crumb = useMemo(() => {
     const activeItem = nav.find((item) => item.href === pathname);
@@ -239,19 +275,31 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <Factory className="h-5 w-5 text-primary" />
             {!collapsed ? <span className="text-sm font-semibold">{text.brand}</span> : null}
           </div>
-          <nav className="space-y-1">
-            {nav.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all active:scale-95",
-                  pathname === href ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {!collapsed ? <span>{label}</span> : null}
-              </Link>
+          <nav className="space-y-3">
+            {navSections.map((section) => (
+              <div key={section.title}>
+                {!collapsed ? <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{section.title}</p> : null}
+                <div className="space-y-1">
+                  {section.items.map(({ href, label, sublabel, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all active:scale-95",
+                        pathname === href ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {!collapsed ? (
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{label}</span>
+                          <span className={cn("block truncate text-[11px]", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
+                        </span>
+                      ) : null}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
           <div className="mt-4 space-y-2">
@@ -313,12 +361,24 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <Menu className="h-4 w-4" />
                 </Button>
               </div>
-              <nav className="grid gap-2">
-                {nav.map(({ href, label, icon: Icon }) => (
-                  <Link key={href} href={href} className={cn("flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition-all active:scale-95", pathname === href ? "border-primary/25 bg-primary/10 text-foreground" : "border-border bg-background/85 text-muted-foreground hover:bg-muted hover:text-foreground")}>
-                    <Icon className="h-4 w-4" />
-                    <span>{label}</span>
-                  </Link>
+              <nav className="grid gap-3">
+                {navSections.map((section) => (
+                  <div key={section.title}>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{section.title}</p>
+                    <div className="grid gap-2">
+                      {section.items.map(({ href, label, sublabel, icon: Icon }) => (
+                        <Link key={href} href={href} className={cn("rounded-2xl border px-4 py-3 text-sm transition-all active:scale-95", pathname === href ? "border-primary/25 bg-primary/10 text-foreground" : "border-border bg-background/85 text-muted-foreground hover:bg-muted hover:text-foreground")}>
+                          <span className="flex items-center gap-3">
+                            <Icon className="h-4 w-4" />
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium">{label}</span>
+                              <span className="block truncate text-xs text-muted-foreground">{sublabel}</span>
+                            </span>
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </nav>
               <div className="mt-4 grid gap-2">
@@ -348,11 +408,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-lg safe-bottom safe-x lg:hidden">
-          <div className="mx-auto flex max-w-5xl items-center gap-2 overflow-x-auto pb-1">
-          {nav.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className={cn("flex min-h-14 min-w-[88px] shrink-0 flex-col items-center justify-center rounded-2xl px-2 text-[11px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+          <div className="mx-auto flex max-w-5xl items-stretch gap-2 overflow-x-auto pb-1">
+          {nav.map(({ href, label, sublabel, icon: Icon }) => (
+            <Link key={href} href={href} className={cn("flex min-h-16 min-w-[104px] shrink-0 flex-col items-center justify-center rounded-2xl px-2 text-[11px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
               <Icon className="mb-1 h-4 w-4" />
-              <span className="truncate">{label}</span>
+              <span className="w-full truncate text-center">{label}</span>
+              <span className={cn("w-full truncate text-center text-[10px]", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
             </Link>
           ))}
         </div>

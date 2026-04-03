@@ -21,7 +21,9 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useState } from "react";
 
 function fmt(n: number) {
   if (n >= 1_000_000) return `৳${(n / 1_000_000).toFixed(1)}M`;
@@ -31,6 +33,13 @@ function fmt(n: number) {
 
 export function DashboardHomeView() {
   const s = useDashboardStats();
+  const [activeModule, setActiveModule] = useState<null | {
+    title: string;
+    blurb: string;
+    href: string;
+    stats: string[];
+    details: string[];
+  }>(null);
 
   const quickStats = [
     { label: "Funds Received", value: fmt(s.totalFundsReceived), icon: Wallet, tone: "emerald" },
@@ -53,6 +62,10 @@ export function DashboardHomeView() {
       icon: BadgeDollarSign,
       blurb: "Fund intake, expense control, approval routing",
       stats: [`${s.pendingApprovals} pending approvals`, `${fmt(s.totalExpenses)} total expenses`],
+      details: [
+        "বাংলা: ফান্ড ম্যানেজমেন্ট ও ব্যয় অনুমোদন একই workflow-এ পরিচালনা করুন",
+        "English: Manage fund accounts, expenses, and approvals from one finance cockpit",
+      ],
     },
     {
       title: "Projects",
@@ -60,6 +73,10 @@ export function DashboardHomeView() {
       icon: FolderKanban,
       blurb: "Project CRUD, budgets, phases, work updates",
       stats: [`${s.totalProjects} total projects`],
+      details: [
+        "বাংলা: প্রজেক্ট তৈরি, স্ট্যাটাস আপডেট ও ফেজভিত্তিক ট্র্যাকিং করুন",
+        "English: Run end-to-end project lifecycle with cleaner phase visibility",
+      ],
     },
     {
       title: "Construction Ops",
@@ -67,6 +84,10 @@ export function DashboardHomeView() {
       icon: Building2,
       blurb: "Worker logs, material stock, progress",
       stats: [`${s.totalWorkers} active workers`],
+      details: [
+        "বাংলা: শ্রমিক, উপকরণ ও প্রগ্রেস মিডিয়া প্রমাণ এক জায়গায় দেখুন",
+        "English: Track field operations with worker/material/progress continuity",
+      ],
     },
     {
       title: "Import & Supply",
@@ -74,6 +95,10 @@ export function DashboardHomeView() {
       icon: ArrowRightLeft,
       blurb: "Shipment stages, landed cost, customs queue",
       stats: ["L/C pipeline management"],
+      details: [
+        "বাংলা: L/C রেকর্ড, আগমনের তারিখ, স্ট্যাটাস এবং সাপ্লাই ফ্লো পরিচালনা করুন",
+        "English: Manage import milestones from LC opening to shipment closure",
+      ],
     },
     {
       title: "Retail POS",
@@ -81,6 +106,21 @@ export function DashboardHomeView() {
       icon: ShoppingCart,
       blurb: "Sales velocity, cart operations, outlet readiness",
       stats: ["Cart & SKU tracking"],
+      details: [
+        "বাংলা: দ্রুত checkout, cart control এবং sales tracking",
+        "English: Real-time POS flow with product, cart, and checkout visibility",
+      ],
+    },
+    {
+      title: "Reports",
+      href: "/dashboard/reports",
+      icon: Activity,
+      blurb: "Cross-module analytics, trends, and CSV exports",
+      stats: ["7d / 30d / 90d insights"],
+      details: [
+        "বাংলা: এক্সপেন্স, উপকরণ ও ফাইন্যান্স ডেটার রিপোর্ট দ্রুত এক্সপোর্ট করুন",
+        "English: Download decision-ready CSV and track operational trendlines",
+      ],
     },
   ];
 
@@ -138,13 +178,13 @@ export function DashboardHomeView() {
       </div>
 
       {/* Workstream Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {workstreams.map(({ title, href, icon: Icon, blurb, stats }) => (
-          <Card key={title} className="overflow-hidden">
+          <Card key={title} className="overflow-hidden border-border/70 transition-all hover:-translate-y-1 hover:shadow-soft">
             <CardContent className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Module</p>
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Module / মডিউল</p>
                   <h3 className="mt-1 text-base font-semibold text-foreground">{title}</h3>
                 </div>
                 <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -159,9 +199,22 @@ export function DashboardHomeView() {
                   </div>
                 ))}
               </div>
-              <Link href={href}>
-                <Button variant="outline" className="w-full text-xs h-8 mt-1">Open</Button>
-              </Link>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button
+                  variant="ghost"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    const item = workstreams.find((w) => w.title === title);
+                    if (!item) return;
+                    setActiveModule(item);
+                  }}
+                >
+                  বিস্তারিত
+                </Button>
+                <Link href={href}>
+                  <Button variant="outline" className="w-full h-8 text-xs">Open</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -222,6 +275,35 @@ export function DashboardHomeView() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog
+        open={Boolean(activeModule)}
+        onClose={() => setActiveModule(null)}
+        title={activeModule ? `${activeModule.title} Details` : "Module Details"}
+      >
+        {activeModule ? (
+          <div className="space-y-4">
+            <p className="text-sm leading-6 text-muted-foreground">{activeModule.blurb}</p>
+            <div className="grid gap-2">
+              {activeModule.details.map((line) => (
+                <div key={line} className="rounded-2xl border border-border/70 bg-background/80 px-3 py-2 text-sm text-muted-foreground">
+                  {line}
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-2">
+              {activeModule.stats.map((stat) => (
+                <div key={stat} className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-foreground">
+                  {stat}
+                </div>
+              ))}
+            </div>
+            <Link href={activeModule.href} onClick={() => setActiveModule(null)}>
+              <Button className="h-9 w-full">Go To Module</Button>
+            </Link>
+          </div>
+        ) : null}
+      </Dialog>
     </div>
   );
 }
