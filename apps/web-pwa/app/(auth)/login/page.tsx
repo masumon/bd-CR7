@@ -95,12 +95,7 @@ export default function LoginPage() {
 
   return (
     <main
-      className="flex flex-col bg-gradient-to-br from-[#eef2ec] via-white to-[#e8f5ec] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
-      style={{
-        minHeight: "100dvh",
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-      }}
+      className="flex min-h-[100dvh] flex-col bg-gradient-to-br from-[#eef2ec] via-white to-[#e8f5ec] safe-top safe-bottom dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
     >
       {/* TOP SECTION: Greeting & Branding */}
       <div className="flex-none px-6 pt-10 pb-2 text-center">

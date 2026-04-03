@@ -156,24 +156,30 @@ export function ImportLCFeature() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Supplier Name *</label>
+                    <label htmlFor="lc-supplier-name" className="text-xs text-muted-foreground">Supplier Name *</label>
                     <input
+                      id="lc-supplier-name"
+                      title="Supplier Name"
                       className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
                       value={form.supplier_name} onChange={set("supplier_name")}
                       placeholder="e.g. China Steel Co."
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">L/C Number *</label>
+                    <label htmlFor="lc-number" className="text-xs text-muted-foreground">L/C Number *</label>
                     <input
+                      id="lc-number"
+                      title="L/C Number"
                       className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
                       value={form.lc_number} onChange={set("lc_number")}
                       placeholder="e.g. LC-2025-001"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Currency *</label>
+                    <label htmlFor="lc-currency" className="text-xs text-muted-foreground">Currency *</label>
                     <select
+                      id="lc-currency"
+                      title="Currency"
                       className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
                       value={form.currency} onChange={set("currency")}
                     >
@@ -181,8 +187,10 @@ export function ImportLCFeature() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Amount *</label>
+                    <label htmlFor="lc-amount" className="text-xs text-muted-foreground">Amount *</label>
                     <input
+                      id="lc-amount"
+                      title="Amount"
                       type="number" min="0" step="0.01"
                       className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
                       value={form.amount} onChange={set("amount")}
@@ -190,16 +198,21 @@ export function ImportLCFeature() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Expected Arrival *</label>
+                    <label htmlFor="lc-expected-arrival" className="text-xs text-muted-foreground">Expected Arrival *</label>
                     <input
+                      id="lc-expected-arrival"
+                      title="Expected Arrival"
                       type="date"
+                      placeholder="YYYY-MM-DD"
                       className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
                       value={form.expected_arrival} onChange={set("expected_arrival")}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Status</label>
+                    <label htmlFor="lc-status" className="text-xs text-muted-foreground">Status</label>
                     <select
+                      id="lc-status"
+                      title="Status"
                       className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
                       value={form.status} onChange={set("status")}
                     >

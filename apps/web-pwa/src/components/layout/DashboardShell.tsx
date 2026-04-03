@@ -66,6 +66,7 @@ const copy = {
       { href: "/dashboard/pos", label: "POS", icon: ShoppingCart },
       { href: "/dashboard/construction/projects", label: "Projects", icon: FolderKanban },
       { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+      { href: "/dashboard/settings", label: "Settings", icon: Settings2 },
     ],
   },
   bn: {
@@ -102,6 +103,7 @@ const copy = {
       { href: "/dashboard/pos", label: "পস", icon: ShoppingCart },
       { href: "/dashboard/construction/projects", label: "প্রজেক্ট", icon: FolderKanban },
       { href: "/dashboard/reports", label: "রিপোর্ট", icon: BarChart3 },
+      { href: "/dashboard/settings", label: "সেটিংস", icon: Settings2 },
     ],
   },
 } as const;
@@ -304,7 +306,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-lg safe-bottom safe-x lg:hidden">
-          <div className="mx-auto grid max-w-3xl grid-cols-7 gap-1">
+          <div className="mx-auto grid max-w-3xl grid-cols-8 gap-1">
           {nav.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} className={cn("flex min-h-14 flex-col items-center justify-center rounded-2xl px-1 text-[11px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
               <Icon className="mb-1 h-4 w-4" />
