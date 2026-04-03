@@ -22,7 +22,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.redis: Redis | None = Redis.from_url(redis_url, encoding="utf-8", decode_responses=True) if redis_url else None
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in {"/health", "/ready", "/docs", "/redoc", "/openapi.json"}:
+        if request.url.path in {"/api/health", "/api/ready", "/api/health/db", "/docs", "/redoc", "/openapi.json"}:
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
