@@ -1,185 +1,148 @@
-# BD-CR7 Ultra Enterprise
+# BD CR7 Ultra Enterprise
 
-Monorepo for BD-CR7 business platform with:
+Production-grade monorepo ERP platform for construction, finance, import supply, POS, reporting, and AI-assisted operations.
 
-- Next.js PWA frontend
-- FastAPI backend
-- Supabase PostgreSQL schema and migrations
-- Shared package modules via PNPM workspaces + Turborepo
+## Live Deployment
+- Production URL: https://bd-cr7.vercel.app
+
+## Core Capabilities
+- Next.js PWA frontend for web + mobile install
+- FastAPI backend API for business logic and AI endpoints
+- Supabase PostgreSQL for transactional data and auth-linked entities
+- Role-aware module visibility in dashboard navigation
+- SUMONIX AI assistant with real dashboard/anomaly integrations
 
 ## Monorepo Structure
-
-```
+```text
 apps/
-	api-core-python/      # FastAPI backend
-	web-pwa/              # Next.js 14 PWA frontend
+  api-core-python/      FastAPI backend
+  web-pwa/              Next.js PWA frontend
 packages/
-	core-logic/
-	media-engine/
-	rbac-engine/
-	ui-system/
+  core-logic/
+  media-engine/
+  rbac-engine/
+  ui-system/
 supabase/
-	migrations/           # SQL migrations
+  migrations/           SQL migrations
 api/
-	main.py               # Vercel Python entrypoint shim
-	requirements.txt      # Vercel Python install manifest
+  main.py               Vercel python entrypoint shim
+  requirements.txt      Vercel python dependency manifest
 ```
 
 ## Tech Stack
+- Frontend: Next.js 15, React 18, TypeScript, Tailwind, Zustand, Supabase JS
+- Backend: FastAPI, Pydantic v2, SQLAlchemy, Supabase Python client
+- Database: Supabase PostgreSQL + RLS policies
+- Monorepo: PNPM workspaces + Turborepo
+- Deployment: Vercel
 
-- Frontend: Next.js 14, React 18, Zustand, Supabase JS
-- Backend: FastAPI, Pydantic v2, SQLAlchemy, Supabase Python
-- Monorepo: PNPM workspaces, Turborepo
-- Database: Supabase PostgreSQL
-- CI/CD: GitHub Actions (security + CodeQL)
-
-## Requirements
-
-- Node.js 20.x
-- PNPM 8.15.x
+## Prerequisites
+- Node.js 20+
+- PNPM 10+
 - Python 3.11+
 
-## Getting Started
+## Environment Setup
+Copy .env.example to .env and provide at least:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- NEXT_PUBLIC_API_URL
 
-### 1) Install dependencies
-
+## Install
 ```bash
 pnpm install
-```
-
-### 2) Python environment (backend)
-
-```bash
 python -m venv .venv
 .venv\Scripts\activate
 python -m pip install -r requirements.txt
+python -m pip install pytest
 ```
-
-### 3) Environment variables
-
-Copy `.env.example` to `.env` and set values.
-
-Minimum keys:
-
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ## Development Commands
-
-Run all apps/packages in dev mode:
-
+### Full workspace
 ```bash
 pnpm dev
-```
-
-Build all workspaces:
-
-```bash
-pnpm build
-```
-
-Lint all workspaces:
-
-```bash
 pnpm lint
-```
-
-Type-check all workspaces:
-
-```bash
+pnpm build
 pnpm type-check
 ```
 
-Backend compile smoke check:
-
-```bash
-python -m py_compile apps/api-core-python/**/*.py
-```
-
-## Frontend and Backend (Individual)
-
-Frontend only:
-
+### Frontend only
 ```bash
 pnpm --filter web-pwa dev
+pnpm --filter web-pwa lint
+pnpm --filter web-pwa build
+pnpm --filter web-pwa type-check
 ```
 
-Backend only (FastAPI):
-
+### Backend only
 ```bash
 cd apps/api-core-python
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+### Backend tests
+```bash
+cd ../..
+.venv\Scripts\python.exe -m pytest apps\api-core-python\tests -q
+```
+
+## Role-Based Module Visibility
+Dashboard modules are filtered by user role:
+
+- admin:
+Dashboard, Construction, Finance, Import, POS, Projects, Reports, Settings
+
+- maker:
+Dashboard, Construction, Finance, Import, POS, Projects, Reports, Settings
+
+- checker:
+Dashboard, Finance, Reports, Settings
+
+- viewer:
+Dashboard, Reports, Settings
+
+- worker:
+Dashboard, Construction, POS, Settings
+
+## UI and UX Notes
+- Mobile footer modules are rendered as a horizontal row with scroll to prevent overlap in PWA/browser.
+- Login page includes animated circular Fingerprint and Face Scan controls.
+- Dashboard pages include safe-area spacing for installed mobile PWA mode.
+
 ## Database Migrations
+All SQL migration files are under supabase/migrations.
 
-SQL migrations are under `supabase/migrations`.
+Guidelines:
+- Prefer additive, idempotent migrations
+- Avoid destructive changes in normal production flow
+- Review RLS impact for each table change
 
-Rules used in this repository:
+## Deployment (Vercel)
+Repository contains vercel.json for monorepo build + Python API rewrites.
 
-- Prefer additive/idempotent migrations.
-- Avoid destructive SQL in standard production flow.
-- Keep schema changes explicit and reviewable.
+Important:
+- .vercelignore is configured to exclude local venv, caches, and build artifacts to keep serverless bundle within Vercel limits.
+- Push to main triggers deployment if auto-deploy is enabled.
 
-## Deployment Notes (Vercel)
+Manual deploy:
+```bash
+vercel --prod --yes
+```
 
-Repository includes `vercel.json` with:
+## User Documentation
+Bangla user guide:
+- USER_GUIDE_BN.md
 
-- Monorepo build command targeting frontend workspace
-- Python function runtime for `api/main.py`
-- Rewrite rule forwarding `/api/*` to Python API entrypoint
+Latest surgical audit report:
+- PROJECT_SURGICAL_AUDIT_REPORT_2026-04-03.txt
 
-Also includes `api/requirements.txt` so Vercel installs backend Python dependencies.
-
-## CI/Security
-
-- Security workflow: `.github/workflows/security.yml`
-- CodeQL config: `.github/codeql/codeql-config.yml`
-
-Current behavior:
-
-- CodeQL scans still run for JavaScript/Python.
-- Analyze upload is configured to not fail hard when repository-level code scanning is disabled.
-
-## Troubleshooting
-
-### Warning: Could not identify Next.js version
-
-Resolved by keeping `next` dependency available at repository root (for framework detection in monorepo builds) and in frontend workspace.
-
-### Browser response: `{ "status": "ok", "message": "FastAPI dependency missing in runtime" }`
-
-This means Python runtime was started without backend dependencies in serverless environment.
-
-This repository already addresses it with:
-
-- `api/requirements.txt` -> points to backend dependency list
-- Vercel rewrite to `api/main.py`
-
-If it appears again after a push:
-
-1. Trigger a fresh Vercel redeploy from latest `main`.
-2. Confirm Vercel project is linked to this repository root.
-3. Check deployment logs for Python dependency installation phase.
-
-### Node warning: `[DEP0169] url.parse() behavior is not standardized`
-
-If seen during cloud build logs, it usually comes from third-party tooling in the build/runtime chain, not project source.
-
-Mitigation applied in this repo:
-
-- Node engine pinned to `20.x` to avoid newer runtime-only deprecation noise.
-
-## Repository Conventions
-
-- Do not commit secrets.
-- Keep `.env` local and commit only `.env.example`.
-- Keep FastAPI models explicit and validated.
-- Keep Zustand state typed.
+## Security and Conventions
+- Never commit secrets
+- Keep FastAPI request/response models explicit
+- Keep Zustand state typed
+- Commit only .env.example, not real .env values
 
 ## License
-
-Private/internal project.
+Private/Internal project.

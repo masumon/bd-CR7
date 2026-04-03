@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, FormEvent } from "react";
+import { motion } from "framer-motion";
 import {
   Eye,
   EyeOff,
@@ -10,6 +11,7 @@ import {
   Mail,
   Lock,
   Fingerprint,
+  ScanFace,
   Facebook,
   Globe,
   MessageCircle,
@@ -27,6 +29,7 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
+  const [biometricMode, setBiometricMode] = useState<"fingerprint" | "face">("fingerprint");
   const [error, setError] = useState("");
 
   // Restore theme preference
@@ -68,11 +71,12 @@ export default function LoginPage() {
     );
   };
 
-  const handleBiometric = async () => {
+  const handleBiometric = async (mode: "fingerprint" | "face") => {
     if (!("credentials" in navigator)) {
       setError("Biometric login is not supported on this device.");
       return;
     }
+    setBiometricMode(mode);
     setBiometricLoading(true);
     setError("");
     try {
@@ -220,19 +224,59 @@ export default function LoginPage() {
           </span>
           <span className="flex-1 h-px bg-border/60" />
         </div>
-        <button
-          type="button"
-          onClick={handleBiometric}
-          disabled={biometricLoading}
-          className="inline-flex items-center gap-2.5 rounded-2xl border border-primary/20 bg-primary/5 px-7 py-3 text-sm font-medium text-primary transition-all active:scale-[0.97] hover:bg-primary/10 disabled:opacity-60"
-        >
-          {biometricLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Fingerprint className="h-5 w-5" />
-          )}
-          {biometricLoading ? "Scanning..." : "Fingerprint / Face ID"}
-        </button>
+        <div className="grid w-full max-w-sm grid-cols-2 gap-4 pt-1">
+          <button
+            type="button"
+            onClick={() => handleBiometric("fingerprint")}
+            disabled={biometricLoading}
+            className="group relative rounded-3xl border border-primary/20 bg-primary/5 p-3 text-primary transition-all hover:bg-primary/10 disabled:opacity-60"
+          >
+            <motion.span
+              className="absolute inset-3 rounded-full border border-primary/35"
+              animate={{ scale: [1, 1.15, 1], opacity: [0.45, 0.1, 0.45] }}
+              transition={{ repeat: Infinity, duration: 2.1, ease: "easeInOut" }}
+            />
+            <motion.span
+              className="absolute inset-1 rounded-full border border-primary/20"
+              animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.08, 0.3] }}
+              transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
+            />
+            <span className="relative z-10 flex min-h-[102px] flex-col items-center justify-center gap-2">
+              {biometricLoading && biometricMode === "fingerprint" ? (
+                <Loader2 className="h-7 w-7 animate-spin" />
+              ) : (
+                <Fingerprint className="h-8 w-8" />
+              )}
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">Fingerprint</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleBiometric("face")}
+            disabled={biometricLoading}
+            className="group relative rounded-3xl border border-primary/20 bg-primary/5 p-3 text-primary transition-all hover:bg-primary/10 disabled:opacity-60"
+          >
+            <motion.span
+              className="absolute inset-3 rounded-full border border-primary/35"
+              animate={{ rotate: [0, 180, 360], opacity: [0.45, 0.2, 0.45] }}
+              transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+            />
+            <motion.span
+              className="absolute inset-1 rounded-full border border-primary/20"
+              animate={{ scale: [1, 1.06, 1], opacity: [0.3, 0.1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+            />
+            <span className="relative z-10 flex min-h-[102px] flex-col items-center justify-center gap-2">
+              {biometricLoading && biometricMode === "face" ? (
+                <Loader2 className="h-7 w-7 animate-spin" />
+              ) : (
+                <ScanFace className="h-8 w-8" />
+              )}
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">Face Scan</span>
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* FOOTER SECTION: Developer Info & Socials */}

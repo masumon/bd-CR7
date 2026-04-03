@@ -108,6 +108,46 @@ const copy = {
   },
 } as const;
 
+const rolePermissions: Record<string, string[]> = {
+  admin: [
+    "/dashboard",
+    "/dashboard/construction",
+    "/dashboard/finance",
+    "/dashboard/import",
+    "/dashboard/pos",
+    "/dashboard/construction/projects",
+    "/dashboard/reports",
+    "/dashboard/settings",
+  ],
+  maker: [
+    "/dashboard",
+    "/dashboard/construction",
+    "/dashboard/finance",
+    "/dashboard/import",
+    "/dashboard/pos",
+    "/dashboard/construction/projects",
+    "/dashboard/reports",
+    "/dashboard/settings",
+  ],
+  checker: [
+    "/dashboard",
+    "/dashboard/finance",
+    "/dashboard/reports",
+    "/dashboard/settings",
+  ],
+  viewer: [
+    "/dashboard",
+    "/dashboard/reports",
+    "/dashboard/settings",
+  ],
+  worker: [
+    "/dashboard",
+    "/dashboard/construction",
+    "/dashboard/pos",
+    "/dashboard/settings",
+  ],
+};
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -165,7 +205,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const text = copy[language];
-  const nav = text.categories;
+  const normalizedRole = (role || "viewer").toLowerCase();
+  const allowed = rolePermissions[normalizedRole] || rolePermissions.viewer;
+  const nav = text.categories.filter((item) => allowed.includes(item.href));
 
   const crumb = useMemo(() => {
     const activeItem = nav.find((item) => item.href === pathname);
@@ -297,7 +339,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="mx-auto w-full max-w-7xl p-4 pb-28 sm:p-6 sm:pb-32 lg:pb-6"
+              className="mx-auto w-full max-w-7xl p-4 pb-36 sm:p-6 sm:pb-40 lg:pb-6"
             >
               {children}
             </motion.main>
@@ -306,9 +348,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-lg safe-bottom safe-x lg:hidden">
-          <div className="mx-auto grid max-w-3xl grid-cols-8 gap-1">
+          <div className="mx-auto flex max-w-5xl items-center gap-2 overflow-x-auto pb-1">
           {nav.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className={cn("flex min-h-14 flex-col items-center justify-center rounded-2xl px-1 text-[11px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+            <Link key={href} href={href} className={cn("flex min-h-14 min-w-[88px] shrink-0 flex-col items-center justify-center rounded-2xl px-2 text-[11px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
               <Icon className="mb-1 h-4 w-4" />
               <span className="truncate">{label}</span>
             </Link>
