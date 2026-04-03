@@ -1,0 +1,30 @@
+# VCS and local tooling
+.git
+.github
+.vscode
+
+# Build caches and artifacts
+**/.next
+**/.turbo
+**/dist
+**/build
+**/__pycache__
+**/*.pyc
+
+# Dependencies managed by package managers
+**/node_modules
+
+# Local Python environments (very large)
+.venv
+venv
+**/.venv
+**/venv
+
+# Local Vercel state
+.vercel
+
+# Local docs/output not needed for runtime
+PROJECT_SURGICAL_AUDIT_REPORT_2026-04-03.txt
+PROJECT_SURGICAL_AUDIT_REPORT_BN.txt
+ROADMAP.md
+supabase.txt
