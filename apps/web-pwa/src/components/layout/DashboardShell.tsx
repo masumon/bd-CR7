@@ -385,6 +385,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </Button>
               <Button
                 variant="ghost"
+                className="h-11 px-3 text-xs font-semibold"
+                aria-label={language === "bn" ? "Switch language to English" : "Switch language to Bangla"}
+                onClick={() => setLanguage((value) => (value === "en" ? "bn" : "en"))}
+              >
+                <Languages className="mr-1.5 h-3.5 w-3.5" />
+                {language === "bn" ? "EN" : "বাং"}
+              </Button>
+              <Button
+                variant="ghost"
                 className="relative h-11 w-11 p-0"
                 aria-label="Open notifications"
                 aria-expanded={notificationsOpen}

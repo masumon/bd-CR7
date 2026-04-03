@@ -21,14 +21,25 @@ interface UserProfile {
 type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
 type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Advanced";
 
-const TAB_LABELS: Record<SettingsTab, string> = {
-  Profile: "General",
-  Workspace: "Approval",
-  Notifications: "Users",
-  Security: "Categories",
-  Data: "Audit",
-  Integrations: "Guide",
-  Advanced: "About",
+const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
+  en: {
+    Profile: "General",
+    Workspace: "Workspace",
+    Notifications: "Notifications",
+    Security: "Security",
+    Data: "Categories",
+    Integrations: "Integrations",
+    Advanced: "About",
+  },
+  bn: {
+    Profile: "সাধারণ",
+    Workspace: "ওয়ার্কস্পেস",
+    Notifications: "নোটিফিকেশন",
+    Security: "নিরাপত্তা",
+    Data: "ক্যাটাগরি",
+    Integrations: "ইন্টিগ্রেশন",
+    Advanced: "তথ্য",
+  },
 };
 
 type SettingItem = {
@@ -261,8 +272,8 @@ export function SettingsFeature() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-semibold text-foreground">Settings</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your profile, contact info, and account context.</p>
+        <h2 className="text-2xl font-semibold text-foreground">{language === "bn" ? "সেটিংস" : "Settings"}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{language === "bn" ? "প্রোফাইল, ভাষা, থিম এবং অ্যাপ কনফিগারেশন সহজভাবে ম্যানেজ করুন।" : "Manage profile, language, theme, and app configuration in one place."}</p>
       </div>
 
       <Card>
@@ -280,7 +291,7 @@ export function SettingsFeature() {
                     : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                {TAB_LABELS[tab]}
+                {TAB_LABELS[language][tab]}
               </button>
             ))}
           </div>
