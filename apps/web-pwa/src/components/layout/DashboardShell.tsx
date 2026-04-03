@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeDollarSign,
   BarChart3,
+  Bell,
   Bot,
   Building2,
   Factory,
@@ -30,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FloatingChat } from "@/features/sumonix_ai_ui/FloatingChat";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
@@ -148,6 +150,13 @@ const copy = {
 
 const QUICK_MOBILE_ROUTES = ["/dashboard", "/dashboard/construction", "/dashboard/finance", "/dashboard/pos", "/dashboard/reports"] as const;
 
+type DashboardNotification = {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+};
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -162,7 +171,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [online, setOnline] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [language, setLanguage] = useState<"en" | "bn">("en");
+
+  const unreadCount = notifications.length;
+
+  const pushNotification = (title: string, body: string) => {
+    const next: DashboardNotification = {
+      id: crypto.randomUUID(),
+      title,
+      body,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications((prev) => [next, ...prev].slice(0, 20));
+  };
 
   useEffect(() => {
     void initialize();
@@ -198,6 +221,65 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    try {
+      const raw = window.localStorage.getItem("bdcr7-notifications");
+      if (!raw) {
+        return;
+      }
+      const parsed = JSON.parse(raw) as DashboardNotification[];
+      setNotifications(parsed.slice(0, 20));
+    } catch {
+      setNotifications([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem("bdcr7-notifications", JSON.stringify(notifications.slice(0, 20)));
+  }, [notifications]);
+
+  useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+
+    const client = supabase;
+
+    const channel = client
+      .channel(`bdcr7-notifications-${userId || "anonymous"}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "approvals" },
+        () => pushNotification("Approval Queue", "A new approval request was created.")
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "expenses" },
+        () => pushNotification("Expense Log", "A new expense entry was added.")
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "project_timeline_events" },
+        () => pushNotification("Project Timeline", "A new project milestone was added.")
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "project_attachments" },
+        () => pushNotification("Project Attachment", "A new project file was uploaded.")
+      )
+      .subscribe();
+
+    return () => {
+      void client.removeChannel(channel);
+    };
+  }, [userId]);
 
   useEffect(() => {
     const onOnline = () => setOnline(true);
@@ -362,6 +444,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <Button variant="ghost" aria-label={text.language} onClick={() => setLanguage((value) => (value === "en" ? "bn" : "en"))}>
                 <Languages className="h-4 w-4" />
               </Button>
+              <Button variant="ghost" aria-label="Open notifications" className="relative" onClick={() => setNotificationsOpen((value) => !value)}>
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                ) : null}
+              </Button>
               <div className="hidden items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs md:flex">
                 {online ? <Wifi className="h-4 w-4 text-emerald-500" /> : <WifiOff className="h-4 w-4 text-rose-500" />}
                 {online ? text.online : text.offline}
@@ -371,6 +461,38 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {role || "unassigned"}
               </button>
             </div>
+
+            {notificationsOpen ? (
+              <div className="mx-auto mt-3 w-full max-w-7xl rounded-2xl border border-border/70 bg-background/95 p-3 shadow-soft">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">Realtime Notifications</p>
+                  <Button
+                    variant="outline"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setNotifications([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {notifications.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-border px-3 py-5 text-center text-xs text-muted-foreground">
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    notifications.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-border bg-card/75 px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-foreground">{item.title}</p>
+                          <span className="text-[11px] text-muted-foreground">{new Date(item.createdAt).toLocaleTimeString()}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">{item.body}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : null}
           </header>
 
           {menuOpen ? (

@@ -15,6 +15,23 @@ type Message = {
   loading?: boolean;
 };
 
+type SpeechRecognitionAlternativeLike = { transcript?: string };
+type SpeechRecognitionResultLike = { 0?: SpeechRecognitionAlternativeLike };
+type SpeechRecognitionEventLike = { results?: { 0?: SpeechRecognitionResultLike } };
+
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionCtorLike = new () => SpeechRecognitionLike;
+
 const WELCOME: Message = {
   id: "welcome",
   role: "ai",
@@ -64,14 +81,96 @@ function formatAIResponse(endpoint: "anomalies" | "dashboard" | "general", data:
 export function FloatingChat() {
   const [open, setOpen] = useState(false);
   const [voice, setVoice] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [listening, setListening] = useState(false);
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const token = useAuthStore((s) => s.token);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const speechWindow = window as Window & {
+      SpeechRecognition?: SpeechRecognitionCtorLike;
+      webkitSpeechRecognition?: SpeechRecognitionCtorLike;
+    };
+    const SpeechRecognitionCtor = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+
+    const canUseRecognition = Boolean(SpeechRecognitionCtor);
+    const canUseSynthesis = Boolean(window.speechSynthesis);
+    setSpeechSupported(canUseRecognition && canUseSynthesis);
+
+    if (!canUseRecognition || !SpeechRecognitionCtor) {
+      return;
+    }
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = document.documentElement.lang === "bn" ? "bn-BD" : "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      }
+    };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognitionRef.current = recognition;
+
+    return () => {
+      try {
+        recognition.stop();
+      } catch {
+        // Ignore teardown failures from browser speech APIs.
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const speak = (raw: string) => {
+    if (!voice || typeof window === "undefined" || !window.speechSynthesis) {
+      return;
+    }
+    const spokenText = raw.replace(/[*_`#>-]/g, " ").replace(/\s+/g, " ").trim();
+    if (!spokenText) {
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(spokenText);
+    utterance.lang = document.documentElement.lang === "bn" ? "bn-BD" : "en-US";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleListening = () => {
+    if (!speechSupported || !recognitionRef.current) {
+      return;
+    }
+    if (listening) {
+      recognitionRef.current.stop();
+      setListening(false);
+      return;
+    }
+    try {
+      recognitionRef.current.lang = document.documentElement.lang === "bn" ? "bn-BD" : "en-US";
+      recognitionRef.current.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+    }
+  };
 
   const sendMessage = async () => {
     const trimmed = text.trim();
@@ -100,15 +199,18 @@ export function FloatingChat() {
       setMessages((prev) =>
         prev.map((m) => (m.loading ? { ...m, loading: false, content: reply } : m))
       );
+      speak(reply);
     } catch (err) {
       const errMsg = (err as Error).message || "AI connection failed.";
+      const fallback = `SUMONIX AI could not answer right now.\n\n${errMsg}\n\nCheck API connectivity or sign in again if your session expired.`;
       setMessages((prev) =>
         prev.map((m) =>
           m.loading
-            ? { ...m, loading: false, content: `SUMONIX AI could not answer right now.\n\n${errMsg}\n\nCheck API connectivity or sign in again if your session expired.` }
+            ? { ...m, loading: false, content: fallback }
             : m
         )
       );
+      speak(fallback);
     }
   };
 
@@ -154,9 +256,18 @@ export function FloatingChat() {
               </div>
               <button
                 type="button"
-                onClick={() => setVoice((v) => !v)}
+                onClick={() => {
+                  if (!speechSupported) {
+                    return;
+                  }
+                  setVoice((v) => !v);
+                  if (listening) {
+                    recognitionRef.current?.stop();
+                    setListening(false);
+                  }
+                }}
                 aria-label={voice ? "Disable voice mode" : "Enable voice mode"}
-                className={`relative rounded-full p-2 transition-all active:scale-95 ${voice ? "bg-rose-100 text-rose-600 dark:bg-rose-900/40" : "bg-muted text-muted-foreground"}`}
+                className={`relative rounded-full p-2 transition-all active:scale-95 ${voice ? "bg-rose-100 text-rose-600 dark:bg-rose-900/40" : "bg-muted text-muted-foreground"} ${speechSupported ? "" : "cursor-not-allowed opacity-50"}`}
               >
                 <Mic className="h-4 w-4" />
                 {voice && <span className="absolute inset-0 animate-ping rounded-full border border-rose-400" />}
@@ -208,6 +319,17 @@ export function FloatingChat() {
 
             <div className="border-t border-border p-3">
               <div className="flex items-center gap-2 rounded-[1.2rem] border border-border bg-background px-3 py-2">
+                {voice ? (
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    disabled={!speechSupported}
+                    className={`rounded-full p-1.5 transition ${listening ? "bg-rose-100 text-rose-600 dark:bg-rose-900/40" : "bg-muted text-muted-foreground"}`}
+                    aria-label={listening ? "Stop listening" : "Start voice input"}
+                  >
+                    <Mic className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}

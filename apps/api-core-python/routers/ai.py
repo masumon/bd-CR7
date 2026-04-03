@@ -1,3 +1,4 @@
+import json
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +8,22 @@ from core.db import fetch_all, tx
 from services.risk import dashboard_metrics, financial_anomalies
 
 router = APIRouter()
+
+
+def _log_ai_interaction(*, user_id: str, message: str, intent: str, response_text: str, metadata: dict | None = None) -> None:
+    metadata_json = json.dumps(metadata or {}, ensure_ascii=False)
+    try:
+        with tx() as conn:
+            conn.exec_driver_sql(
+                """
+                INSERT INTO ai_interactions (id, user_id, message, intent, response, metadata)
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb)
+                """,
+                (str(uuid4()), user_id, message, intent, response_text, metadata_json),
+            )
+    except Exception:
+        # Keep chat API resilient even when audit logging is unavailable.
+        return
 
 
 def _format_currency(value: object) -> str:
@@ -92,16 +109,18 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
     wants_module_guide = any(keyword in normalized for keyword in ("module", "workspace", "what can you do", "কি করতে পারো", "কি কি আছে"))
 
     if wants_greeting:
-        return {
+        payload = {
             "reply": (
                 "আমি SUMONIX AI। আমি finance summary, anomaly review, project snapshot, এবং module guidance দিতে পারি।\n\n"
                 "I can help with dashboard summaries, risky expense signals, project context, and workflow guidance."
             ),
             "intent": "general",
         }
+        _log_ai_interaction(user_id=user.user_id, message=message, intent="general", response_text=payload["reply"])
+        return payload
 
     if wants_module_guide:
-        return {
+        payload = {
             "reply": (
                 "Available workspaces:\n"
                 "1. Dashboard: executive overview\n"
@@ -115,15 +134,19 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
             ),
             "intent": "general",
         }
+        _log_ai_interaction(user_id=user.user_id, message=message, intent="general", response_text=payload["reply"])
+        return payload
 
     if wants_anomaly:
         anomalies = financial_anomalies()
         if not anomalies:
-            return {
+            payload = {
                 "reply": "No high-signal anomaly was found in recent expenses. Current records do not show a severe spike pattern.",
                 "intent": "anomalies",
                 "count": 0,
             }
+            _log_ai_interaction(user_id=user.user_id, message=message, intent="anomalies", response_text=payload["reply"], metadata={"count": 0})
+            return payload
         top = anomalies[:3]
         lines = [f"Found {len(anomalies)} anomalous expense records. Top signals:"]
         for idx, row in enumerate(top, 1):
@@ -131,11 +154,29 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
                 f"{idx}. Expense {row.get('id')} amount {_format_currency(row.get('amount'))} (account: {row.get('account_id')})"
             )
         lines.append("Review the related account, receipt quality, and approval path before releasing payment.")
-        return {"reply": "\n".join(lines), "intent": "anomalies", "count": len(anomalies), "items": top}
+        reply_text = "\n".join(lines)
+        payload = {"reply": reply_text, "intent": "anomalies", "count": len(anomalies), "items": top}
+        _log_ai_interaction(
+            user_id=user.user_id,
+            message=message,
+            intent="anomalies",
+            response_text=reply_text,
+            metadata={"count": len(anomalies)},
+        )
+        return payload
 
     metrics = dashboard_metrics()
-    return {
+    reply_text = _dashboard_reply(metrics)
+    payload = {
         "reply": _dashboard_reply(metrics),
         "intent": "dashboard" if wants_dashboard else "general",
         "data": metrics,
     }
+    _log_ai_interaction(
+        user_id=user.user_id,
+        message=message,
+        intent=payload["intent"],
+        response_text=reply_text,
+        metadata={"has_metrics": True},
+    )
+    return payload

@@ -19,6 +19,7 @@ interface UserProfile {
 }
 
 type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
+type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Advanced";
 
 type SettingItem = {
   id: string;
@@ -43,6 +44,13 @@ export function SettingsFeature() {
   const [error, setError] = useState("");
   const [dark, setDark] = useState(false);
   const [language, setLanguage] = useState<"en" | "bn">("en");
+  const [activeTab, setActiveTab] = useState<SettingsTab>("Profile");
+  const [integrationState, setIntegrationState] = useState({
+    cloudinary: true,
+    realtime: true,
+    aiVoice: true,
+    offlineSync: true,
+  });
   const [settingItems, setSettingItems] = useState<SettingItem[]>([
     {
       id: "ws-compact-cards",
@@ -94,6 +102,15 @@ export function SettingsFeature() {
     } catch {
       setSettingItems((prev) => prev);
     }
+
+    try {
+      const integrationRaw = window.localStorage.getItem("bdcr7-integration-state");
+      if (integrationRaw) {
+        setIntegrationState(JSON.parse(integrationRaw) as typeof integrationState);
+      }
+    } catch {
+      setIntegrationState((prev) => prev);
+    }
   }, []);
 
   const persistSettings = useCallback((next: SettingItem[]) => {
@@ -120,6 +137,13 @@ export function SettingsFeature() {
     }
     return totals;
   }, [settingItems]);
+
+  const filteredSettings = useMemo(() => {
+    if (activeTab === "Workspace" || activeTab === "Notifications" || activeTab === "Security" || activeTab === "Data") {
+      return settingItems.filter((item) => item.category === activeTab);
+    }
+    return settingItems;
+  }, [activeTab, settingItems]);
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("bdcr7-theme");
@@ -208,6 +232,22 @@ export function SettingsFeature() {
     void loadProfile();
   };
 
+  const persistIntegrationState = (next: typeof integrationState) => {
+    setIntegrationState(next);
+    window.localStorage.setItem("bdcr7-integration-state", JSON.stringify(next));
+  };
+
+  const resetWorkspacePreferences = () => {
+    window.localStorage.removeItem("bdcr7-theme");
+    window.localStorage.removeItem("bdcr7-language");
+    window.localStorage.removeItem("bdcr7-settings-catalog");
+    window.localStorage.removeItem("bdcr7-integration-state");
+    window.localStorage.removeItem("bdcr7-notifications");
+    setMessage("Workspace preferences reset. Reload page to apply defaults.");
+  };
+
+  const tabs: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Advanced"];
+
   return (
     <div className="space-y-5">
       <div>
@@ -215,6 +255,29 @@ export function SettingsFeature() {
         <p className="mt-1 text-sm text-muted-foreground">Manage your profile, contact info, and account context.</p>
       </div>
 
+      <Card>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "rounded-xl border px-3 py-2 text-xs font-medium transition",
+                  activeTab === tab
+                    ? "border-primary/35 bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {activeTab === "Profile" ? (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
@@ -294,7 +357,9 @@ export function SettingsFeature() {
           )}
         </CardContent>
       </Card>
+      ) : null}
 
+      {activeTab === "Workspace" ? (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Quick Controls</CardTitle>
@@ -355,10 +420,12 @@ export function SettingsFeature() {
           </div>
         </CardContent>
       </Card>
+      ) : null}
 
+      {(activeTab === "Workspace" || activeTab === "Notifications" || activeTab === "Security" || activeTab === "Data") ? (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Category & Subcategory Controls</CardTitle>
+          <CardTitle className="text-base">{activeTab} Controls</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -383,7 +450,7 @@ export function SettingsFeature() {
                 </tr>
               </thead>
               <tbody>
-                {settingItems.map((item) => (
+                {filteredSettings.map((item) => (
                   <tr key={item.id} className="border-b border-border/50 last:border-b-0">
                     <td className="px-3 py-3 text-xs font-medium text-foreground">{item.category}</td>
                     <td className="px-3 py-3 text-xs text-muted-foreground">{item.subcategory}</td>
@@ -411,6 +478,77 @@ export function SettingsFeature() {
           </div>
         </CardContent>
       </Card>
+      ) : null}
+
+      {activeTab === "Integrations" ? (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Integrations</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[
+            { key: "cloudinary", label: "Cloudinary Upload", description: "Media upload for receipts and progress evidence" },
+            { key: "realtime", label: "Supabase Realtime", description: "Live notifications for approvals and project updates" },
+            { key: "aiVoice", label: "AI Voice Mode", description: "Speech input/output in SUMONIX AI chat" },
+            { key: "offlineSync", label: "Offline Sync", description: "Background queue replay when connection restores" },
+          ].map((integration) => (
+            <div key={integration.key} className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/75 p-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">{integration.label}</p>
+                <p className="text-xs text-muted-foreground">{integration.description}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const key = integration.key as keyof typeof integrationState;
+                  const next = { ...integrationState, [key]: !integrationState[key] };
+                  persistIntegrationState(next);
+                }}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium",
+                  integrationState[integration.key as keyof typeof integrationState]
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {integrationState[integration.key as keyof typeof integrationState] ? "Enabled" : "Disabled"}
+              </button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      ) : null}
+
+      {activeTab === "Advanced" ? (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Advanced Controls</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
+            <p className="text-sm font-medium text-foreground">Reset Local Workspace Preferences</p>
+            <p className="mt-1 text-xs text-muted-foreground">Clears theme, language, settings catalog, integration toggles, and notification cache from this device.</p>
+            <Button className="mt-3 h-9 px-4" variant="outline" onClick={resetWorkspacePreferences}>Reset Local Preferences</Button>
+          </div>
+
+          <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
+            <p className="text-sm font-medium text-foreground">Environment Checklist</p>
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <li>NEXT_PUBLIC_SUPABASE_URL configured</li>
+              <li>NEXT_PUBLIC_SUPABASE_ANON_KEY configured</li>
+              <li>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME configured</li>
+              <li>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET configured</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+      ) : null}
+
+      {message && activeTab !== "Profile" ? (
+        <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4" /> {message}
+        </div>
+      ) : null}
     </div>
   );
 }

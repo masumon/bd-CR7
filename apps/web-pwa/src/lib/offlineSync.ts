@@ -24,10 +24,6 @@ async function flushQueueOnce(): Promise<void> {
 
   try {
     const apiBase = resolveApiBase();
-    if (!apiBase) {
-      return;
-    }
-
     const token = useAuthStore.getState().token;
     const maxBatch = 50;
 

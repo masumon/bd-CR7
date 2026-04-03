@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Clock3,
   CalendarClock,
   CalendarDays,
+  FileImage,
   FolderKanban,
   Loader2,
   Pencil,
   Plus,
+  Upload,
   X,
   XCircle,
 } from "lucide-react";
@@ -17,7 +20,10 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { uploadToCloudinary } from "@bdcr7/media-engine";
+import { apiRequest } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/store/authStore";
 
 const STATUS_OPTIONS = ["Planning", "Active", "Paused", "Completed", "Cancelled"] as const;
 type ProjectStatus = (typeof STATUS_OPTIONS)[number];
@@ -59,6 +65,26 @@ interface Project {
   created_at: string;
 }
 
+interface ProjectTimelineEvent {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  status: string;
+  created_at: string;
+}
+
+interface ProjectAttachment {
+  id: string;
+  project_id: string;
+  file_url: string;
+  file_type: string | null;
+  file_name: string | null;
+  caption: string | null;
+  created_at: string;
+}
+
 const EMPTY_FORM = {
   name: "",
   description: "",
@@ -72,6 +98,8 @@ const EMPTY_FORM = {
 
 export function ProjectsFeature() {
   const supabase = useMemo(() => createClient(), []);
+  const userId = useAuthStore((state) => state.userId);
+  const token = useAuthStore((state) => state.token);
 
   const [projects, setProjects]     = useState<Project[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -80,6 +108,24 @@ export function ProjectsFeature() {
   const [editId, setEditId]         = useState<string | null>(null);
   const [form, setForm]             = useState({ ...EMPTY_FORM });
   const [error, setError]           = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [timelineItems, setTimelineItems] = useState<ProjectTimelineEvent[]>([]);
+  const [attachments, setAttachments] = useState<ProjectAttachment[]>([]);
+  const [timelineTitle, setTimelineTitle] = useState("");
+  const [timelineDescription, setTimelineDescription] = useState("");
+  const [timelineDate, setTimelineDate] = useState(new Date().toISOString().slice(0, 10));
+  const [timelineStatus, setTimelineStatus] = useState("planned");
+  const [timelineSaving, setTimelineSaving] = useState(false);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentCaption, setAttachmentCaption] = useState("");
+  const [attachmentSaving, setAttachmentSaving] = useState(false);
+
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === selectedProjectId) ?? null,
+    [projects, selectedProjectId]
+  );
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -91,7 +137,66 @@ export function ProjectsFeature() {
     setLoading(false);
     }, [supabase]);
 
+  const fetchProjectDetails = useCallback(async (projectId: string) => {
+    setDetailsLoading(true);
+    setDetailsError(null);
+    try {
+      const [timelineData, attachmentData] = await Promise.all([
+        apiRequest<ProjectTimelineEvent[]>(`/api/project-management/projects/${projectId}/timeline`, {}, token || undefined),
+        apiRequest<ProjectAttachment[]>(`/api/project-management/projects/${projectId}/attachments`, {}, token || undefined),
+      ]);
+      setTimelineItems(timelineData || []);
+      setAttachments(attachmentData || []);
+    } catch {
+      const [timelineRes, attachmentsRes] = await Promise.all([
+        supabase
+          .from("project_timeline_events")
+          .select("id,project_id,title,description,event_date,status,created_at")
+          .eq("project_id", projectId)
+          .order("event_date", { ascending: false })
+          .limit(40),
+        supabase
+          .from("project_attachments")
+          .select("id,project_id,file_url,file_type,file_name,caption,created_at")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false })
+          .limit(40),
+      ]);
+
+      if (timelineRes.error || attachmentsRes.error) {
+        setDetailsError(timelineRes.error?.message || attachmentsRes.error?.message || "Failed to load project details");
+        setTimelineItems([]);
+        setAttachments([]);
+        setDetailsLoading(false);
+        return;
+      }
+
+      setTimelineItems((timelineRes.data || []) as ProjectTimelineEvent[]);
+      setAttachments((attachmentsRes.data || []) as ProjectAttachment[]);
+    }
+    setDetailsLoading(false);
+  }, [supabase, token]);
+
     useEffect(() => { fetchProjects(); }, [fetchProjects]);
+
+  useEffect(() => {
+    if (!projects.length) {
+      setSelectedProjectId(null);
+      return;
+    }
+    if (!selectedProjectId || !projects.some((project) => project.id === selectedProjectId)) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setTimelineItems([]);
+      setAttachments([]);
+      return;
+    }
+    void fetchProjectDetails(selectedProjectId);
+  }, [selectedProjectId, fetchProjectDetails]);
 
   function openCreate() {
     setEditId(null);
@@ -154,6 +259,97 @@ export function ProjectsFeature() {
     if (!confirm("Mark this project as Cancelled?")) return;
     await supabase.from("projects").update({ status: "Cancelled" }).eq("id", id);
     fetchProjects();
+  }
+
+  async function handleAddTimelineEvent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedProjectId || !timelineTitle.trim()) {
+      return;
+    }
+    setTimelineSaving(true);
+    setDetailsError(null);
+    let timelineError: Error | null = null;
+    try {
+      await apiRequest(`/api/project-management/projects/${selectedProjectId}/timeline`, {
+        method: "POST",
+        body: JSON.stringify({
+          title: timelineTitle.trim(),
+          description: timelineDescription.trim() || null,
+          event_date: timelineDate,
+          status: timelineStatus,
+        }),
+      }, token || undefined);
+    } catch {
+      const { error } = await supabase.from("project_timeline_events").insert({
+        project_id: selectedProjectId,
+        title: timelineTitle.trim(),
+        description: timelineDescription.trim() || null,
+        event_date: timelineDate,
+        status: timelineStatus,
+        created_by: userId ?? null,
+      });
+      timelineError = error;
+    }
+    setTimelineSaving(false);
+    if (timelineError) {
+      setDetailsError(timelineError.message);
+      return;
+    }
+    setTimelineTitle("");
+    setTimelineDescription("");
+    setTimelineDate(new Date().toISOString().slice(0, 10));
+    setTimelineStatus("planned");
+    await fetchProjectDetails(selectedProjectId);
+  }
+
+  async function handleUploadAttachment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedProjectId || !attachmentFile) {
+      return;
+    }
+    setAttachmentSaving(true);
+    setDetailsError(null);
+    try {
+      const fileUrl = await uploadToCloudinary({
+        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "",
+        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "",
+        file: attachmentFile,
+      });
+
+      let attachmentError: Error | null = null;
+      try {
+        await apiRequest(`/api/project-management/projects/${selectedProjectId}/attachments`, {
+          method: "POST",
+          body: JSON.stringify({
+            file_url: fileUrl,
+            file_type: attachmentFile.type || null,
+            file_name: attachmentFile.name || null,
+            caption: attachmentCaption.trim() || null,
+          }),
+        }, token || undefined);
+      } catch {
+        const { error } = await supabase.from("project_attachments").insert({
+          project_id: selectedProjectId,
+          file_url: fileUrl,
+          file_type: attachmentFile.type || null,
+          file_name: attachmentFile.name || null,
+          caption: attachmentCaption.trim() || null,
+          uploaded_by: userId ?? null,
+        });
+        attachmentError = error;
+      }
+
+      if (attachmentError) {
+        throw attachmentError;
+      }
+      setAttachmentFile(null);
+      setAttachmentCaption("");
+      await fetchProjectDetails(selectedProjectId);
+    } catch (uploadError) {
+      setDetailsError((uploadError as Error).message);
+    } finally {
+      setAttachmentSaving(false);
+    }
   }
 
   const field = (
@@ -286,6 +482,13 @@ export function ProjectsFeature() {
                     >
                       <Pencil className="h-3.5 w-3.5" /> Edit
                     </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={() => setSelectedProjectId(p.id)}
+                    >
+                      <Clock3 className="h-3.5 w-3.5" /> Timeline
+                    </Button>
                     {p.status !== "Cancelled" && p.status !== "Completed" && (
                       <Button
                         variant="outline"
@@ -302,6 +505,155 @@ export function ProjectsFeature() {
           ))}
         </div>
       )}
+
+      {selectedProject ? (
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">Project Timeline</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Manage milestones for {selectedProject.name}.</p>
+                </div>
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Clock3 className="h-4 w-4" />
+                </div>
+              </div>
+
+              <form onSubmit={handleAddTimelineEvent} className="grid gap-2">
+                <input
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  title="Timeline title"
+                  placeholder="Milestone title"
+                  value={timelineTitle}
+                  onChange={(e) => setTimelineTitle(e.target.value)}
+                  required
+                />
+                <textarea
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                  title="Timeline description"
+                  placeholder="Milestone details"
+                  rows={2}
+                  value={timelineDescription}
+                  onChange={(e) => setTimelineDescription(e.target.value)}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    type="date"
+                    title="Event date"
+                    value={timelineDate}
+                    onChange={(e) => setTimelineDate(e.target.value)}
+                  />
+                  <select
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    title="Event status"
+                    value={timelineStatus}
+                    onChange={(e) => setTimelineStatus(e.target.value)}
+                  >
+                    <option value="planned">Planned</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="blocked">Blocked</option>
+                  </select>
+                </div>
+                <Button type="submit" className="gap-1.5" disabled={timelineSaving}>
+                  {timelineSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Add Milestone
+                </Button>
+              </form>
+
+              <div className="space-y-2">
+                {detailsLoading ? (
+                  <div className="py-6 text-center text-muted-foreground"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></div>
+                ) : timelineItems.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border bg-background/70 px-3 py-5 text-center text-sm text-muted-foreground">No timeline event yet.</div>
+                ) : (
+                  timelineItems.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-border bg-background/80 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-foreground">{item.title}</p>
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] uppercase text-muted-foreground">{item.status}</span>
+                      </div>
+                      {item.description ? <p className="mt-1 text-xs text-muted-foreground">{item.description}</p> : null}
+                      <p className="mt-1 text-[11px] text-muted-foreground">{item.event_date}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">Project Attachments</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Upload image/video evidence and supporting files.</p>
+                </div>
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <FileImage className="h-4 w-4" />
+                </div>
+              </div>
+
+              <form onSubmit={handleUploadAttachment} className="grid gap-2">
+                <input
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  type="file"
+                  title="Attachment upload"
+                  accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.csv"
+                  onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                  required
+                />
+                <input
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  title="Attachment caption"
+                  placeholder="Caption (optional)"
+                  value={attachmentCaption}
+                  onChange={(e) => setAttachmentCaption(e.target.value)}
+                />
+                <Button type="submit" className="gap-1.5" disabled={attachmentSaving}>
+                  {attachmentSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Upload Attachment
+                </Button>
+              </form>
+
+              <div className="space-y-2">
+                {detailsLoading ? (
+                  <div className="py-6 text-center text-muted-foreground"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></div>
+                ) : attachments.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border bg-background/70 px-3 py-5 text-center text-sm text-muted-foreground">No attachments yet.</div>
+                ) : (
+                  attachments.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-border bg-background/80 p-2">
+                      {item.file_type?.startsWith("image/") ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.file_url} alt={item.caption || item.file_name || "Attachment"} className="h-32 w-full rounded-lg object-cover" />
+                      ) : item.file_type?.startsWith("video/") ? (
+                        <video className="h-32 w-full rounded-lg object-cover" controls src={item.file_url} />
+                      ) : (
+                        <a href={item.file_url} target="_blank" rel="noreferrer" className="flex h-20 items-center justify-center rounded-lg border border-dashed border-border text-xs text-primary hover:underline">
+                          Open file
+                        </a>
+                      )}
+                      <div className="mt-2 flex items-start justify-between gap-2 text-xs">
+                        <p className="truncate text-muted-foreground">{item.caption || item.file_name || "Attachment"}</p>
+                        <span className="text-muted-foreground">{new Date(item.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      {detailsError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          {detailsError}
+        </div>
+      ) : null}
 
       {/* Modal */}
       <AnimatePresence>
