@@ -114,9 +114,11 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary) / 0.34) transparent;
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.34) transparent;
+  }
 }
 
 *::-webkit-scrollbar {
@@ -236,7 +238,14 @@ a:focus-visible {
 }
 
 .text-balance {
-  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+@supports (text-wrap: balance) {
+  .text-balance {
+    text-wrap: balance;
+    overflow-wrap: normal;
+  }
 }
 
 .skeleton {

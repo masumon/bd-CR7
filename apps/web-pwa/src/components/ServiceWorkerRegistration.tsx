@@ -16,7 +16,11 @@ export default function ServiceWorkerRegistration() {
       });
     };
 
-    window.addEventListener("load", register, { once: true });
+    if (document.readyState === "complete") {
+      register();
+    } else {
+      window.addEventListener("load", register, { once: true });
+    }
     const cleanupOfflineSync = setupOfflineSync();
 
     return () => {
