@@ -18,7 +18,8 @@
   "packageManager": "pnpm@10.17.1",
   "pnpm": {
     "overrides": {
-      "minimatch": ">=9.0.7"
+      "minimatch": ">=9.0.7",
+      "serialize-javascript": ">=7.0.3"
     }
   }
 }
