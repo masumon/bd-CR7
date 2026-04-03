@@ -1,10 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Camera, HardHat, MapPinned, PackageCheck } from "lucide-react";
+import { Camera, FolderKanban, HardHat, MapPinned, PackageCheck, Workflow } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
+import { ActionMenu } from "@/components/ui/action-menu";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
+import { Tabs } from "@/components/ui/tabs";
+import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { ProgressCamFeature } from "./progress_cam/ProgressCamFeature";
 import { WorkerLogsFeature } from "./worker_logs/WorkerLogsFeature";
 import { MaterialTrackFeature } from "./material_track/MaterialTrackFeature";
 
@@ -23,54 +30,57 @@ const materials = [
 ];
 
 export function ConstructionView() {
+  const [activeTab, setActiveTab] = useState("Project Progress");
+  const presentWorkers = workers.filter((row) => row.status === "Present").length;
+  const averageStock = Math.round(materials.reduce((sum, item) => sum + item.stock, 0) / materials.length);
+  const riskCount = materials.filter((item) => item.stock < 60).length;
+
+  const sections = useMemo(
+    () => [
+      {
+        key: "Project Progress",
+        eyebrow: "Progress / অগ্রগতি",
+        title: "Phase evidence and field continuity",
+        description: "Foundation to handover updates, field media, and execution evidence stay grouped here.",
+        content: <ProgressCamFeature />,
+      },
+      {
+        key: "Workers",
+        eyebrow: "Workforce / শ্রমিক",
+        title: "Attendance, wage exposure, and geofence discipline",
+        description: "Log labour presence and daily field status without leaving the site workspace.",
+        content: <WorkerLogsFeature />,
+      },
+      {
+        key: "Materials",
+        eyebrow: "Materials / মালামাল",
+        title: "Stock movement, low inventory watch, and supply readiness",
+        description: "Material inflow and outflow are organized as a site logistics desk.",
+        content: <MaterialTrackFeature />,
+      },
+    ],
+    []
+  );
+
+  const currentSection = sections.find((section) => section.key === activeTab) || sections[0];
+
   return (
     <div className="space-y-4">
-      <Card className="overflow-hidden border-primary/10 bg-gradient-to-br from-white/85 via-white/80 to-primary/5 dark:from-slate-950/70 dark:via-slate-950/55 dark:to-primary/10">
-        <CardContent className="grid gap-5 p-5 md:grid-cols-[1.1fr_0.9fr] md:p-6">
-          <div className="space-y-4">
-            <div className="inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-              Construction Workspace
-            </div>
-            <div>
-              <h2 className="text-3xl font-semibold tracking-tight text-foreground">Site categories and subcategories are now separated for faster field decisions.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Worker attendance, stock movement, and progress capture each get their own visual block so project managers can move from workforce to materials to execution evidence without losing context.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { title: "Workforce", desc: "Attendance, zone presence, wage visibility", icon: HardHat },
-                { title: "Materials", desc: "Stock pressure, reorder risk, site readiness", icon: PackageCheck },
-                { title: "Progress Media", desc: "Phase-based field evidence and milestones", icon: Camera },
-              ].map(({ title, desc, icon: Icon }) => (
-                <div key={title} className="rounded-2xl border border-border/70 bg-background/75 p-4">
-                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <Icon className="h-4.5 w-4.5" />
-                  </div>
-                  <p className="font-semibold text-foreground">{title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-[1.5rem] border border-border/70 bg-background/80 p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Field Snapshot</p>
-            <div className="mt-4 space-y-3">
-              <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Present workers</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">3 / 4</p>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Average stock readiness</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">67%</p>
-              </div>
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
-                One absent worker and two material lines need attention before the next finishing-phase push.
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <WorkspaceHero
+        badge="Construction Workspace / নির্মাণ ওয়ার্কস্পেস"
+        title="Showroom construction now reads like a real progress control app, not a flat form stack."
+        description="Project overview, workforce, materials, and phase evidence are grouped in a single site workspace so supervisors can move through daily decisions in sequence."
+        stats={[
+          { label: "Present Workers", value: `${presentWorkers} / ${workers.length}` },
+          { label: "Average Stock Readiness", value: `${averageStock}%` },
+          { label: "Risk Lines", value: String(riskCount) },
+        ]}
+        highlights={[
+          { title: "Project Control", description: "Project profile, phase, and execution snapshot", icon: FolderKanban },
+          { title: "Workforce", description: "Attendance, zone, wage, and compliance", icon: HardHat },
+          { title: "Material Flow", description: "Stock pressure and replenishment watch", icon: PackageCheck },
+        ]}
+      />
 
       <motion.div
         initial="hidden"
@@ -81,7 +91,18 @@ export function ConstructionView() {
         <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
         <Card>
           <CardHeader>
-            <CardTitle>Worker Logs</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle>Daily Site Register</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">Quick workforce visibility before deeper actions.</p>
+              </div>
+              <ActionMenu
+                items={[
+                  { label: "Open Worker Form", onClick: () => setActiveTab("Workers") },
+                  { label: "Open Project Intro", onClick: () => window.location.assign("/dashboard/construction/projects") },
+                ]}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -118,7 +139,18 @@ export function ConstructionView() {
         <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }} className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Material Inventory</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle>Material Snapshot</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">Immediate stock visibility before store actions.</p>
+              </div>
+              <ActionMenu
+                items={[
+                  { label: "Open Material Desk", onClick: () => setActiveTab("Materials") },
+                  { label: "Open Progress Desk", onClick: () => setActiveTab("Project Progress") },
+                ]}
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {materials.map((row) => (
@@ -139,21 +171,38 @@ export function ConstructionView() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Subcategory Focus</CardTitle>
+            <CardTitle>Category and Subcategory Flow</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-border/70 bg-background/75 p-3">Attendance and wage tracking for workforce planning</div>
-            <div className="rounded-2xl border border-border/70 bg-background/75 p-3">Material replenishment watchlist for cement and steel</div>
-            <div className="rounded-2xl border border-border/70 bg-background/75 p-3">Phase capture queue for foundation, structure, finishing, handover</div>
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-3">Project Intro: identity, phase, timeline, budget</div>
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-3">Workers: attendance, wages, geofence, daily task notes</div>
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-3">Materials: inward, outward, low-stock, supplier notes</div>
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-3">Progress: image/video evidence for foundation, structure, finishing, handover</div>
           </CardContent>
         </Card>
         </motion.div>
       </motion.div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <WorkerLogsFeature />
-        <MaterialTrackFeature />
-      </div>
+      <Card>
+        <CardContent className="space-y-5 p-5">
+          <SectionHeader
+            eyebrow="Workspace Flow / কাজের ধারা"
+            title={currentSection.title}
+            description={currentSection.description}
+            actions={
+              <>
+                <Tabs tabs={sections.map((section) => section.key)} value={activeTab} onChange={setActiveTab} />
+                <Link href="/dashboard/construction/projects">
+                  <Button variant="outline" className="gap-2">
+                    <Workflow className="h-4 w-4" /> Project Intro
+                  </Button>
+                </Link>
+              </>
+            }
+          />
+          {currentSection.content}
+        </CardContent>
+      </Card>
     </div>
   );
 }

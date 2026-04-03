@@ -3,27 +3,37 @@
 @tailwind utilities;
 
 :root {
-  --background: 48 30% 97%;
-  --foreground: 163 24% 13%;
+  --background: 42 33% 97%;
+  --foreground: 170 28% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 163 24% 13%;
-  --muted: 150 15% 92%;
-  --muted-foreground: 163 10% 38%;
-  --border: 152 18% 86%;
-  --primary: 164 75% 28%;
+  --card-foreground: 170 28% 12%;
+  --muted: 45 18% 92%;
+  --muted-foreground: 170 11% 36%;
+  --border: 38 17% 84%;
+  --primary: 168 72% 26%;
   --primary-foreground: 48 33% 98%;
+  --accent: 33 89% 57%;
+  --accent-foreground: 170 28% 12%;
+  --ring: 168 72% 26%;
+  --surface: 45 50% 99%;
+  --surface-strong: 43 38% 95%;
 }
 
 .dark {
-  --background: 162 23% 8%;
+  --background: 164 24% 8%;
   --foreground: 48 23% 95%;
-  --card: 164 24% 11%;
+  --card: 166 25% 11%;
   --card-foreground: 48 23% 95%;
-  --muted: 163 18% 16%;
-  --muted-foreground: 150 10% 72%;
-  --border: 163 18% 22%;
-  --primary: 43 81% 63%;
-  --primary-foreground: 164 32% 10%;
+  --muted: 165 14% 16%;
+  --muted-foreground: 45 11% 74%;
+  --border: 167 14% 22%;
+  --primary: 40 93% 64%;
+  --primary-foreground: 166 31% 10%;
+  --accent: 167 46% 46%;
+  --accent-foreground: 48 23% 95%;
+  --ring: 40 93% 64%;
+  --surface: 166 23% 10%;
+  --surface-strong: 166 20% 14%;
 }
 
 html {
@@ -36,17 +46,19 @@ body {
   overflow-x: hidden;
   font-family: var(--font-body), "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(15, 108, 90, 0.18), transparent 26%),
-    radial-gradient(circle at bottom right, rgba(201, 127, 58, 0.16), transparent 24%),
-    linear-gradient(180deg, #f7f5ee 0%, hsl(var(--background)) 100%);
+    radial-gradient(circle at 0% 0%, rgba(18, 119, 102, 0.18), transparent 28%),
+    radial-gradient(circle at 100% 0%, rgba(226, 167, 77, 0.14), transparent 24%),
+    radial-gradient(circle at 100% 100%, rgba(12, 85, 72, 0.08), transparent 28%),
+    linear-gradient(180deg, hsl(var(--surface)) 0%, hsl(var(--background)) 100%);
   @apply text-foreground antialiased;
 }
 
 .dark body {
   background:
-    radial-gradient(circle at top left, rgba(250, 204, 21, 0.12), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.14), transparent 24%),
-    linear-gradient(180deg, #091411 0%, hsl(var(--background)) 100%);
+    radial-gradient(circle at 0% 0%, rgba(250, 204, 21, 0.1), transparent 22%),
+    radial-gradient(circle at 100% 0%, rgba(15, 118, 110, 0.12), transparent 24%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.08), transparent 18%),
+    linear-gradient(180deg, #08110f 0%, hsl(var(--background)) 100%);
 }
 
 h1,
@@ -74,8 +86,29 @@ select:focus-visible,
 textarea:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid hsl(var(--primary) / 0.5);
+  outline: 2px solid hsl(var(--ring) / 0.46);
   outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.34) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.7), hsl(var(--accent) / 0.5));
+  background-clip: padding-box;
 }
 
 /* Animations */
@@ -150,7 +183,37 @@ a:focus-visible {
 }
 
 .glass {
-  @apply border border-white/45 bg-white/70 backdrop-blur-md dark:border-emerald-950/80 dark:bg-slate-950/50;
+  @apply border backdrop-blur-xl;
+  border-color: hsl(var(--border) / 0.75);
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.9), hsl(var(--card) / 0.78));
+  box-shadow:
+    0 24px 80px rgba(15, 36, 31, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.dark .glass {
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.84));
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.module-surface {
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.96), hsl(var(--card) / 0.88));
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.22) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.text-balance {
+  text-wrap: balance;
 }
 
 .skeleton {

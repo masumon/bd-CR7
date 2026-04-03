@@ -9,6 +9,33 @@ from services.risk import dashboard_metrics, financial_anomalies
 router = APIRouter()
 
 
+def _format_currency(value: object) -> str:
+    try:
+        return f"৳{float(value or 0):,.2f}"
+    except (TypeError, ValueError):
+        return "৳0.00"
+
+
+def _dashboard_reply(metrics: dict) -> str:
+    recent = metrics.get("recent_expenses") or []
+    latest_note = ""
+    if recent:
+        latest = recent[0]
+        latest_note = f"\n- Latest expense: {latest.get('description') or 'General'} ({_format_currency(latest.get('amount'))})"
+
+    return (
+        "SUMONIX AI workspace summary:\n"
+        f"- Fund balance: {_format_currency(metrics.get('fund_balance'))}\n"
+        f"- 30-day sales: {_format_currency(metrics.get('monthly_sales'))}\n"
+        f"- Total expenses tracked: {_format_currency(metrics.get('total_expenses'))}\n"
+        f"- Pending expenses: {metrics.get('pending_expenses', 0)}\n"
+        f"- Active workers logged: {metrics.get('total_workers', 0)}\n"
+        f"- Projects in portfolio: {metrics.get('total_projects', 0)}"
+        f"{latest_note}\n\n"
+        "Ask for anomalies, finance summary, project status, or next-step guidance."
+    )
+
+
 @router.get("/anomalies")
 async def get_anomalies(user: UserContext = Depends(require_roles("admin", "checker"))):
     return financial_anomalies()
@@ -59,14 +86,41 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="message is required")
 
     normalized = message.lower()
+    wants_greeting = any(keyword in normalized for keyword in ("hello", "hi", "hey", "assalamualaikum", "সালাম", "হ্যালো"))
     wants_anomaly = any(keyword in normalized for keyword in ("anomal", "risk", "suspicious", "ঝুঁকি", "অস্বাভাবিক"))
     wants_dashboard = any(keyword in normalized for keyword in ("dashboard", "summary", "overview", "balance", "সারসংক্ষেপ", "ব্যালেন্স"))
+    wants_module_guide = any(keyword in normalized for keyword in ("module", "workspace", "what can you do", "কি করতে পারো", "কি কি আছে"))
+
+    if wants_greeting:
+        return {
+            "reply": (
+                "আমি SUMONIX AI। আমি finance summary, anomaly review, project snapshot, এবং module guidance দিতে পারি।\n\n"
+                "I can help with dashboard summaries, risky expense signals, project context, and workflow guidance."
+            ),
+            "intent": "general",
+        }
+
+    if wants_module_guide:
+        return {
+            "reply": (
+                "Available workspaces:\n"
+                "1. Dashboard: executive overview\n"
+                "2. Project Intro: project identity and phases\n"
+                "3. Site Progress: workers, materials, progress evidence\n"
+                "4. Fund & Expense: cashflow and approvals\n"
+                "5. Supply Chain: L/C and shipment records\n"
+                "6. POS Workspace: catalog, cart, checkout, and sales history\n"
+                "7. Reports: exports and analysis\n\n"
+                "Ask me for a summary of any workspace and I will guide you."
+            ),
+            "intent": "general",
+        }
 
     if wants_anomaly:
         anomalies = financial_anomalies()
         if not anomalies:
             return {
-                "reply": "No high-signal anomaly was found in recent expenses.",
+                "reply": "No high-signal anomaly was found in recent expenses. Current records do not show a severe spike pattern.",
                 "intent": "anomalies",
                 "count": 0,
             }
@@ -74,18 +128,14 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
         lines = [f"Found {len(anomalies)} anomalous expense records. Top signals:"]
         for idx, row in enumerate(top, 1):
             lines.append(
-                f"{idx}. Expense {row.get('id')} amount {row.get('amount')} (account: {row.get('account_id')})"
+                f"{idx}. Expense {row.get('id')} amount {_format_currency(row.get('amount'))} (account: {row.get('account_id')})"
             )
+        lines.append("Review the related account, receipt quality, and approval path before releasing payment.")
         return {"reply": "\n".join(lines), "intent": "anomalies", "count": len(anomalies), "items": top}
 
     metrics = dashboard_metrics()
     return {
-        "reply": (
-            "Dashboard snapshot:\n"
-            f"- Total balance: {metrics.get('total_balance', 0)}\n"
-            f"- Monthly sales: {metrics.get('monthly_sales', 0)}\n"
-            f"- Pending expenses: {metrics.get('pending_expenses', 0)}"
-        ),
+        "reply": _dashboard_reply(metrics),
         "intent": "dashboard" if wants_dashboard else "general",
         "data": metrics,
     }

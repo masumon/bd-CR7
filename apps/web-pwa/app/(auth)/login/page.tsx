@@ -22,6 +22,7 @@ import { DEVELOPER_CONFIG } from "@/lib/developers";
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const persistedToken = useAuthStore((s) => s.token);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,50 +71,27 @@ export default function LoginPage() {
     );
   };
 
-  const handleBiometric = useCallback(async (mode: "fingerprint" | "face", silent = false) => {
-    if (!("credentials" in navigator)) {
-      if (!silent) {
-        setError("Biometric login is not supported on this device.");
-      }
-      return;
-    }
+  const handleBiometric = useCallback(async (mode: "fingerprint" | "face") => {
     setBiometricMode(mode);
     setBiometricLoading(true);
     setError("");
     try {
-      const challenge = crypto.getRandomValues(new Uint8Array(32));
-      await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          timeout: 60000,
-          userVerification: "required",
-          allowCredentials: [],
-        },
-      });
+      const existingSession = await supabase?.auth.getSession();
+      const hasRememberedSession = Boolean(persistedToken || existingSession?.data.session);
+
+      if (!hasRememberedSession) {
+        setError("Fingerprint quick unlock works only when a remembered session already exists. Please sign in with email and password first.");
+        return;
+      }
+
       router.push("/dashboard");
     } catch (err) {
-      if (!silent) {
-        setError((err as Error).message || "Biometric authentication failed.");
-      }
+      const message = (err as Error).message || "Biometric quick unlock failed.";
+      setError(message);
     } finally {
       setBiometricLoading(false);
     }
-  }, [router]);
-
-  useEffect(() => {
-    const isLikelyMobile = window.matchMedia("(max-width: 768px)").matches;
-    if (!isLikelyMobile || !("credentials" in navigator)) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      void handleBiometric("face", true);
-    }, 900);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [handleBiometric]);
+  }, [persistedToken, router]);
 
   return (
     <main
@@ -247,27 +225,30 @@ export default function LoginPage() {
             type="button"
             onClick={() => handleBiometric("fingerprint")}
             disabled={biometricLoading}
-            className="group relative mx-auto flex h-40 w-40 items-center justify-center rounded-full border border-primary/30 bg-primary/5 p-3 text-primary transition-all hover:bg-primary/10 disabled:opacity-60"
+            className="group relative mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-primary/30 bg-primary/5 p-3 text-primary transition-all hover:bg-primary/10 disabled:opacity-60"
           >
             <motion.span
-              className="absolute inset-5 rounded-full border border-primary/35"
+              className="absolute inset-4 rounded-full border border-primary/35"
               animate={{ scale: [1, 1.15, 1], opacity: [0.45, 0.1, 0.45] }}
               transition={{ repeat: Infinity, duration: 2.1, ease: "easeInOut" }}
             />
             <motion.span
-              className="absolute inset-2 rounded-full border border-primary/20"
+              className="absolute inset-1.5 rounded-full border border-primary/20"
               animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.08, 0.3] }}
               transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
             />
             <span className="relative z-10 flex flex-col items-center justify-center gap-2">
               {biometricLoading && biometricMode === "fingerprint" ? (
-                <Loader2 className="h-9 w-9 animate-spin" />
+                <Loader2 className="h-7 w-7 animate-spin" />
               ) : (
-                <Fingerprint className="h-10 w-10" />
+                <Fingerprint className="h-8 w-8" />
               )}
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">Fingerprint</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">Unlock</span>
             </span>
           </button>
+          <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
+            Quick unlock uses an existing remembered session. It will not bypass login or create a new biometric account.
+          </p>
         </div>
       </div>
 

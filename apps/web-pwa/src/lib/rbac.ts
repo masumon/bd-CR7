@@ -2,6 +2,7 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   super_admin: [
     "/dashboard",
     "/dashboard/construction",
+    "/dashboard/ai",
     "/dashboard/finance",
     "/dashboard/import",
     "/dashboard/pos",
@@ -12,6 +13,7 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   admin: [
     "/dashboard",
     "/dashboard/construction",
+    "/dashboard/ai",
     "/dashboard/finance",
     "/dashboard/import",
     "/dashboard/pos",
@@ -22,6 +24,7 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   maker: [
     "/dashboard",
     "/dashboard/construction",
+    "/dashboard/ai",
     "/dashboard/finance",
     "/dashboard/import",
     "/dashboard/pos",
@@ -31,18 +34,21 @@ export const ROLE_ACCESS: Record<string, string[]> = {
   ],
   checker: [
     "/dashboard",
+    "/dashboard/ai",
     "/dashboard/finance",
     "/dashboard/reports",
     "/dashboard/settings",
   ],
   viewer: [
     "/dashboard",
+    "/dashboard/ai",
     "/dashboard/reports",
     "/dashboard/settings",
   ],
   worker: [
     "/dashboard",
     "/dashboard/construction",
+    "/dashboard/ai",
     "/dashboard/pos",
     "/dashboard/settings",
   ],

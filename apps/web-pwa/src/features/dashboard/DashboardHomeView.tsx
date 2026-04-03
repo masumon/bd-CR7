@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   BadgeDollarSign,
+  Bot,
   Building2,
   ClipboardList,
   DollarSign,
@@ -13,6 +14,7 @@ import {
   Gauge,
   HardHat,
   Loader2,
+  Settings2,
   ShoppingCart,
   Wallet,
 } from "lucide-react";
@@ -57,10 +59,21 @@ export function DashboardHomeView() {
 
   const workstreams = [
     {
-      title: "Finance Core",
+      title: "Project Introduction",
+      href: "/dashboard/construction/projects",
+      icon: FolderKanban,
+      blurb: "Project profile, phase ladder, schedule, and budget identity",
+      stats: [`${s.totalProjects} total projects`, "Planning to handover visibility"],
+      details: [
+        "বাংলা: প্রকল্পের নাম, বাজেট, ধাপ, সময়সীমা এবং ভিজ্যুয়াল কভার এক স্ক্রিনে সাজানো থাকে।",
+        "English: Project identity, budget, and phase progression stay together for fast executive review.",
+      ],
+    },
+    {
+      title: "Fund & Expense",
       href: "/dashboard/finance",
       icon: BadgeDollarSign,
-      blurb: "Fund intake, expense control, approval routing",
+      blurb: "Fund intake, expense control, approval routing, and ledger discipline",
       stats: [`${s.pendingApprovals} pending approvals`, `${fmt(s.totalExpenses)} total expenses`],
       details: [
         "বাংলা: ফান্ড ম্যানেজমেন্ট ও ব্যয় অনুমোদন একই workflow-এ পরিচালনা করুন",
@@ -68,22 +81,11 @@ export function DashboardHomeView() {
       ],
     },
     {
-      title: "Projects",
-      href: "/dashboard/construction/projects",
-      icon: FolderKanban,
-      blurb: "Project CRUD, budgets, phases, work updates",
-      stats: [`${s.totalProjects} total projects`],
-      details: [
-        "বাংলা: প্রজেক্ট তৈরি, স্ট্যাটাস আপডেট ও ফেজভিত্তিক ট্র্যাকিং করুন",
-        "English: Run end-to-end project lifecycle with cleaner phase visibility",
-      ],
-    },
-    {
-      title: "Construction Ops",
+      title: "Site Progress",
       href: "/dashboard/construction",
       icon: Building2,
-      blurb: "Worker logs, material stock, progress",
-      stats: [`${s.totalWorkers} active workers`],
+      blurb: "Worker logs, material stock, phase evidence, and daily execution rhythm",
+      stats: [`${s.totalWorkers} active workers`, "Site readiness tracking"],
       details: [
         "বাংলা: শ্রমিক, উপকরণ ও প্রগ্রেস মিডিয়া প্রমাণ এক জায়গায় দেখুন",
         "English: Track field operations with worker/material/progress continuity",
@@ -104,8 +106,8 @@ export function DashboardHomeView() {
       title: "Retail POS",
       href: "/dashboard/pos",
       icon: ShoppingCart,
-      blurb: "Sales velocity, cart operations, outlet readiness",
-      stats: ["Cart & SKU tracking"],
+      blurb: "Catalog, cart operations, stock awareness, and cashier-ready checkout",
+      stats: ["Catalog, cart, checkout, history"],
       details: [
         "বাংলা: দ্রুত checkout, cart control এবং sales tracking",
         "English: Real-time POS flow with product, cart, and checkout visibility",
@@ -120,6 +122,28 @@ export function DashboardHomeView() {
       details: [
         "বাংলা: এক্সপেন্স, উপকরণ ও ফাইন্যান্স ডেটার রিপোর্ট দ্রুত এক্সপোর্ট করুন",
         "English: Download decision-ready CSV and track operational trendlines",
+      ],
+    },
+    {
+      title: "SUMONIX AI",
+      href: "/dashboard/ai",
+      icon: Bot,
+      blurb: "Ready-to-use ERP assistant for summaries, anomalies, and guided actions",
+      stats: ["Bilingual prompts", "Risk and dashboard assistance"],
+      details: [
+        "বাংলা: SUMONIX AI এখন চ্যাটবটের মতো দ্রুত প্রশ্নের উত্তর, সারাংশ এবং পরামর্শ দেবে।",
+        "English: SUMONIX AI is positioned as a ready assistant instead of a hidden tool panel.",
+      ],
+    },
+    {
+      title: "Settings",
+      href: "/dashboard/settings",
+      icon: Settings2,
+      blurb: "User profile, language, theme, and workspace control settings",
+      stats: ["Theme and language shortcuts"],
+      details: [
+        "বাংলা: প্রোফাইল, ভাষা, থিম এবং সেশন সেটিংস এক জায়গা থেকে নিয়ন্ত্রণ করুন।",
+        "English: Keep identity, preferences, and session controls in one place.",
       ],
     },
   ];

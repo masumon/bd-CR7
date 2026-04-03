@@ -19,7 +19,7 @@ const WELCOME: Message = {
   id: "welcome",
   role: "ai",
   content:
-    "আমি SUMONIX AI — আপনার ERP সহকারী। তহবিল ঝুঁকি, অস্বাভাবিক ব্যয়, শ্রমিক উপস্থিতি বা যেকোনো তথ্য জিজ্ঞেস করুন।\n\nWelcome! Ask me about fund risk, anomalies, worker stats, or any financial insights.",
+    "আমি SUMONIX AI। আপনি dashboard summary, risky expense, project guidance, বা module help চাইতে পারেন।\n\nI am ready to help with dashboard summaries, anomalies, project context, and workflow guidance.",
 };
 
 function classifyMessage(text: string): "anomalies" | "dashboard" | "general" {
@@ -101,11 +101,11 @@ export function FloatingChat() {
         prev.map((m) => (m.loading ? { ...m, loading: false, content: reply } : m))
       );
     } catch (err) {
-      const errMsg = (err as Error).message || "AI সংযোগে সমস্যা হয়েছে।";
+      const errMsg = (err as Error).message || "AI connection failed.";
       setMessages((prev) =>
         prev.map((m) =>
           m.loading
-            ? { ...m, loading: false, content: `❌ Error: ${errMsg}\n\nAPI_URL সেট করা না থাকলে backend চালু করুন।` }
+            ? { ...m, loading: false, content: `SUMONIX AI could not answer right now.\n\n${errMsg}\n\nCheck API connectivity or sign in again if your session expired.` }
             : m
         )
       );
@@ -149,7 +149,7 @@ export function FloatingChat() {
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold">SUMONIX AI</h4>
-                  <p className="text-[10px] text-muted-foreground">Financial Intelligence Engine</p>
+                  <p className="text-[10px] text-muted-foreground">Ready ERP Assistant</p>
                 </div>
               </div>
               <button
@@ -194,7 +194,7 @@ export function FloatingChat() {
 
             {/* Quick prompts */}
             <div className="flex gap-2 overflow-x-auto px-4 pb-1 pt-0">
-              {["ঝুঁকিপূর্ণ ব্যয়", "Dashboard summary", "অস্বাভাবিক লেনদেন"].map((q) => (
+              {["Dashboard summary", "Show risky expenses", "কি কি module আছে?", "আজকের কাজের অগ্রাধিকার বলো"].map((q) => (
                 <button
                   key={q}
                   type="button"

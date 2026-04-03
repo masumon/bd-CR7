@@ -1,11 +1,14 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Loader2, Minus, Plus, RefreshCw, ShoppingBasket, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock3, Loader2, Minus, PackageSearch, Plus, RefreshCw, Search, ShoppingBasket, ShoppingCart, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs } from "@/components/ui/tabs";
+import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
@@ -17,15 +20,25 @@ interface Product {
   stock_qty: number;
 }
 
+interface SaleHistoryRow {
+  id: string;
+  total_amount: number | string;
+  created_at: string;
+  customer_name?: string | null;
+}
+
 export function RetailPOSView() {
   const userId = useAuthStore((state) => state.userId);
   const token = useAuthStore((state) => state.token);
   const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales] = useState<SaleHistoryRow[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("All Products");
 
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
@@ -40,7 +53,21 @@ export function RetailPOSView() {
     setLoadingProducts(false);
   }, [token]);
 
+  const fetchSales = useCallback(async () => {
+    if (!token) {
+      setSales([]);
+      return;
+    }
+    try {
+      const data = await apiRequest<SaleHistoryRow[]>("/api/pos/sales", {}, token);
+      setSales(data || []);
+    } catch {
+      setSales([]);
+    }
+  }, [token]);
+
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(() => { void fetchSales(); }, [fetchSales]);
 
   const total = useMemo(
     () => Object.entries(cart).reduce((sum, [id, qty]) => {
@@ -51,6 +78,26 @@ export function RetailPOSView() {
   );
 
   const cartCount = useMemo(() => Object.values(cart).reduce((s, q) => s + q, 0), [cart]);
+  const lowStockCount = useMemo(() => products.filter((product) => product.stock_qty > 0 && product.stock_qty <= 5).length, [products]);
+  const outOfStockCount = useMemo(() => products.filter((product) => product.stock_qty <= 0).length, [products]);
+
+  const filteredProducts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return products.filter((product) => {
+      const inTab =
+        activeTab === "All Products" ||
+        (activeTab === "Ready Stock" && product.stock_qty > 5) ||
+        (activeTab === "Low Stock" && product.stock_qty > 0 && product.stock_qty <= 5) ||
+        (activeTab === "Out of Stock" && product.stock_qty <= 0);
+
+      const inQuery =
+        !normalizedQuery ||
+        product.name.toLowerCase().includes(normalizedQuery) ||
+        product.barcode.toLowerCase().includes(normalizedQuery);
+
+      return inTab && inQuery;
+    });
+  }, [activeTab, products, query]);
 
   const add = (id: string) => setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
   const remove = (id: string) => setCart((prev) => {
@@ -95,6 +142,7 @@ export function RetailPOSView() {
       setSuccessMsg(`বিক্রয় সংরক্ষিত হয়েছে — Sale saved (৳${total.toLocaleString("en-BD")})`);
       setTimeout(() => setSuccessMsg(""), 4000);
       void fetchProducts();
+      void fetchSales();
     } catch (err) {
       setErrorMsg((err as Error).message || "Checkout failed.");
     } finally {
@@ -106,21 +154,56 @@ export function RetailPOSView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">Retail POS</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{products.length} products • {cartCount} in cart</p>
-        </div>
-        <Button variant="outline" className="h-8 px-3 text-xs" onClick={fetchProducts} disabled={loadingProducts}>
-          {loadingProducts ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-        </Button>
-      </div>
+      <WorkspaceHero
+        badge="POS Workspace / পজ ওয়ার্কস্পেস"
+        title="All POS-related actions now live in one sequential workspace for catalog, cart, checkout, and sales review."
+        description="This page is organized as one commerce module so cashiers and managers can move from product selection to checkout and recent sales without jumping between disconnected screens."
+        stats={[
+          { label: "Products", value: String(products.length) },
+          { label: "Low Stock", value: String(lowStockCount) },
+          { label: "Recent Sales", value: String(sales.length) },
+        ]}
+        highlights={[
+          { title: "Catalog", description: "Searchable products with stock awareness", icon: PackageSearch },
+          { title: "Cart", description: "Live quantity and total control", icon: ShoppingBasket },
+          { title: "Checkout", description: "Atomic sale save with history refresh", icon: ShoppingCart },
+        ]}
+      />
+
+      <SectionHeader
+        eyebrow="Commerce Desk / বাণিজ্য ডেস্ক"
+        title="Category, subcategory, and cashier flow"
+        description="Filter products by stock readiness, manage the cart, and review the latest sales from one place."
+        actions={
+          <Button variant="outline" className="h-10 px-4 text-sm" onClick={fetchProducts} disabled={loadingProducts}>
+            {loadingProducts ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}
+            Refresh POS
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 xl:grid-cols-3">
         {/* Product grid */}
         <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle>পণ্য তালিকা — Products</CardTitle>
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle>Catalog / পণ্য তালিকা</CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">Category filters keep the POS list readable during busy sales flow.</p>
+                </div>
+                <Tabs tabs={["All Products", "Ready Stock", "Low Stock", "Out of Stock"]} value={activeTab} onChange={setActiveTab} />
+              </div>
+              <div className="flex items-center gap-2 rounded-[1.2rem] border border-border bg-background/90 px-3 py-3">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="w-full bg-transparent text-sm outline-none"
+                  placeholder="Search by product name or barcode"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingProducts ? (
@@ -134,7 +217,7 @@ export function RetailPOSView() {
                 variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
                 className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
               >
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <motion.div
                     key={product.id}
                     variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
@@ -143,10 +226,25 @@ export function RetailPOSView() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{product.name}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">Stock: {product.stock_qty}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">Barcode: {product.barcode || "N/A"}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Stock: {product.stock_qty}</p>
                       </div>
-                      <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                        ৳{product.sell_price.toLocaleString("en-BD")}
+                      <div className="flex items-start gap-2">
+                        <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                          ৳{product.sell_price.toLocaleString("en-BD")}
+                        </span>
+                        <ActionMenu
+                          items={[
+                            { label: "Add One", onClick: () => add(product.id) },
+                            { label: "Remove One", onClick: () => remove(product.id) },
+                            { label: "Clear From Cart", onClick: () => clearItem(product.id), tone: "danger" },
+                          ]}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-full border border-border/70 px-2.5 py-1 text-muted-foreground">
+                        {product.stock_qty <= 0 ? "Out of Stock" : product.stock_qty <= 5 ? "Low Stock" : "Ready Stock"}
                       </span>
                     </div>
                     <div className="mt-3 flex items-center gap-2">
@@ -160,6 +258,11 @@ export function RetailPOSView() {
                     </div>
                   </motion.div>
                 ))}
+                {!filteredProducts.length ? (
+                  <div className="rounded-2xl border border-dashed border-border bg-background/70 px-4 py-8 text-center text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">
+                    No products matched this category or search.
+                  </div>
+                ) : null}
               </motion.div>
             )}
           </CardContent>
@@ -231,6 +334,30 @@ export function RetailPOSView() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Clock3 className="h-4 w-4 text-primary" />
+            <CardTitle>Recent Sales / সাম্প্রতিক বিক্রয়</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3 lg:grid-cols-3">
+          {sales.slice(0, 6).map((sale) => (
+            <div key={sale.id} className="rounded-[1.25rem] border border-border/70 bg-background/75 p-4 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-foreground">#{sale.id.slice(0, 8).toUpperCase()}</span>
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                  ৳{Number(sale.total_amount || 0).toLocaleString("en-BD")}
+                </span>
+              </div>
+              <p className="mt-2 text-muted-foreground">Customer: {sale.customer_name || "Walk-in"}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{sale.created_at?.replace("T", " ").slice(0, 16)}</p>
+            </div>
+          ))}
+          {!sales.length ? <div className="rounded-2xl border border-dashed border-border bg-background/70 px-4 py-8 text-center text-sm text-muted-foreground lg:col-span-3">No sales history available yet.</div> : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }

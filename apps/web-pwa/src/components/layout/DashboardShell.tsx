@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeDollarSign,
   BarChart3,
+  Bot,
   Building2,
   Factory,
   FolderKanban,
@@ -34,10 +35,10 @@ import { useAuthStore } from "@/store/authStore";
 
 const copy = {
   en: {
-    brand: "BD CR7 Ultra",
-    controlRoom: "Control Room",
+    brand: "BD CR7 Progress OS",
+    controlRoom: "Construction Control Room",
     home: "Home",
-    searchPlaceholder: "Search modules, activity, or alerts",
+    searchPlaceholder: "Search workspace, module, or action",
     online: "Online",
     offline: "Offline",
     offlineNote: "Offline mode active. Actions will queue and sync automatically.",
@@ -59,37 +60,40 @@ const copy = {
     navigation: "Navigation",
     collapse: "Collapse",
     expand: "Expand",
+    activeRole: "Active Role",
+    moduleFlow: "Module Flow",
     sections: [
       {
-        title: "Core",
+        title: "Core Workspace",
         items: [
-          { href: "/dashboard", label: "Dashboard", sublabel: "Overview & KPI", icon: Home },
-          { href: "/dashboard/reports", label: "Reports", sublabel: "Analytics & Export", icon: BarChart3 },
-          { href: "/dashboard/settings", label: "Settings", sublabel: "Profile & Preferences", icon: Settings2 },
+          { href: "/dashboard", label: "Dashboard", sublabel: "6-command overview", icon: Home },
+          { href: "/dashboard/construction/projects", label: "Project Intro", sublabel: "Project identity and phases", icon: FolderKanban },
+          { href: "/dashboard/construction", label: "Site Progress", sublabel: "Workers, materials, progress", icon: Building2 },
         ],
       },
       {
-        title: "Operations",
+        title: "Finance & Commerce",
         items: [
-          { href: "/dashboard/construction", label: "Construction", sublabel: "Workers, Materials, Progress", icon: Building2 },
-          { href: "/dashboard/construction/projects", label: "Projects", sublabel: "Project Pipeline", icon: FolderKanban },
-          { href: "/dashboard/import", label: "Import", sublabel: "L/C and Shipment", icon: Import },
-          { href: "/dashboard/pos", label: "POS", sublabel: "Sales & Checkout", icon: ShoppingCart },
+          { href: "/dashboard/finance", label: "Fund & Expense", sublabel: "Cashflow, ledger, approvals", icon: BadgeDollarSign },
+          { href: "/dashboard/import", label: "Supply Chain", sublabel: "L/C, import, shipment", icon: Import },
+          { href: "/dashboard/pos", label: "POS Workspace", sublabel: "Catalog, cart, sales, stock", icon: ShoppingCart },
         ],
       },
       {
-        title: "Finance",
+        title: "Insight & Control",
         items: [
-          { href: "/dashboard/finance", label: "Finance", sublabel: "Funds & Expenses", icon: BadgeDollarSign },
+          { href: "/dashboard/reports", label: "Reports", sublabel: "Analytics and export desk", icon: BarChart3 },
+          { href: "/dashboard/ai", label: "SUMONIX AI", sublabel: "Ready assistant and analysis", icon: Bot },
+          { href: "/dashboard/settings", label: "Settings", sublabel: "Profile, theme, language", icon: Settings2 },
         ],
       },
     ],
   },
   bn: {
-    brand: "BD CR7 Ultra",
-    controlRoom: "কন্ট্রোল রুম",
+    brand: "BD CR7 Progress OS",
+    controlRoom: "নির্মাণ কন্ট্রোল রুম",
     home: "হোম",
-    searchPlaceholder: "মডিউল, activity বা alert খুঁজুন",
+    searchPlaceholder: "ওয়ার্কস্পেস, মডিউল বা অ্যাকশন খুঁজুন",
     online: "অনলাইন",
     offline: "অফলাইন",
     offlineNote: "অফলাইন মোড চালু আছে। সব action queue হয়ে পরে sync হবে।",
@@ -111,28 +115,31 @@ const copy = {
     navigation: "নেভিগেশন",
     collapse: "ছোট করুন",
     expand: "বড় করুন",
+    activeRole: "সক্রিয় রোল",
+    moduleFlow: "মডিউল ধারা",
     sections: [
       {
-        title: "মূল",
+        title: "মূল ওয়ার্কস্পেস",
         items: [
-          { href: "/dashboard", label: "ড্যাশবোর্ড", sublabel: "সারাংশ ও KPI", icon: Home },
-          { href: "/dashboard/reports", label: "রিপোর্ট", sublabel: "বিশ্লেষণ ও এক্সপোর্ট", icon: BarChart3 },
-          { href: "/dashboard/settings", label: "সেটিংস", sublabel: "প্রোফাইল ও পছন্দ", icon: Settings2 },
+          { href: "/dashboard", label: "ড্যাশবোর্ড", sublabel: "৬ কমান্ড সারসংক্ষেপ", icon: Home },
+          { href: "/dashboard/construction/projects", label: "প্রকল্প পরিচিতি", sublabel: "প্রকল্প তথ্য ও ধাপ", icon: FolderKanban },
+          { href: "/dashboard/construction", label: "সাইট অগ্রগতি", sublabel: "শ্রমিক, মালামাল, প্রগতি", icon: Building2 },
         ],
       },
       {
-        title: "অপারেশন",
+        title: "ফাইন্যান্স ও বাণিজ্য",
         items: [
-          { href: "/dashboard/construction", label: "কনস্ট্রাকশন", sublabel: "শ্রমিক, উপকরণ, অগ্রগতি", icon: Building2 },
-          { href: "/dashboard/construction/projects", label: "প্রজেক্ট", sublabel: "প্রজেক্ট পাইপলাইন", icon: FolderKanban },
-          { href: "/dashboard/import", label: "ইমপোর্ট", sublabel: "L/C ও শিপমেন্ট", icon: Import },
-          { href: "/dashboard/pos", label: "পস", sublabel: "বিক্রয় ও চেকআউট", icon: ShoppingCart },
+          { href: "/dashboard/finance", label: "তহবিল ও খরচ", sublabel: "ক্যাশফ্লো, লেজার, অনুমোদন", icon: BadgeDollarSign },
+          { href: "/dashboard/import", label: "সাপ্লাই চেইন", sublabel: "L/C, ইমপোর্ট, শিপমেন্ট", icon: Import },
+          { href: "/dashboard/pos", label: "পজ ওয়ার্কস্পেস", sublabel: "ক্যাটালগ, কার্ট, বিক্রয়, স্টক", icon: ShoppingCart },
         ],
       },
       {
-        title: "ফাইন্যান্স",
+        title: "বিশ্লেষণ ও নিয়ন্ত্রণ",
         items: [
-          { href: "/dashboard/finance", label: "ফাইন্যান্স", sublabel: "ফান্ড ও ব্যয়", icon: BadgeDollarSign },
+          { href: "/dashboard/reports", label: "রিপোর্ট", sublabel: "বিশ্লেষণ ও এক্সপোর্ট ডেস্ক", icon: BarChart3 },
+          { href: "/dashboard/ai", label: "SUMONIX AI", sublabel: "রেডি সহকারী ও বিশ্লেষণ", icon: Bot },
+          { href: "/dashboard/settings", label: "সেটিংস", sublabel: "প্রোফাইল, থিম, ভাষা", icon: Settings2 },
         ],
       },
     ],
@@ -245,13 +252,28 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="mx-auto flex min-h-[100svh] max-w-[1700px]">
         <aside
           className={cn(
-            "sticky top-0 hidden h-[100svh] border-r border-border/70 bg-card/80 p-3 backdrop-blur lg:block",
+            "sticky top-0 hidden h-[100svh] border-r border-border/70 bg-card/72 p-3 backdrop-blur-xl lg:block",
             collapsed ? "w-20" : "w-64"
           )}
         >
-          <div className="mb-5 flex items-center gap-2 px-2 py-3">
-            <Factory className="h-5 w-5 text-primary" />
-            {!collapsed ? <span className="text-sm font-semibold">{text.brand}</span> : null}
+          <div className="mb-5 rounded-[1.5rem] border border-border/70 bg-background/72 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Factory className="h-5 w-5" />
+              </span>
+              {!collapsed ? (
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold">{text.brand}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">{text.moduleFlow}</span>
+                </span>
+              ) : null}
+            </div>
+            {!collapsed ? (
+              <div className="mt-4 rounded-2xl border border-primary/15 bg-primary/6 px-3 py-3 text-xs text-muted-foreground">
+                <p className="uppercase tracking-[0.16em]">{text.activeRole}</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{role || "unassigned"}</p>
+              </div>
+            ) : null}
           </div>
           <nav className="space-y-3">
             {navSections.map((section) => (
@@ -263,8 +285,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       key={href}
                       href={href}
                       className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all active:scale-95",
-                        pathname === href ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all active:scale-95",
+                        pathname === href ? "bg-primary text-primary-foreground shadow-[0_16px_34px_rgba(15,108,90,0.22)]" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground"
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
@@ -293,7 +315,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="min-h-[100svh] flex-1">
-          <header className="sticky top-0 z-30 border-b border-border/70 bg-card/75 px-4 py-3 backdrop-blur safe-top safe-x">
+          <header className="sticky top-0 z-30 border-b border-border/70 bg-card/72 px-4 py-3 backdrop-blur-xl safe-top safe-x">
             {!online ? (
               <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
                 {text.offlineNote}
@@ -307,7 +329,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{text.controlRoom}</p>
                 <div className="truncate text-sm text-muted-foreground">{text.home} / <span className="font-medium text-foreground">{crumb}</span></div>
               </div>
-              <div className="order-last flex w-full items-center gap-2 rounded-2xl border border-border bg-background/90 px-3 py-3 md:order-none md:mx-auto md:max-w-md md:flex-1">
+              <div className="order-last flex w-full items-center gap-2 rounded-[1.35rem] border border-border bg-background/88 px-3 py-3 md:order-none md:mx-auto md:max-w-md md:flex-1">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input className="w-full bg-transparent text-sm outline-none" placeholder={text.searchPlaceholder} aria-label="Global search" />
               </div>
@@ -321,7 +343,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {online ? <Wifi className="h-4 w-4 text-emerald-500" /> : <WifiOff className="h-4 w-4 text-rose-500" />}
                 {online ? text.online : text.offline}
               </div>
-              <button type="button" className="hidden items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm transition-all active:scale-95 hover:shadow-soft sm:flex" onClick={() => setSettingsOpen(true)}>
+              <button type="button" className="hidden items-center gap-2 rounded-[1.15rem] border border-border bg-background px-3 py-2 text-sm transition-all active:scale-95 hover:shadow-soft sm:flex" onClick={() => setSettingsOpen(true)}>
                 <UserCircle2 className="h-4 w-4" />
                 {role || "unassigned"}
               </button>
@@ -385,10 +407,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-lg safe-bottom safe-x lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-xl safe-bottom safe-x lg:hidden">
           <div className="mx-auto flex max-w-5xl items-stretch gap-1.5 overflow-x-auto pb-1">
           {nav.map(({ href, label, sublabel, icon: Icon }) => (
-            <Link key={href} href={href} className={cn("flex min-h-14 min-w-[82px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl px-2 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+            <Link key={href} href={href} className={cn("flex min-h-14 min-w-[82px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl px-2 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")}>
               <Icon className="mb-1 h-4 w-4" />
               <span className="w-full truncate text-center">{label}</span>
               <span className={cn("hidden w-full truncate text-center text-[10px] sm:block", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>

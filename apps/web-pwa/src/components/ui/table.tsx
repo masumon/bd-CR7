@@ -5,9 +5,9 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
 }
 
 export function Th({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th className={cn("border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground", className)} {...props} />;
+  return <th className={cn("border-b border-border/85 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground", className)} {...props} />;
 }
 
 export function Td({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("border-b border-border/70 px-3 py-2", className)} {...props} />;
+  return <td className={cn("border-b border-border/65 px-3 py-3 align-top", className)} {...props} />;
 }

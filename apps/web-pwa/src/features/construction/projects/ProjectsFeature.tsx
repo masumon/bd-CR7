@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  CalendarClock,
   CalendarDays,
   FolderKanban,
   Loader2,
@@ -12,8 +13,10 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { createClient } from "@/lib/supabase/client";
 
 const STATUS_OPTIONS = ["Planning", "Active", "Paused", "Completed", "Cancelled"] as const;
@@ -184,15 +187,32 @@ export function ProjectsFeature() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FolderKanban className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Projects</h2>
-        </div>
-          <Button onClick={openCreate} className="gap-1.5 h-8 px-3 text-xs">
-          <Plus className="h-4 w-4" /> New Project
-        </Button>
-      </div>
+      <WorkspaceHero
+        badge="Project Introduction / প্রকল্প পরিচিতি"
+        title="Each showroom project now gets a proper identity card, schedule lane, and phase context."
+        description="This page acts as the executive project desk where users can create, update, and review each project without mixing it into worker or expense screens."
+        stats={[
+          { label: "Total Projects", value: String(projects.length) },
+          { label: "Active Projects", value: String(projects.filter((project) => project.status === "Active").length) },
+          { label: "Completed", value: String(projects.filter((project) => project.status === "Completed").length) },
+        ]}
+        highlights={[
+          { title: "Identity", description: "Project name, cover, summary, and budget", icon: FolderKanban },
+          { title: "Timeline", description: "Start date, deadline, and phase ladder", icon: CalendarClock },
+          { title: "Status", description: "Planning, active, paused, completed, cancelled", icon: Plus },
+        ]}
+      />
+
+      <SectionHeader
+        eyebrow="Project Desk / প্রজেক্ট ডেস্ক"
+        title="Project cards with update controls"
+        description="Use the add button or each card's 3-dot menu to maintain project information without deleting historical data."
+        actions={
+          <Button onClick={openCreate} className="gap-1.5 h-10 px-4 text-sm">
+            <Plus className="h-4 w-4" /> New Project
+          </Button>
+        }
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -224,10 +244,18 @@ export function ProjectsFeature() {
                 )}
                 <CardContent className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold leading-tight">{p.name}</h3>
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[p.status]}`}>
-                      {p.status}
-                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold leading-tight">{p.name}</h3>
+                      <span className={`mt-2 inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[p.status]}`}>
+                        {p.status}
+                      </span>
+                    </div>
+                    <ActionMenu
+                      items={[
+                        { label: "Update Project", onClick: () => openEdit(p) },
+                        { label: "Mark as Cancelled", onClick: () => void handleCancel(p.id), tone: "danger" },
+                      ]}
+                    />
                   </div>
                   {p.description && (
                     <p className="text-xs text-muted-foreground leading-5 line-clamp-2">{p.description}</p>
