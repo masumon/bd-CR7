@@ -127,9 +127,10 @@ export function FloatingChat() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close SUMONIX AI chat" : "Open SUMONIX AI chat"}
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_30px_rgba(15,108,90,0.42)] sm:right-6 lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.65rem)] right-3 z-50 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/20 bg-[linear-gradient(135deg,rgba(15,108,90,0.96),rgba(8,74,63,0.94))] px-3 text-primary-foreground shadow-[0_18px_40px_rgba(15,108,90,0.38)] sm:right-6 sm:h-13 sm:px-4 lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
       >
-        {open ? <X className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+        {open ? <X className="h-4.5 w-4.5" /> : <Sparkles className="h-4.5 w-4.5" />}
+        <span className="text-[11px] font-semibold tracking-[0.14em] sm:text-xs">SUMONIX AI</span>
       </motion.button>
 
       <AnimatePresence>
@@ -139,17 +140,16 @@ export function FloatingChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+9.25rem)] top-auto z-50 flex max-h-[min(72svh,42rem)] flex-col overflow-hidden rounded-[1.5rem] border border-white/20 bg-card/95 shadow-2xl backdrop-blur-sm sm:inset-x-auto sm:bottom-[calc(env(safe-area-inset-bottom)+9rem)] sm:right-6 sm:w-[min(440px,calc(100vw-2rem))] lg:bottom-24"
+            className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+9rem)] top-auto z-50 flex max-h-[min(74svh,44rem)] flex-col overflow-hidden rounded-[1.65rem] border border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,249,247,0.95))] shadow-2xl backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(15,24,21,0.97),rgba(10,19,17,0.96))] sm:inset-x-auto sm:bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] sm:right-6 sm:w-[min(460px,calc(100vw-2rem))] lg:bottom-24"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <div className="flex items-center justify-between border-b border-border/70 bg-primary/8 px-4 py-3">
               <div className="flex items-center gap-2">
-                <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+                <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
                   <Bot className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold">SUMONIX AI</h4>
-                  <p className="text-[10px] text-muted-foreground">Ready ERP Assistant</p>
+                  <h4 className="text-sm font-semibold text-foreground">SUMONIX AI</h4>
+                  <p className="text-[11px] leading-4 text-muted-foreground">Ready ERP Assistant / রেডি সহকারী</p>
                 </div>
               </div>
               <button
@@ -163,8 +163,7 @@ export function FloatingChat() {
               </button>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
+            <div className="flex-1 space-y-3 overflow-y-auto p-4 text-[13px] sm:text-sm">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "ai" && (
@@ -173,10 +172,10 @@ export function FloatingChat() {
                     </div>
                   )}
                   <div
-                    className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 leading-relaxed ${
+                    className={`max-w-[88%] break-words whitespace-pre-wrap rounded-2xl px-3 py-2.5 leading-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] ${
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
+                        : "border border-border/60 bg-muted/80 text-foreground"
                     }`}
                   >
                     {msg.loading ? (
@@ -192,23 +191,23 @@ export function FloatingChat() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Quick prompts */}
-            <div className="flex gap-2 overflow-x-auto px-4 pb-1 pt-0">
+            <div className="grid grid-cols-2 gap-2 px-4 pb-2 pt-0 sm:grid-cols-4">
               {["Dashboard summary", "Show risky expenses", "কি কি module আছে?", "আজকের কাজের অগ্রাধিকার বলো"].map((q) => (
                 <button
                   key={q}
                   type="button"
-                  onClick={() => { setText(q); }}
-                  className="shrink-0 rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground hover:bg-muted"
+                  onClick={() => {
+                    setText(q);
+                  }}
+                  className="rounded-2xl border border-border bg-background/88 px-3 py-2 text-left text-[11px] leading-4 text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
                   {q}
                 </button>
               ))}
             </div>
 
-            {/* Input */}
             <div className="border-t border-border p-3">
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+              <div className="flex items-center gap-2 rounded-[1.2rem] border border-border bg-background px-3 py-2">
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}

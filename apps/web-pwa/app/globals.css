@@ -44,7 +44,7 @@ html {
 body {
   min-height: 100svh;
   overflow-x: hidden;
-  font-family: var(--font-body), "Segoe UI", sans-serif;
+  font-family: var(--font-body), var(--font-bengali), "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at 0% 0%, rgba(18, 119, 102, 0.18), transparent 28%),
     radial-gradient(circle at 100% 0%, rgba(226, 167, 77, 0.14), transparent 24%),
@@ -67,7 +67,15 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+  font-family: var(--font-display), var(--font-bengali), "Trebuchet MS", sans-serif;
+}
+
+html[lang="bn"] body,
+html[lang="bn"] input,
+html[lang="bn"] textarea,
+html[lang="bn"] select,
+html[lang="bn"] button {
+  font-family: var(--font-bengali), var(--font-body), "Segoe UI", sans-serif;
 }
 
 ::selection {
@@ -111,7 +119,6 @@ a:focus-visible {
   background-clip: padding-box;
 }
 
-/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -233,7 +240,15 @@ a:focus-visible {
   padding-right: max(1rem, env(safe-area-inset-right));
 }
 
-/* Auth Layout Backgrounds */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
 .auth-bg-light {
   background:
     radial-gradient(circle at top left, rgba(15, 108, 90, 0.18), transparent 26%),

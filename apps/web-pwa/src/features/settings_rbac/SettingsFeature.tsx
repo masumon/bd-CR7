@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Loader2, RefreshCw, Settings2, UserRound, Sun, Moon, Languages } from "lucide-react";
 
+import { ActionMenu } from "@/components/ui/action-menu";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,17 @@ interface UserProfile {
   full_name: string;
   phone: string | null;
 }
+
+type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
+
+type SettingItem = {
+  id: string;
+  category: SettingCategory;
+  subcategory: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+};
 
 export function SettingsFeature() {
   const supabase = useMemo(() => createClient(), []);
@@ -31,6 +43,83 @@ export function SettingsFeature() {
   const [error, setError] = useState("");
   const [dark, setDark] = useState(false);
   const [language, setLanguage] = useState<"en" | "bn">("en");
+  const [settingItems, setSettingItems] = useState<SettingItem[]>([
+    {
+      id: "ws-compact-cards",
+      category: "Workspace",
+      subcategory: "Layout",
+      label: "Compact Dashboard Cards",
+      description: "Show operational micro cards on home view",
+      enabled: true,
+    },
+    {
+      id: "ws-floating-ai",
+      category: "Workspace",
+      subcategory: "Assistant",
+      label: "Floating SUMONIX AI",
+      description: "Enable floating assistant entry across modules",
+      enabled: true,
+    },
+    {
+      id: "ntf-offline-alert",
+      category: "Notifications",
+      subcategory: "System",
+      label: "Offline Queue Alert",
+      description: "Show warning when offline sync queue is active",
+      enabled: true,
+    },
+    {
+      id: "sec-session-expiry",
+      category: "Security",
+      subcategory: "Session",
+      label: "Session Expiry Reminder",
+      description: "Warn user before session timeout",
+      enabled: false,
+    },
+    {
+      id: "data-export-ready",
+      category: "Data",
+      subcategory: "Reporting",
+      label: "Report Export Ready",
+      description: "Keep export helpers enabled in reports module",
+      enabled: true,
+    },
+  ]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("bdcr7-settings-catalog");
+      if (!raw) return;
+      setSettingItems(JSON.parse(raw) as SettingItem[]);
+    } catch {
+      setSettingItems((prev) => prev);
+    }
+  }, []);
+
+  const persistSettings = useCallback((next: SettingItem[]) => {
+    setSettingItems(next);
+    window.localStorage.setItem("bdcr7-settings-catalog", JSON.stringify(next));
+  }, []);
+
+  const toggleSetting = (id: string) => {
+    const next = settingItems.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item));
+    persistSettings(next);
+  };
+
+  const categoryTotals = useMemo(() => {
+    const totals: Record<SettingCategory, number> = {
+      Workspace: 0,
+      Notifications: 0,
+      Security: 0,
+      Data: 0,
+    };
+    for (const item of settingItems) {
+      if (item.enabled) {
+        totals[item.category] += 1;
+      }
+    }
+    return totals;
+  }, [settingItems]);
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("bdcr7-theme");
@@ -263,6 +352,62 @@ export function SettingsFeature() {
             >
               <Languages className="h-4 w-4" />
             </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Category & Subcategory Controls</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(Object.keys(categoryTotals) as SettingCategory[]).map((category) => (
+              <div key={category} className="rounded-2xl border border-border/70 bg-background/75 p-4">
+                <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{category}</p>
+                <p className="mt-1 text-lg font-semibold text-foreground">{categoryTotals[category]}</p>
+                <p className="text-xs text-muted-foreground">active controls</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-border/70">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/70 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                  <th className="px-3 py-3">Category</th>
+                  <th className="px-3 py-3">Subcategory</th>
+                  <th className="px-3 py-3">Control</th>
+                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {settingItems.map((item) => (
+                  <tr key={item.id} className="border-b border-border/50 last:border-b-0">
+                    <td className="px-3 py-3 text-xs font-medium text-foreground">{item.category}</td>
+                    <td className="px-3 py-3 text-xs text-muted-foreground">{item.subcategory}</td>
+                    <td className="px-3 py-3">
+                      <p className="text-sm font-medium text-foreground">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.description}</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className={cn("rounded-full px-2.5 py-1 text-xs", item.enabled ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>{item.enabled ? "Enabled" : "Disabled"}</span>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <ActionMenu
+                        className="ml-auto"
+                        items={[
+                          { label: `Category: ${item.category}`, onClick: () => {} },
+                          { label: `Subcategory: ${item.subcategory}`, onClick: () => {} },
+                          { label: item.enabled ? "Disable" : "Enable", onClick: () => toggleSetting(item.id) },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>

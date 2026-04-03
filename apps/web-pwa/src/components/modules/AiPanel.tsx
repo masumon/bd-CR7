@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Bot, BrainCircuit, Loader2, Radar, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -120,12 +120,12 @@ export function AiPanel() {
           <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
             <div className="space-y-4 rounded-[1.4rem] border border-border/70 bg-background/75 p-4">
               <div className="flex flex-wrap gap-2">
-                {["Dashboard summary", "Show risky expenses", "What modules can you guide?", "আজকের কাজ কি আগে করা উচিত?"] .map((item) => (
+                {["Dashboard summary", "Show risky expenses", "What modules can you guide?", "আজকের কাজ কি আগে করা উচিত?"].map((item) => (
                   <button
                     key={item}
                     type="button"
                     onClick={() => setPrompt(item)}
-                    className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted/75 hover:text-foreground"
+                    className="rounded-2xl border border-border bg-card px-3 py-2 text-left text-xs leading-5 text-muted-foreground transition hover:bg-muted/75 hover:text-foreground"
                   >
                     {item}
                   </button>
@@ -137,7 +137,7 @@ export function AiPanel() {
                   onChange={(event) => setPrompt(event.target.value)}
                   placeholder="Ask SUMONIX about finance, risks, projects, workers, or reports"
                   rows={4}
-                  className="w-full resize-none bg-transparent text-sm outline-none"
+                  className="w-full resize-none bg-transparent text-sm leading-6 outline-none"
                 />
                 <div className="mt-3 flex justify-end">
                   <Button onClick={askAi} disabled={!token || loadingChat || !prompt.trim()} className="gap-2">
@@ -146,7 +146,7 @@ export function AiPanel() {
                   </Button>
                 </div>
               </div>
-              <div className="rounded-[1.25rem] border border-primary/15 bg-primary/5 p-4 text-sm leading-6 text-foreground">
+              <div className="rounded-[1.25rem] border border-primary/15 bg-primary/5 p-4 text-sm leading-7 text-foreground">
                 {answer || "AI reply will appear here with a practical summary and next-step guidance."}
               </div>
             </div>

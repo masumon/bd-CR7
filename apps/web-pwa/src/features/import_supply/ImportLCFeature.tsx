@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ClipboardList, Loader2, Plus, RefreshCw, Trash2, X } from "lucide-react";
 
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
@@ -39,6 +40,15 @@ const STATUS_COLORS: Record<LCStatus, string> = {
 
 const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CNY", "BDT", "SGD"];
 
+const SUPPLY_TAXONOMY = {
+  "Raw Materials": ["Cement", "Steel", "Aggregate", "Electrical", "Other"],
+  Equipment: ["Machinery", "Generator", "Safety Gear", "Tools", "Other"],
+  Finishing: ["Tiles", "Paint", "Glass", "Interior", "Other"],
+  Logistics: ["Sea Freight", "Air Freight", "Customs", "Port Handling", "Other"],
+} as const;
+
+type SupplyCategory = keyof typeof SUPPLY_TAXONOMY;
+
 const EMPTY_FORM = {
   supplier_name: "",
   lc_number: "",
@@ -46,6 +56,8 @@ const EMPTY_FORM = {
   amount: "",
   expected_arrival: "",
   status: "open" as LCStatus,
+  category: "Raw Materials" as SupplyCategory,
+  subcategory: "Cement",
 };
 
 export function ImportLCFeature() {
@@ -56,6 +68,27 @@ export function ImportLCFeature() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const [tagsByLc, setTagsByLc] = useState<Record<string, { category: SupplyCategory; subcategory: string }>>({});
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("bdcr7-import-tags");
+      if (!raw) return;
+      setTagsByLc(JSON.parse(raw) as Record<string, { category: SupplyCategory; subcategory: string }>);
+    } catch {
+      setTagsByLc({});
+    }
+  }, []);
+
+  const saveTags = useCallback((next: Record<string, { category: SupplyCategory; subcategory: string }>) => {
+    setTagsByLc(next);
+    window.localStorage.setItem("bdcr7-import-tags", JSON.stringify(next));
+  }, []);
+
+  const tagFor = useCallback(
+    (lcNumber: string) => tagsByLc[lcNumber] || { category: "Raw Materials", subcategory: "Cement" },
+    [tagsByLc]
+  );
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -89,6 +122,13 @@ export function ImportLCFeature() {
     });
     setSaving(false);
     if (dbErr) { setError(dbErr.message); return; }
+    saveTags({
+      ...tagsByLc,
+      [form.lc_number.trim()]: {
+        category: form.category,
+        subcategory: form.subcategory,
+      },
+    });
     setForm(EMPTY_FORM);
     setShowForm(false);
     fetchRecords();
@@ -102,8 +142,28 @@ export function ImportLCFeature() {
   const set = (k: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
+  const updateTag = (lcNumber: string, category: SupplyCategory, subcategory: string) => {
+    saveTags({
+      ...tagsByLc,
+      [lcNumber]: { category, subcategory },
+    });
+  };
+
+  const updateStatus = async (id: string, status: LCStatus) => {
+    await supabase.from("lc_records").update({ status }).eq("id", id);
+    setRecords((prev) => prev.map((item) => (item.id === id ? { ...item, status } : item)));
+  };
+
   const totalValue = records.reduce((s, r) => s + r.amount, 0);
   const openCount = records.filter((r) => r.status === "open" || r.status === "processing").length;
+  const categoryCounts = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const row of records) {
+      const category = tagFor(row.lc_number).category;
+      totals[category] = (totals[category] || 0) + 1;
+    }
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  }, [records, tagFor]);
 
   return (
     <div className="space-y-5">
@@ -137,6 +197,20 @@ export function ImportLCFeature() {
             <p className="mt-1.5 text-xl font-semibold text-foreground">{card.value}</p>
           </div>
         ))}
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-4">
+        {Object.entries(SUPPLY_TAXONOMY).map(([category, children]) => {
+          const total = categoryCounts.find(([name]) => name === category)?.[1] || 0;
+          return (
+            <div key={category} className="rounded-2xl border border-border/70 bg-background/85 p-4">
+              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Category</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{category}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{children.slice(0, 3).join(" • ")}</p>
+              <p className="mt-3 text-xs text-primary">{total} active records</p>
+            </div>
+          );
+        })}
       </div>
 
       <AnimatePresence>
@@ -219,6 +293,41 @@ export function ImportLCFeature() {
                       {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                   </div>
+                  <div className="space-y-1">
+                    <label htmlFor="lc-category" className="text-xs text-muted-foreground">Category *</label>
+                    <select
+                      id="lc-category"
+                      title="Category"
+                      className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
+                      value={form.category}
+                      onChange={(e) => {
+                        const category = e.target.value as SupplyCategory;
+                        setForm((prev) => ({
+                          ...prev,
+                          category,
+                          subcategory: SUPPLY_TAXONOMY[category][0],
+                        }));
+                      }}
+                    >
+                      {Object.keys(SUPPLY_TAXONOMY).map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="lc-subcategory" className="text-xs text-muted-foreground">Subcategory *</label>
+                    <select
+                      id="lc-subcategory"
+                      title="Subcategory"
+                      className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/60"
+                      value={form.subcategory}
+                      onChange={set("subcategory")}
+                    >
+                      {SUPPLY_TAXONOMY[form.category].map((item) => (
+                        <option key={item} value={item}>{item}</option>
+                      ))}
+                    </select>
+                  </div>
                   {error ? <p className="sm:col-span-2 lg:col-span-3 text-sm text-rose-600">{error}</p> : null}
                   <div className="sm:col-span-2 lg:col-span-3">
                     <Button type="submit" disabled={saving} className="h-9 px-5">
@@ -253,6 +362,8 @@ export function ImportLCFeature() {
                   <tr className="border-b border-border text-left text-xs uppercase tracking-[0.1em] text-muted-foreground">
                     <th className="py-2 pr-4">L/C Number</th>
                     <th className="py-2 pr-4">Supplier</th>
+                    <th className="py-2 pr-4">Category</th>
+                    <th className="py-2 pr-4">Subcategory</th>
                     <th className="py-2 pr-4">Amount</th>
                     <th className="py-2 pr-4">Arrival</th>
                     <th className="py-2 pr-4">Status</th>
@@ -260,31 +371,65 @@ export function ImportLCFeature() {
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((r) => (
-                    <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="py-2.5 pr-4 font-mono text-xs text-foreground">{r.lc_number}</td>
-                      <td className="py-2.5 pr-4 font-medium text-foreground">{r.supplier_name}</td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">
-                        {r.currency} {Number(r.amount).toLocaleString("en-US")}
-                      </td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">{r.expected_arrival?.slice(0, 10)}</td>
-                      <td className="py-2.5 pr-4">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_COLORS[r.status as LCStatus] || STATUS_COLORS.open}`}>
-                          {STATUS_LABELS[r.status as LCStatus] || r.status}
-                        </span>
-                      </td>
-                      <td className="py-2.5">
-                        <button
-                          type="button"
-                          className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
-                          onClick={() => deleteRecord(r.id)}
-                          aria-label={`Delete L/C ${r.lc_number}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {records.map((r) => {
+                    const tag = tagFor(r.lc_number);
+                    return (
+                      <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="py-2.5 pr-4 font-mono text-xs text-foreground">{r.lc_number}</td>
+                        <td className="py-2.5 pr-4 font-medium text-foreground">{r.supplier_name}</td>
+                        <td className="py-2.5 pr-4 text-xs text-muted-foreground">{tag.category}</td>
+                        <td className="py-2.5 pr-4 text-xs text-muted-foreground">{tag.subcategory}</td>
+                        <td className="py-2.5 pr-4 text-muted-foreground">
+                          {r.currency} {Number(r.amount).toLocaleString("en-US")}
+                        </td>
+                        <td className="py-2.5 pr-4 text-muted-foreground">{r.expected_arrival?.slice(0, 10)}</td>
+                        <td className="py-2.5 pr-4">
+                          <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_COLORS[r.status as LCStatus] || STATUS_COLORS.open}`}>
+                            {STATUS_LABELS[r.status as LCStatus] || r.status}
+                          </span>
+                        </td>
+                        <td className="py-2.5">
+                          <ActionMenu
+                            items={[
+                              { label: `Category: ${tag.category}`, onClick: () => {} },
+                              { label: `Subcategory: ${tag.subcategory}`, onClick: () => {} },
+                              {
+                                label: "Set Status: Processing",
+                                onClick: () => {
+                                  void updateStatus(r.id, "processing");
+                                },
+                              },
+                              {
+                                label: "Set Status: Shipped",
+                                onClick: () => {
+                                  void updateStatus(r.id, "shipped");
+                                },
+                              },
+                              {
+                                label: "Set Status: Cleared",
+                                onClick: () => {
+                                  void updateStatus(r.id, "cleared");
+                                },
+                              },
+                              {
+                                label: "Category -> Logistics / Customs",
+                                onClick: () => {
+                                  updateTag(r.lc_number, "Logistics", "Customs");
+                                },
+                              },
+                              {
+                                label: "Category -> Raw Materials / Cement",
+                                onClick: () => {
+                                  updateTag(r.lc_number, "Raw Materials", "Cement");
+                                },
+                              },
+                              { label: "Delete Record", onClick: () => deleteRecord(r.id), tone: "danger" },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

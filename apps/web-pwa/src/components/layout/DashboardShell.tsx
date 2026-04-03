@@ -146,6 +146,8 @@ const copy = {
   },
 } as const;
 
+const QUICK_MOBILE_ROUTES = ["/dashboard", "/dashboard/construction", "/dashboard/finance", "/dashboard/pos", "/dashboard/reports"] as const;
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -219,6 +221,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }))
     .filter((section) => section.items.length > 0);
   const nav = navSections.flatMap((section) => section.items);
+
+  const mobileQuickNav = useMemo(() => {
+    const selected = QUICK_MOBILE_ROUTES
+      .map((href) => nav.find((item) => item.href === href))
+      .filter(Boolean) as typeof nav;
+    if (selected.length >= 5) {
+      return selected;
+    }
+    return nav.slice(0, 5);
+  }, [nav]);
+
+  const iconTone = (href: string) => {
+    if (href.includes("finance")) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-300";
+    if (href.includes("construction")) return "bg-sky-100 text-sky-700 dark:bg-sky-900/35 dark:text-sky-300";
+    if (href.includes("import")) return "bg-violet-100 text-violet-700 dark:bg-violet-900/35 dark:text-violet-300";
+    if (href.includes("pos")) return "bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-300";
+    if (href.includes("reports")) return "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/35 dark:text-fuchsia-300";
+    if (href.includes("ai")) return "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/35 dark:text-cyan-300";
+    if (href.includes("settings")) return "bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200";
+    return "bg-primary/10 text-primary";
+  };
 
   const crumb = useMemo(() => {
     const activeItem = nav.find((item) => item.href === pathname);
@@ -367,12 +390,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{section.title}</p>
                     <div className="grid gap-2">
                       {section.items.map(({ href, label, sublabel, icon: Icon }) => (
-                        <Link key={href} href={href} className={cn("rounded-2xl border px-4 py-3 text-sm transition-all active:scale-95", pathname === href ? "border-primary/25 bg-primary/10 text-foreground" : "border-border bg-background/85 text-muted-foreground hover:bg-muted hover:text-foreground")}>
-                          <span className="flex items-center gap-3">
-                            <Icon className="h-4 w-4" />
+                        <Link key={href} href={href} className={cn("rounded-2xl border px-3 py-2.5 text-sm transition-all active:scale-95", pathname === href ? "border-primary/25 bg-primary/10 text-foreground" : "border-border bg-background/85 text-muted-foreground hover:bg-muted hover:text-foreground")}>
+                          <span className="flex items-center gap-2.5">
+                            <span className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl", iconTone(href))}>
+                              <Icon className="h-3.5 w-3.5" />
+                            </span>
                             <span className="min-w-0">
                               <span className="block truncate font-medium">{label}</span>
-                              <span className="block truncate text-xs text-muted-foreground">{sublabel}</span>
+                              <span className="block truncate text-[11px] text-muted-foreground">{sublabel}</span>
                             </span>
                           </span>
                         </Link>
@@ -407,13 +432,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-1.5 py-1.5 backdrop-blur-xl safe-bottom safe-x lg:hidden">
-          <div className="mx-auto flex max-w-5xl items-stretch gap-1 overflow-x-auto pb-1">
-          {nav.map(({ href, label, sublabel, icon: Icon }) => (
-            <Link key={href} href={href} className={cn("flex min-h-[3.4rem] min-w-[72px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl px-1.5 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")}>
-              <Icon className="mb-0.5 h-4 w-4" />
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-1 py-1 backdrop-blur-xl safe-bottom safe-x lg:hidden">
+          <div className="mx-auto grid max-w-5xl grid-cols-5 gap-1">
+          {mobileQuickNav.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className={cn("flex min-h-[3.1rem] min-w-0 flex-col items-center justify-center rounded-2xl px-1 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")}>
+              <Icon className="mb-0.5 h-3.5 w-3.5" />
               <span className="w-full truncate text-center leading-tight">{label}</span>
-              <span className={cn("hidden w-full truncate text-center text-[9px] sm:block", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
             </Link>
           ))}
         </div>
