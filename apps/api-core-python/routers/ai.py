@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user, require_roles
 from core.db import fetch_all, tx
@@ -50,3 +50,42 @@ async def search_memory(vector: str, top_k: int = 5, user: UserContext = Depends
         {"vector": vector, "top_k": max(1, min(top_k, 20))},
     )
     return [dict(x) for x in rows]
+
+
+@router.post("/chat")
+async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
+    message = str(payload.get("message", "")).strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="message is required")
+
+    normalized = message.lower()
+    wants_anomaly = any(keyword in normalized for keyword in ("anomal", "risk", "suspicious", "ঝুঁকি", "অস্বাভাবিক"))
+    wants_dashboard = any(keyword in normalized for keyword in ("dashboard", "summary", "overview", "balance", "সারসংক্ষেপ", "ব্যালেন্স"))
+
+    if wants_anomaly:
+        anomalies = financial_anomalies()
+        if not anomalies:
+            return {
+                "reply": "No high-signal anomaly was found in recent expenses.",
+                "intent": "anomalies",
+                "count": 0,
+            }
+        top = anomalies[:3]
+        lines = [f"Found {len(anomalies)} anomalous expense records. Top signals:"]
+        for idx, row in enumerate(top, 1):
+            lines.append(
+                f"{idx}. Expense {row.get('id')} amount {row.get('amount')} (account: {row.get('account_id')})"
+            )
+        return {"reply": "\n".join(lines), "intent": "anomalies", "count": len(anomalies), "items": top}
+
+    metrics = dashboard_metrics()
+    return {
+        "reply": (
+            "Dashboard snapshot:\n"
+            f"- Total balance: {metrics.get('total_balance', 0)}\n"
+            f"- Monthly sales: {metrics.get('monthly_sales', 0)}\n"
+            f"- Pending expenses: {metrics.get('pending_expenses', 0)}"
+        ),
+        "intent": "dashboard" if wants_dashboard else "general",
+        "data": metrics,
+    }

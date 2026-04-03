@@ -3,6 +3,43 @@ import { persist } from "zustand/middleware";
 
 import { supabase } from "@/lib/supabase";
 
+type RoleJoin = { name?: string } | Array<{ name?: string }> | null | undefined;
+
+function extractRoleName(roles: RoleJoin): string {
+  if (Array.isArray(roles)) {
+    const name = roles[0]?.name;
+    if (typeof name === "string" && name.trim()) return name.trim().toLowerCase();
+  }
+  if (roles && typeof roles === "object") {
+    const name = (roles as { name?: string }).name;
+    if (typeof name === "string" && name.trim()) return name.trim().toLowerCase();
+  }
+  throw new Error("User role mapping is missing. Contact administrator.");
+}
+
+async function fetchUserRole(userId: string): Promise<string> {
+  if (!supabase) {
+    throw new Error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
+  }
+  const { data, error } = await supabase
+    .from("users")
+    .select("id,is_active,roles(name)")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message || "Failed to load user profile");
+  }
+  if (!data) {
+    throw new Error("User profile missing. Please contact your administrator.");
+  }
+  if (data.is_active === false) {
+    throw new Error("User account is inactive.");
+  }
+
+  return extractRoleName((data as { roles?: RoleJoin }).roles);
+}
+
 function normalizeAuthError(message: string | undefined, mode: "login" | "register"): string {
   const text = (message || "").toLowerCase();
 
@@ -29,6 +66,11 @@ type AuthState = {
   token: string | null;
   role: string | null;
   userId: string | null;
+  loading: boolean;
+  hydrated: boolean;
+  error: string | null;
+  initialize: () => Promise<void>;
+  fetchUser: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string, roleName: string) => Promise<void>;
   logout: () => void;
@@ -40,36 +82,82 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       role: null,
       userId: null,
+      loading: false,
+      hydrated: false,
+      error: null,
+      initialize: async () => {
+        if (!supabase) {
+          set({ hydrated: true, loading: false });
+          return;
+        }
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          if (error) {
+            throw new Error(error.message || "Failed to restore session");
+          }
+          const session = data.session;
+          if (!session?.user?.id) {
+            set({ token: null, userId: null, role: null, loading: false, hydrated: true });
+            return;
+          }
+          const roleName = await fetchUserRole(session.user.id);
+          set({
+            token: session.access_token,
+            userId: session.user.id,
+            role: roleName,
+            loading: false,
+            hydrated: true,
+            error: null,
+          });
+        } catch (err) {
+          set({
+            token: null,
+            role: null,
+            userId: null,
+            loading: false,
+            hydrated: true,
+            error: (err as Error).message,
+          });
+        }
+      },
+      fetchUser: async () => {
+        const state = useAuthStore.getState();
+        if (!state.userId) {
+          return;
+        }
+        set({ loading: true, error: null });
+        try {
+          const roleName = await fetchUserRole(state.userId);
+          set({ role: roleName, loading: false, hydrated: true });
+        } catch (err) {
+          set({ loading: false, hydrated: true, error: (err as Error).message });
+          throw err;
+        }
+      },
       login: async (email, password) => {
         if (!supabase) {
           throw new Error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
         }
+        set({ loading: true, error: null });
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error || !data.session || !data.user) {
+          set({ loading: false });
           throw new Error(normalizeAuthError(error?.message, "login"));
         }
-
-        let roleName = "viewer";
-        const { data: localUser } = await supabase
-          .from("users")
-          .select("role_id")
-          .eq("id", data.user.id)
-          .maybeSingle();
-        if (localUser?.role_id) {
-          const { data: roleRow } = await supabase
-            .from("roles")
-            .select("name")
-            .eq("id", localUser.role_id)
-            .maybeSingle();
-          roleName = roleRow?.name || roleName;
+        try {
+          const roleName = await fetchUserRole(data.user.id);
+          set({ token: data.session.access_token, role: roleName, userId: data.user.id, loading: false, hydrated: true });
+        } catch (err) {
+          set({ loading: false, error: (err as Error).message });
+          throw err;
         }
-
-        set({ token: data.session.access_token, role: roleName, userId: data.user.id });
       },
       register: async (email, password, fullName, roleName) => {
         if (!supabase) {
           throw new Error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
         }
+        set({ loading: true, error: null });
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -78,17 +166,34 @@ export const useAuthStore = create<AuthState>()(
           },
         });
         if (error || !data.user) {
+          set({ loading: false });
           throw new Error(normalizeAuthError(error?.message, "register"));
         }
 
         const accessToken = data.session?.access_token || null;
-        set({ token: accessToken, role: roleName || "viewer", userId: data.user.id });
+        if (accessToken) {
+          try {
+            const resolvedRole = await fetchUserRole(data.user.id);
+            set({ token: accessToken, role: resolvedRole, userId: data.user.id, loading: false, hydrated: true });
+            return;
+          } catch {
+            // Keep successful auth state while backend profile propagation catches up.
+          }
+        }
+        set({ token: accessToken, role: null, userId: data.user.id, loading: false, hydrated: true });
       },
       logout: () => {
         void supabase?.auth.signOut();
-        set({ token: null, role: null, userId: null });
+        set({ token: null, role: null, userId: null, loading: false, hydrated: true, error: null });
       },
     }),
-    { name: "bdcr7-auth" }
+    {
+      name: "bdcr7-auth",
+      partialize: (state) => ({
+        token: state.token,
+        role: state.role,
+        userId: state.userId,
+      }),
+    }
   )
 );

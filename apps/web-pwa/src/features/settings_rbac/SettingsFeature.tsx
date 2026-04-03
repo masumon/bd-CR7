@@ -1,7 +1,9 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw, Settings2, UserRound } from "lucide-react";
+import { CheckCircle2, Loader2, RefreshCw, Settings2, UserRound, Sun, Moon, Languages } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +29,36 @@ export function SettingsFeature() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [dark, setDark] = useState(false);
+  const [language, setLanguage] = useState<"en" | "bn">("en");
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem("bdcr7-theme");
+    const storedLanguage = window.localStorage.getItem("bdcr7-language");
+
+    if (storedTheme === "dark") {
+      setDark(true);
+    } else if (storedTheme === "light") {
+      setDark(false);
+    } else {
+      setDark(window.matchMedia("(prefers-color-scheme: dark)").matches);
+    }
+
+    if (storedLanguage === "bn" || storedLanguage === "en") {
+      setLanguage(storedLanguage);
+    }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("dark", dark);
+    window.localStorage.setItem("bdcr7-theme", dark ? "dark" : "light");
+  }, [dark]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    window.localStorage.setItem("bdcr7-language", language);
+  }, [language]);
 
   const loadProfile = useCallback(async () => {
     if (!userId) {
@@ -118,7 +150,7 @@ export function SettingsFeature() {
                 </div>
                 <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
                   <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Role</p>
-                  <p className="mt-2 text-sm font-medium text-foreground">{role || "viewer"}</p>
+                  <p className="mt-2 text-sm font-medium text-foreground">{role || "Unassigned"}</p>
                 </div>
               </div>
 
@@ -171,6 +203,67 @@ export function SettingsFeature() {
               </Button>
             </form>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Quick Controls</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              aria-label="Switch to light mode"
+              title="Light mode"
+              onClick={() => setDark(false)}
+              className={cn(
+                "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
+                dark ? "border-border bg-background text-muted-foreground" : "border-primary/35 bg-primary/10 text-primary"
+              )}
+            >
+              <Sun className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              aria-label="Switch to dark mode"
+              title="Dark mode"
+              onClick={() => setDark(true)}
+              className={cn(
+                "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
+                dark ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+              )}
+            >
+              <Moon className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              aria-label="Switch language to Bangla"
+              title="Bangla"
+              onClick={() => setLanguage("bn")}
+              className={cn(
+                "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
+                language === "bn" ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+              )}
+            >
+              <Languages className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              aria-label="Switch language to English"
+              title="English"
+              onClick={() => setLanguage("en")}
+              className={cn(
+                "inline-flex h-11 w-11 items-center justify-center rounded-full border transition-all",
+                language === "en" ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+              )}
+            >
+              <Languages className="h-4 w-4" />
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>

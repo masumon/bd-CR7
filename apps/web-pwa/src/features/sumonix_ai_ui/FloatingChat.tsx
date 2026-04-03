@@ -26,7 +26,7 @@ function classifyMessage(text: string): "anomalies" | "dashboard" | "general" {
   const t = text.toLowerCase();
   if (t.match(/anomal|risk|suspicious|সন্দেহ|ঝুঁকি|অস্বাভাবিক/)) return "anomalies";
   if (t.match(/dashboard|summary|overview|total|balance|তহবিল|ব্যালেন্স|সারসংক্ষেপ/)) return "dashboard";
-  return "dashboard";
+  return "general";
 }
 
 function formatAIResponse(endpoint: "anomalies" | "dashboard" | "general", data: unknown): string {
@@ -86,9 +86,17 @@ export function FloatingChat() {
     const endpoint = classifyMessage(trimmed);
 
     try {
-      const apiPath = endpoint === "anomalies" ? "/api/ai/anomalies" : "/api/ai/dashboard";
-      const data = await apiRequest<unknown>(apiPath, {}, token || undefined);
-      const reply = formatAIResponse(endpoint, data);
+      const data = await apiRequest<{ reply?: string; intent?: "anomalies" | "dashboard" | "general"; data?: unknown; items?: unknown }>(
+        "/api/ai/chat",
+        {
+          method: "POST",
+          body: JSON.stringify({ message: trimmed }),
+        },
+        token || undefined
+      );
+      const intent = data.intent || endpoint;
+      const formatted = data.reply || formatAIResponse(intent, data.data ?? data.items ?? data);
+      const reply = formatted;
       setMessages((prev) =>
         prev.map((m) => (m.loading ? { ...m, loading: false, content: reply } : m))
       );

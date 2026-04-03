@@ -28,6 +28,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FloatingChat } from "@/features/sumonix_ai_ui/FloatingChat";
+import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
@@ -138,58 +139,25 @@ const copy = {
   },
 } as const;
 
-const rolePermissions: Record<string, string[]> = {
-  admin: [
-    "/dashboard",
-    "/dashboard/construction",
-    "/dashboard/finance",
-    "/dashboard/import",
-    "/dashboard/pos",
-    "/dashboard/construction/projects",
-    "/dashboard/reports",
-    "/dashboard/settings",
-  ],
-  maker: [
-    "/dashboard",
-    "/dashboard/construction",
-    "/dashboard/finance",
-    "/dashboard/import",
-    "/dashboard/pos",
-    "/dashboard/construction/projects",
-    "/dashboard/reports",
-    "/dashboard/settings",
-  ],
-  checker: [
-    "/dashboard",
-    "/dashboard/finance",
-    "/dashboard/reports",
-    "/dashboard/settings",
-  ],
-  viewer: [
-    "/dashboard",
-    "/dashboard/reports",
-    "/dashboard/settings",
-  ],
-  worker: [
-    "/dashboard",
-    "/dashboard/construction",
-    "/dashboard/pos",
-    "/dashboard/settings",
-  ],
-};
-
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const initialize = useAuthStore((state) => state.initialize);
   const logout = useAuthStore((state) => state.logout);
   const role = useAuthStore((state) => state.role);
   const userId = useAuthStore((state) => state.userId);
+  const authLoading = useAuthStore((state) => state.loading);
+  const hydrated = useAuthStore((state) => state.hydrated);
   const [collapsed, setCollapsed] = useState(false);
   const [dark, setDark] = useState(false);
   const [online, setOnline] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [language, setLanguage] = useState<"en" | "bn">("en");
+
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("bdcr7-theme");
@@ -235,8 +203,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const text = copy[language];
-  const normalizedRole = (role || "viewer").toLowerCase();
-  const allowed = rolePermissions[normalizedRole] || rolePermissions.viewer;
+  const normalizedRole = normalizeRoleName(role);
+  const allowed = ROLE_ACCESS[normalizedRole] || ROLE_ACCESS.viewer;
   const navSections = text.sections
     .map((section) => ({
       ...section,
@@ -259,6 +227,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     setMenuOpen(false);
     router.push("/login");
   };
+
+  if (!hydrated || authLoading) {
+    return (
+      <div className="flex min-h-[100svh] items-center justify-center bg-aura">
+        <div className="rounded-2xl border border-border/70 bg-card/75 px-6 py-4 text-sm text-muted-foreground backdrop-blur">
+          Loading workspace...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100svh] bg-aura">
@@ -345,7 +323,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
               <button type="button" className="hidden items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm transition-all active:scale-95 hover:shadow-soft sm:flex" onClick={() => setSettingsOpen(true)}>
                 <UserCircle2 className="h-4 w-4" />
-                {role || text.admin}
+                {role || "unassigned"}
               </button>
             </div>
           </header>
@@ -408,12 +386,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-lg safe-bottom safe-x lg:hidden">
-          <div className="mx-auto flex max-w-5xl items-stretch gap-2 overflow-x-auto pb-1">
+          <div className="mx-auto flex max-w-5xl items-stretch gap-1.5 overflow-x-auto pb-1">
           {nav.map(({ href, label, sublabel, icon: Icon }) => (
-            <Link key={href} href={href} className={cn("flex min-h-16 min-w-[104px] shrink-0 flex-col items-center justify-center rounded-2xl px-2 text-[11px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+            <Link key={href} href={href} className={cn("flex min-h-14 min-w-[82px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl px-2 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
               <Icon className="mb-1 h-4 w-4" />
               <span className="w-full truncate text-center">{label}</span>
-              <span className={cn("w-full truncate text-center text-[10px]", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
+              <span className={cn("hidden w-full truncate text-center text-[10px] sm:block", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
             </Link>
           ))}
         </div>
@@ -430,7 +408,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-border/70 bg-background/80 p-3 text-sm text-muted-foreground">
                 <p className="text-xs uppercase tracking-[0.14em]">Role</p>
-                <p className="mt-2 font-semibold text-foreground">{role || text.admin}</p>
+                <p className="mt-2 font-semibold text-foreground">{role || "unassigned"}</p>
               </div>
               <div className="rounded-2xl border border-border/70 bg-background/80 p-3 text-sm text-muted-foreground">
                 <p className="text-xs uppercase tracking-[0.14em]">User ID</p>
@@ -447,9 +425,31 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
               {dark ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button type="button" variant={dark ? "ghost" : "outline"} onClick={() => setDark(false)}>{text.light}</Button>
-              <Button type="button" variant={dark ? "outline" : "ghost"} onClick={() => setDark(true)}>{text.dark}</Button>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                title={text.light}
+                aria-label={text.light}
+                onClick={() => setDark(false)}
+                className={cn(
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  dark ? "border-border bg-background text-muted-foreground" : "border-primary/35 bg-primary/10 text-primary"
+                )}
+              >
+                <Sun className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                title={text.dark}
+                aria-label={text.dark}
+                onClick={() => setDark(true)}
+                className={cn(
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  dark ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+                )}
+              >
+                <Moon className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
@@ -461,9 +461,31 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
               <Languages className="h-4 w-4 text-primary" />
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button type="button" variant={language === "bn" ? "outline" : "ghost"} onClick={() => setLanguage("bn")}>{text.bangla}</Button>
-              <Button type="button" variant={language === "en" ? "outline" : "ghost"} onClick={() => setLanguage("en")}>{text.english}</Button>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                title={text.bangla}
+                aria-label={text.bangla}
+                onClick={() => setLanguage("bn")}
+                className={cn(
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  language === "bn" ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+                )}
+              >
+                <Languages className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                title={text.english}
+                aria-label={text.english}
+                onClick={() => setLanguage("en")}
+                className={cn(
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                  language === "en" ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+                )}
+              >
+                <Languages className="h-4 w-4" />
+              </button>
             </div>
           </div>
 

@@ -10,6 +10,15 @@ router = APIRouter()
 SELF_SERVICE_ROLE = "viewer"
 
 
+def _extract_joined_role_name(user_row: dict) -> str:
+    role_obj = user_row.get("roles")
+    if isinstance(role_obj, dict):
+        role_name = role_obj.get("name")
+        if isinstance(role_name, str) and role_name.strip():
+            return role_name.strip().lower()
+    raise HTTPException(status_code=500, detail="User role mapping is invalid")
+
+
 @router.post("/register", response_model=AuthResponse)
 async def register(payload: RegisterRequest):
     if supabase_service is None:
@@ -81,7 +90,13 @@ async def login(payload: LoginRequest):
     if not auth_result.user or not auth_result.session:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    local_user = supabase_service.table("users").select("id, role_id").eq("id", str(auth_result.user.id)).limit(1).execute()
+    local_user = (
+        supabase_service.table("users")
+        .select("id,is_active,roles(name)")
+        .eq("id", str(auth_result.user.id))
+        .limit(1)
+        .execute()
+    )
 
     if not local_user.data:
         viewer = supabase_service.table("roles").select("id,name").eq("name", "viewer").limit(1).execute()
@@ -101,11 +116,7 @@ async def login(payload: LoginRequest):
         ).execute()
         role_name = viewer_role["name"]
     else:
-        role_id = local_user.data[0].get("role_id")
-        if role_id is None:
-            raise HTTPException(status_code=500, detail="User role_id is null (data corruption)")
-        role_res = supabase_service.table("roles").select("name").eq("id", role_id).limit(1).execute()
-        role_name = role_res.data[0]["name"] if role_res.data else "viewer"
+        role_name = _extract_joined_role_name(local_user.data[0])
 
     return AuthResponse(
         access_token=auth_result.session.access_token,
@@ -124,12 +135,17 @@ async def me(user: UserContext = Depends(get_current_user)):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
-    profile = supabase_service.table("users").select("id,email,full_name,role_id").eq("id", user.user_id).limit(1).execute()
+    profile = (
+        supabase_service.table("users")
+        .select("id,email,full_name,roles(name)")
+        .eq("id", user.user_id)
+        .limit(1)
+        .execute()
+    )
     if not profile.data:
         raise HTTPException(status_code=404, detail="User not found")
     profile_row = profile.data[0]
-    role_res = supabase_service.table("roles").select("name").eq("id", profile_row.get("role_id")).limit(1).execute()
-    role_name = role_res.data[0]["name"] if role_res.data else "viewer"
+    role_name = _extract_joined_role_name(profile_row)
     return {
         "id": profile_row["id"],
         "email": profile_row.get("email"),

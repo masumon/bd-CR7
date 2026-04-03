@@ -50,7 +50,7 @@ export function AuthFeature() {
 
   const onRegister = async () => {
     try {
-      await register(email, password, fullName, "worker");
+      await register(email, password, fullName, "viewer");
       setMessage("Registration successful");
     } catch (error) {
       setMessage((error as Error).message);
@@ -77,7 +77,7 @@ export function AuthFeature() {
       return;
     }
     const { role: currentRole } = useAuthStore.getState();
-    useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || "worker" });
+    useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
     setMessage("Mobile OTP login successful");
   };
 

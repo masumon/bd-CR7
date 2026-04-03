@@ -8,19 +8,19 @@ router = APIRouter()
 
 
 @router.get("")
-async def list_users(user: UserContext = Depends(require_roles("admin", "checker"))):
+async def list_users(user: UserContext = Depends(require_roles("admin", "checker", "super_admin"))):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
     rows = supabase_service.table("users").select("id,email,full_name,is_active,role_id,created_at").limit(500).execute()
     roles = supabase_service.table("roles").select("id,name").execute()
-    role_map = {str(r["id"]): r["name"] for r in (roles.data or [])}
+    role_map = {str(r["id"]): str(r["name"]).lower() for r in (roles.data or [])}
     return [
         {
             "id": r["id"],
             "email": r.get("email"),
             "full_name": r.get("full_name"),
             "is_active": r.get("is_active", True),
-            "role": role_map.get(str(r.get("role_id")), "viewer"),
+            "role": role_map.get(str(r.get("role_id"))),
             "created_at": r.get("created_at"),
         }
         for r in (rows.data or [])
@@ -69,7 +69,7 @@ async def create_user(payload: UserCreate, user: UserContext = Depends(require_r
 
 @router.get("/{user_id}")
 async def get_user(user_id: str, actor: UserContext = Depends(get_current_user)):
-    if actor.role not in ("admin", "checker") and actor.user_id != user_id:
+    if actor.role not in ("super_admin", "admin", "checker") and actor.user_id != user_id:
         raise HTTPException(status_code=403, detail="Insufficient role")
 
     if supabase_service is None:
@@ -78,8 +78,13 @@ async def get_user(user_id: str, actor: UserContext = Depends(get_current_user))
     row = supabase_service.table("users").select("id,email,full_name,is_active,role_id,created_at,updated_at").eq("id", user_id).limit(1).execute()
     if not row.data:
         raise HTTPException(status_code=404, detail="User not found")
+    role_id = row.data[0].get("role_id")
+    if role_id is None:
+        raise HTTPException(status_code=500, detail="User role_id is null (data corruption)")
     role_res = supabase_service.table("roles").select("name").eq("id", row.data[0].get("role_id")).limit(1).execute()
-    role_name = role_res.data[0]["name"] if role_res.data else "viewer"
+    if not role_res.data:
+        raise HTTPException(status_code=500, detail="User role mapping is invalid")
+    role_name = str(role_res.data[0]["name"]).lower()
     profile = dict(row.data[0])
     profile["role"] = role_name
     profile.pop("role_id", None)

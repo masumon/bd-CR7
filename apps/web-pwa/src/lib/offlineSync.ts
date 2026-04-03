@@ -1,6 +1,8 @@
 import useOfflineQueue from '@/store/offlineQueue';
+import { useAuthStore } from '@/store/authStore';
 
 const MAX_ATTEMPTS = 5;
+let flushInProgress = false;
 
 function resolveApiBase(): string {
   const raw = (process.env.NEXT_PUBLIC_API_URL || '').trim();
@@ -11,47 +13,58 @@ function resolveApiBase(): string {
 }
 
 async function flushQueueOnce(): Promise<void> {
+  if (flushInProgress) {
+    return;
+  }
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return;
   }
 
-  const state = useOfflineQueue.getState();
-  const item = state.dequeue();
-  if (!item) {
-    return;
-  }
-
-  const apiBase = resolveApiBase();
-  if (!apiBase) {
-    state.requeue(item);
-    return;
-  }
+  flushInProgress = true;
 
   try {
-    const response = await fetch(`${apiBase}${item.endpoint}`, {
-      method: item.method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item.payload),
-    });
-
-    if (response.ok) {
+    const apiBase = resolveApiBase();
+    if (!apiBase) {
       return;
     }
 
-    if (response.status === 409) {
-      // Conflict resolution: last-write-wins by dropping older queued op.
-      return;
-    }
+    const token = useAuthStore.getState().token;
+    const maxBatch = 50;
 
-    const attempts = (item.attempts || 0) + 1;
-    if (attempts < MAX_ATTEMPTS) {
-      state.requeue({ ...item, attempts, lastError: `HTTP ${response.status}` });
+    for (let i = 0; i < maxBatch; i += 1) {
+      const state = useOfflineQueue.getState();
+      const item = state.dequeue();
+      if (!item) {
+        break;
+      }
+
+      try {
+        const response = await fetch(`${apiBase}${item.endpoint}`, {
+          method: item.method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(item.payload),
+        });
+
+        if (response.ok || response.status === 409) {
+          continue;
+        }
+
+        const attempts = (item.attempts || 0) + 1;
+        if (attempts < MAX_ATTEMPTS) {
+          state.requeue({ ...item, attempts, lastError: `HTTP ${response.status}` });
+        }
+      } catch (error) {
+        const attempts = (item.attempts || 0) + 1;
+        if (attempts < MAX_ATTEMPTS) {
+          state.requeue({ ...item, attempts, lastError: (error as Error).message });
+        }
+      }
     }
-  } catch (error) {
-    const attempts = (item.attempts || 0) + 1;
-    if (attempts < MAX_ATTEMPTS) {
-      state.requeue({ ...item, attempts, lastError: (error as Error).message });
-    }
+  } finally {
+    flushInProgress = false;
   }
 }
 

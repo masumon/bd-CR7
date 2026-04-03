@@ -73,7 +73,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, password, fullName, "user");
+      await register(email, password, fullName, "viewer");
       setSuccess(true);
       setTimeout(() => {
         router.push("/auth/welcome");
