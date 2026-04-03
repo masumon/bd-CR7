@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/client";
+import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
 interface Product {
@@ -17,18 +17,9 @@ interface Product {
   stock_qty: number;
 }
 
-const FALLBACK_PRODUCTS: Product[] = [
-  { id: "p1", name: "Rice 5kg", barcode: "00001", sell_price: 580, stock_qty: 100 },
-  { id: "p2", name: "Cooking Oil 1L", barcode: "00002", sell_price: 195, stock_qty: 50 },
-  { id: "p3", name: "Flour 2kg", barcode: "00003", sell_price: 120, stock_qty: 80 },
-  { id: "p4", name: "Sugar 1kg", barcode: "00004", sell_price: 90, stock_qty: 60 },
-  { id: "p5", name: "Milk 1L", barcode: "00005", sell_price: 75, stock_qty: 40 },
-  { id: "p6", name: "Tea Pack 100g", barcode: "00006", sell_price: 55, stock_qty: 70 },
-];
-
 export function RetailPOSView() {
-  const supabase = useMemo(() => createClient(), []);
   const userId = useAuthStore((state) => state.userId);
+  const token = useAuthStore((state) => state.token);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -38,18 +29,16 @@ export function RetailPOSView() {
 
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
-    const { data, error } = await supabase
-      .from("products")
-      .select("id,name,barcode,sell_price,stock_qty")
-      .order("name")
-      .limit(60);
-    if (error || !data || data.length === 0) {
-      setProducts(FALLBACK_PRODUCTS);
-    } else {
-      setProducts(data as Product[]);
+    setErrorMsg("");
+    try {
+      const data = await apiRequest<Product[]>("/api/pos/products", {}, token || undefined);
+      setProducts(data || []);
+    } catch (err) {
+      setProducts([]);
+      setErrorMsg((err as Error).message || "Failed to load products.");
     }
     setLoadingProducts(false);
-  }, [supabase]);
+  }, [token]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -83,36 +72,34 @@ export function RetailPOSView() {
       return;
     }
 
-    // Insert sale
-    const { data: saleData, error: saleErr } = await supabase
-      .from("sales")
-      .insert({ cashier_id: userId, total_amount: total, customer_id: null })
-      .select("id")
-      .single();
-
-    if (saleErr || !saleData) {
-      setErrorMsg(saleErr?.message || "Failed to create sale.");
+    if (!token) {
+      setErrorMsg("API token missing. Please login again.");
       setSaving(false);
       return;
     }
 
-    const saleId = saleData.id as string;
     const items = Object.entries(cart)
       .filter(([, qty]) => qty > 0)
-      .map(([id, qty]) => {
-        const p = products.find((pr) => pr.id === id)!;
-        return { sale_id: saleId, product_id: id, quantity: qty, unit_price: p.sell_price, line_total: p.sell_price * qty };
-      });
+      .map(([id, qty]) => ({ product_id: id, quantity: qty }));
 
-    const { error: itemsErr } = await supabase.from("sale_items").insert(items);
-    setSaving(false);
-    if (itemsErr) {
-      setErrorMsg(itemsErr.message);
-      return;
+    try {
+      await apiRequest<{ id: string; total_amount: string }>(
+        "/api/pos/sales",
+        {
+          method: "POST",
+          body: JSON.stringify({ customer_id: null, items }),
+        },
+        token
+      );
+      setCart({});
+      setSuccessMsg(`বিক্রয় সংরক্ষিত হয়েছে — Sale saved (৳${total.toLocaleString("en-BD")})`);
+      setTimeout(() => setSuccessMsg(""), 4000);
+      void fetchProducts();
+    } catch (err) {
+      setErrorMsg((err as Error).message || "Checkout failed.");
+    } finally {
+      setSaving(false);
     }
-    setCart({});
-    setSuccessMsg(`বিক্রয় সংরক্ষিত হয়েছে — Sale saved (৳${total.toLocaleString("en-BD")})`);
-    setTimeout(() => setSuccessMsg(""), 4000);
   };
 
   const cartItems = products.filter((p) => (cart[p.id] || 0) > 0);

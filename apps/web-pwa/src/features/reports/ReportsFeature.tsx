@@ -19,9 +19,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 
 interface ExpenseRow { id: string; amount: number; status: string; created_at: string; metadata?: Record<string, string>; }
-interface WorkerRow { id: string; full_name?: string; worker_name?: string; role?: string; daily_rate?: number; }
-interface MaterialRow { id: string; material_name: string; movement_type: string; quantity: number; unit: string; total_cost?: number; created_at: string; }
-interface FundRow { id: string; amount: number; direction: string; created_at: string; }
+interface WorkerRow { worker_id: string; attendance_date: string; }
+interface MaterialRow { id: string; material_name: string; movement_type: string; quantity: number; unit_cost?: number; created_at: string; }
+interface FundRow { id: string; amount: number; created_at: string; }
 
 interface ReportSummary {
   totalFunds: number;
@@ -77,9 +77,9 @@ export function ReportsFeature() {
 
     const [expRes, workerRes, matRes, fundRes] = await Promise.all([
       supabase.from("expenses").select("id,amount,status,created_at,metadata").gte("created_at", sinceISO).order("created_at", { ascending: false }).limit(200),
-      supabase.from("attendance").select("id,worker_name,role").gte("date", sinceISO.slice(0, 10)),
-      supabase.from("material_movements").select("id,material_name,movement_type,quantity,unit,total_cost,created_at").gte("created_at", sinceISO).order("created_at", { ascending: false }).limit(200),
-      supabase.from("fund_transactions").select("id,amount,direction,created_at").gte("created_at", sinceISO),
+      supabase.from("attendance").select("worker_id,attendance_date").gte("attendance_date", sinceISO.slice(0, 10)),
+      supabase.from("material_movements").select("id,material_name,movement_type,quantity,unit_cost,created_at").gte("created_at", sinceISO).order("created_at", { ascending: false }).limit(200),
+      supabase.from("fund_transactions").select("id,amount,created_at").gte("created_at", sinceISO),
     ]);
 
     const expenses = (expRes.data || []) as ExpenseRow[];
@@ -88,14 +88,14 @@ export function ReportsFeature() {
     const funds = (fundRes.data || []) as FundRow[];
 
     setData({
-      totalFunds: funds.filter((f) => f.direction === "credit").reduce((s, f) => s + f.amount, 0),
+      totalFunds: funds.reduce((s, f) => s + Number(f.amount || 0), 0),
       totalExpenses: expenses.reduce((s, e) => s + e.amount, 0),
       pendingExpenses: expenses.filter((e) => e.status === "pending").length,
       approvedExpenses: expenses.filter((e) => e.status === "approved").reduce((s, e) => s + e.amount, 0),
-      totalWorkers: new Set(workers.map((w) => w.worker_name || w.id)).size,
+      totalWorkers: new Set(workers.map((w) => w.worker_id)).size,
       totalMaterialIn: materials.filter((m) => m.movement_type === "in").reduce((s, m) => s + m.quantity, 0),
       totalMaterialOut: materials.filter((m) => m.movement_type === "out").reduce((s, m) => s + m.quantity, 0),
-      materialCost: materials.reduce((s, m) => s + (m.total_cost || 0), 0),
+      materialCost: materials.reduce((s, m) => s + (Number(m.quantity || 0) * Number(m.unit_cost || 0)), 0),
       recentExpenses: expenses.slice(0, 20),
       recentMaterials: materials.slice(0, 20),
     });
@@ -259,8 +259,8 @@ export function ReportsFeature() {
                   material: m.material_name,
                   type: m.movement_type,
                   quantity: m.quantity,
-                  unit: m.unit,
-                  cost: m.total_cost ?? 0,
+                  unit_cost: m.unit_cost ?? 0,
+                  cost: Number(m.quantity || 0) * Number(m.unit_cost || 0),
                 }))
               )
             }
@@ -293,8 +293,8 @@ export function ReportsFeature() {
                           {m.movement_type === "in" ? "IN প্রবেশ" : m.movement_type === "out" ? "OUT বের" : "Adjust"}
                         </span>
                       </td>
-                      <td className="py-2 pr-4 text-muted-foreground">{m.quantity} {m.unit}</td>
-                      <td className="py-2 text-muted-foreground">{fmt(m.total_cost ?? 0)}</td>
+                      <td className="py-2 pr-4 text-muted-foreground">{m.quantity}</td>
+                      <td className="py-2 text-muted-foreground">{fmt((Number(m.quantity || 0) * Number(m.unit_cost || 0)) ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>

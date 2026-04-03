@@ -76,6 +76,7 @@ export function AiPanel() {
   return (
     <section className="module">
       <h2>Sumonix AI</h2>
+      {!token ? <p>Please login to activate AI tools.</p> : null}
       <div className="formGrid mb-2.5">
         <input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask SUMONIX..." />
         <button onClick={askAi} disabled={!token}>Ask AI</button>

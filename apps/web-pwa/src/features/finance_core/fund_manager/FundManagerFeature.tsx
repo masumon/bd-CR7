@@ -52,16 +52,8 @@ export function FundManagerFeature() {
         from_account_id: accountId,
         to_account_id:   accountId,
         amount:    Number(amount),
-        direction: "credit" as const,
-        payment_method: paymentMethod,
-        reference: `${sourceSender}-${paymentMethod}`,
-        receipt_url: receiptUrl.trim() || null,
-        metadata: {
-          date,
-          source_sender: sourceSender,
-          description,
-          created_by: userId,
-        },
+        reference: `${sourceSender}-${paymentMethod}-${date}`,
+        created_by: userId,
       };
       const { error } = await supabase.from("fund_transactions").insert(payload);
       if (error) throw error;

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { SocialLinks } from "@/components/auth/SocialLinks";
 import { AuthLayout, AuthCard } from "@/components/auth/AuthLayout";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 
 export default function RegisterPage() {
@@ -92,14 +93,18 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      // Implement Google signup via Supabase
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
+      if (!supabase) {
+        throw new Error("Supabase is not configured");
+      }
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/dashboard` },
+      });
+      if (oauthError) {
+        throw oauthError;
+      }
     } catch (err) {
-      setError("Google signup failed. Please try again.");
+      setError(err instanceof Error ? err.message : "Google signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
