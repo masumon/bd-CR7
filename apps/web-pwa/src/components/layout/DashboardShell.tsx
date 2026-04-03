@@ -13,6 +13,7 @@ import {
   FolderKanban,
   Home,
   Import,
+  Menu,
   Moon,
   Settings2,
   ShoppingCart,
@@ -147,7 +148,7 @@ const copy = {
   },
 } as const;
 
-const QUICK_MOBILE_ROUTES = ["/dashboard", "/dashboard/construction/projects", "/dashboard/finance", "/dashboard/pos", "/dashboard/settings"] as const;
+const MOBILE_PRIMARY_ROUTES = ["/dashboard", "/dashboard/construction/projects", "/dashboard/finance", "/dashboard/pos"] as const;
 
 type DashboardNotification = {
   id: string;
@@ -169,6 +170,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
   const [online, setOnline] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [syncToast, setSyncToast] = useState(false);
@@ -219,6 +221,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setNotificationsOpen(false);
+    setMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -312,15 +315,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     .filter((section) => section.items.length > 0);
   const nav = navSections.flatMap((section) => section.items);
 
-  const mobileQuickNav = useMemo(() => {
-    const selected = QUICK_MOBILE_ROUTES
+  const mobilePrimaryNav = useMemo(() => {
+    const selected = MOBILE_PRIMARY_ROUTES
       .map((href) => nav.find((item) => item.href === href))
       .filter(Boolean) as typeof nav;
-    if (selected.length >= 5) {
+    if (selected.length >= 4) {
       return selected;
     }
-    return nav.slice(0, 5);
+    return nav.slice(0, 4);
   }, [nav]);
+
+  const mobileLabel = (href: string, label: string) => {
+    if (href === "/dashboard") return language === "bn" ? "হোম" : "Home";
+    if (href.includes("construction/projects")) return language === "bn" ? "প্রজেক্ট" : "Projects";
+    if (href.includes("finance")) return language === "bn" ? "ফাইন্যান্স" : "Finance";
+    if (href.includes("pos")) return "POS";
+    return label;
+  };
 
   const crumb = useMemo(() => {
     const activeItem = nav.find((item) => item.href === pathname);
@@ -357,6 +368,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
             ) : null}
             <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3">
+              <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" aria-label="Open navigation menu" onClick={() => setMenuOpen(true)}>
+                <Menu className="h-4 w-4" />
+              </Button>
               <div className="min-w-0 flex-1">
                 {pathname !== "/dashboard" ? (
                   <Button variant="ghost" className="mb-1 h-11 px-2" onClick={() => router.back()} aria-label="Go back">
@@ -442,14 +456,78 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
+      {menuOpen ? <button type="button" aria-label="Close navigation menu" className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] lg:hidden" onClick={() => setMenuOpen(false)} /> : null}
+
+      {menuOpen ? (
+        <aside className="fixed inset-y-0 left-0 z-50 w-[min(88vw,22rem)] border-r border-border bg-card/95 p-4 shadow-soft backdrop-blur-xl lg:hidden safe-top safe-bottom safe-x">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{text.navigation}</p>
+              <p className="mt-1 text-base font-semibold text-foreground">{text.brand}</p>
+            </div>
+            <Button variant="ghost" className="h-11 w-11 p-0" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="mb-4 rounded-2xl border border-border/70 bg-background/80 px-3 py-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{text.activeRole}</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{role || "unassigned"}</p>
+          </div>
+
+          <nav className="space-y-4 overflow-y-auto pb-4">
+            {navSections.map((section) => (
+              <div key={section.title}>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{section.title}</p>
+                <div className="grid gap-2">
+                  {section.items.map(({ href, label, sublabel, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        "rounded-2xl border px-3 py-3 text-sm transition-all active:scale-95",
+                        pathname === href ? "border-primary/25 bg-primary/10 text-foreground" : "border-border bg-background/88 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <Icon className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{label}</span>
+                          <span className="block truncate text-[11px] text-muted-foreground">{sublabel}</span>
+                        </span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+
+          <div className="mt-2 grid gap-2">
+            <Button variant="outline" className="h-11 w-full justify-start gap-2" onClick={() => setSettingsOpen(true)}>
+              <Settings2 className="h-4 w-4" /> {text.settings}
+            </Button>
+            <Button variant="ghost" className="h-11 w-full justify-start gap-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-300 dark:hover:bg-rose-950/25" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" /> {text.logout}
+            </Button>
+          </div>
+        </aside>
+      ) : null}
+
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-1 py-1 backdrop-blur-xl safe-bottom safe-x lg:hidden">
-          <div className="mx-auto grid max-w-5xl grid-cols-5 gap-1">
-          {mobileQuickNav.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className={cn("flex min-h-[3.1rem] min-w-0 flex-col items-center justify-center rounded-2xl px-1 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")}>
+        <div className="mx-auto grid max-w-5xl grid-cols-5 gap-1">
+          {mobilePrimaryNav.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className={cn("flex min-h-[3.15rem] min-w-0 flex-col items-center justify-center rounded-2xl px-1 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")}>
               <Icon className="mb-0.5 h-3.5 w-3.5" />
-              <span className="w-full truncate text-center leading-tight">{label}</span>
+              <span className="w-full truncate text-center leading-tight">{mobileLabel(href, label)}</span>
             </Link>
           ))}
+          <button type="button" className={cn("flex min-h-[3.15rem] min-w-0 flex-col items-center justify-center rounded-2xl px-1 text-[10px] font-medium transition-all", menuOpen ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")} onClick={() => setMenuOpen(true)}>
+            <Menu className="mb-0.5 h-3.5 w-3.5" />
+            <span className="w-full truncate text-center leading-tight">{language === "bn" ? "মেনু" : "Menu"}</span>
+          </button>
         </div>
       </nav>
 
