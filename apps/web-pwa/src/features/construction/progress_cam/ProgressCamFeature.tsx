@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 import { uploadToCloudinary } from "@bdcr7/media-engine";
+import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/store/authStore";
 
 const PHASES = ["Foundation", "Structure", "Finishing", "Handover"];
 
@@ -13,6 +15,8 @@ type ProgressEntry = {
 };
 
 export function ProgressCamFeature() {
+  const supabase = useMemo(() => createClient(), []);
+  const userId = useAuthStore((state) => state.userId);
   const [file, setFile] = useState<File | null>(null);
   const [phaseCategory, setPhaseCategory] = useState(PHASES[0]);
   const [caption, setCaption] = useState("");
@@ -32,6 +36,14 @@ export function ProgressCamFeature() {
         uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "",
         file,
       });
+
+      // Save to Supabase progress_cam table
+      await supabase.from("progress_cam").insert({
+        photo_url: mediaUrl,
+        phase_tag: phaseCategory,
+        uploaded_by: userId ?? null,
+      });
+
       const next: ProgressEntry = { media_url: mediaUrl, phase_category: phaseCategory, caption };
       setEntries((prev) => [next, ...prev]);
       setMessage("Progress media uploaded");
