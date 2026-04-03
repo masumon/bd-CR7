@@ -9,10 +9,17 @@ import { validateDualApproval } from "@bdcr7/rbac-engine";
 
 const USERS = ["Owner", "Supervisor", "Accountant", "Worker"];
 const CATEGORIES = ["Materials", "Labor", "Transport", "Utility", "Misc"];
+const SUBCATEGORIES: Record<string, string[]> = {
+  Materials: ["Cement", "Steel", "Electrical", "Finishing", "Other"],
+  Labor: ["Mason", "Welder", "Electrician", "General Labour", "Other"],
+  Transport: ["Truck", "Pickup", "Courier", "Fuel", "Other"],
+  Utility: ["Electricity", "Water", "Internet", "Security", "Other"],
+  Misc: ["Office", "Permit", "Emergency", "Maintenance", "Other"],
+};
 
 type ExpenseStatus = "pending" | "approved";
 
-export function ExpenseEngineFeature() {
+export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   const token = useAuthStore((s) => s.token);
   const userId = useAuthStore((s) => s.userId);
 
@@ -20,6 +27,7 @@ export function ExpenseEngineFeature() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [paidBy, setPaidBy] = useState(USERS[0]);
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [subcategory, setSubcategory] = useState(SUBCATEGORIES[CATEGORIES[0]][0]);
   const [description, setDescription] = useState("");
   const [receipt, setReceipt] = useState<File | null>(null);
   const [status, setStatus] = useState<ExpenseStatus>("pending");
@@ -55,9 +63,11 @@ export function ExpenseEngineFeature() {
         maker_id: userId,
         category_id: null,
         metadata: {
+          module: "finance_workspace",
           expense_date: date,
           paid_by: paidBy,
           category,
+          subcategory,
           receipt_url: receiptUrl,
           approval_status: finalStatus,
           approved_by: finalStatus === "approved" ? approverId : null,
@@ -69,6 +79,8 @@ export function ExpenseEngineFeature() {
       setDescription("");
       setReceipt(null);
       setStatus("pending");
+      setSubcategory(SUBCATEGORIES[category][0]);
+      onSaved?.();
     } catch (error) {
       setMessage((error as Error).message);
     }
@@ -99,8 +111,20 @@ export function ExpenseEngineFeature() {
         </label>
         <label className="space-y-2 text-sm text-muted-foreground">
           <span className="text-xs font-medium uppercase tracking-[0.14em]">Expense Category</span>
-          <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Expense category" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Expense category" value={category} onChange={(e) => {
+            const nextCategory = e.target.value;
+            setCategory(nextCategory);
+            setSubcategory(SUBCATEGORIES[nextCategory][0]);
+          }}>
             {CATEGORIES.map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-2 text-sm text-muted-foreground">
+          <span className="text-xs font-medium uppercase tracking-[0.14em]">Expense Subcategory</span>
+          <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Expense subcategory" value={subcategory} onChange={(e) => setSubcategory(e.target.value)}>
+            {SUBCATEGORIES[category].map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
           </select>

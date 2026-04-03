@@ -8,14 +8,17 @@ import {
   DollarSign,
   HardHat,
   Loader2,
+  MoreHorizontal,
   PackageCheck,
   RefreshCw,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
 
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { createClient } from "@/lib/supabase/client";
 
 interface ExpenseRow { id: string; amount: number; status: string; created_at: string; metadata?: Record<string, string>; }
@@ -34,12 +37,13 @@ interface ReportSummary {
   materialCost: number;
   recentExpenses: ExpenseRow[];
   recentMaterials: MaterialRow[];
+  categoryTotals: Array<{ label: string; value: number }>;
 }
 
 const EMPTY: ReportSummary = {
   totalFunds: 0, totalExpenses: 0, pendingExpenses: 0, approvedExpenses: 0,
   totalWorkers: 0, totalMaterialIn: 0, totalMaterialOut: 0, materialCost: 0,
-  recentExpenses: [], recentMaterials: [],
+  recentExpenses: [], recentMaterials: [], categoryTotals: [],
 };
 
 function fmt(n: number) {
@@ -86,6 +90,11 @@ export function ReportsFeature() {
     const workers = (workerRes.data || []) as WorkerRow[];
     const materials = (matRes.data || []) as MaterialRow[];
     const funds = (fundRes.data || []) as FundRow[];
+    const categoryTotalsMap: Record<string, number> = {};
+    for (const expense of expenses) {
+      const category = expense.metadata?.["category"] || "General";
+      categoryTotalsMap[category] = (categoryTotalsMap[category] || 0) + Number(expense.amount || 0);
+    }
 
     setData({
       totalFunds: funds.reduce((s, f) => s + Number(f.amount || 0), 0),
@@ -98,6 +107,7 @@ export function ReportsFeature() {
       materialCost: materials.reduce((s, m) => s + (Number(m.quantity || 0) * Number(m.unit_cost || 0)), 0),
       recentExpenses: expenses.slice(0, 20),
       recentMaterials: materials.slice(0, 20),
+      categoryTotals: Object.entries(categoryTotalsMap).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 5),
     });
     setLoading(false);
   }, [supabase, period]);
@@ -122,33 +132,44 @@ export function ReportsFeature() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">রিপোর্ট ও বিশ্লেষণ</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Finance, Materials & Workers — real-time summary</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {(["7d", "30d", "90d"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPeriod(p)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${period === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-            >
-              {p === "7d" ? "৭ দিন" : p === "30d" ? "৩০ দিন" : "৯০ দিন"}
-            </button>
-          ))}
-          <Button
-            variant="outline"
-            className="h-8 px-3 text-xs"
-            onClick={fetchReport}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-          </Button>
-        </div>
-      </div>
+      <WorkspaceHero
+        badge="Reports Workspace / রিপোর্ট ও বিশ্লেষণ"
+        title="Reports now summarize finance, workers, and materials as one decision desk with Bengali-first readability."
+        description="The reporting workspace groups time filters, exports, and cross-module signals so managers can review the site and showroom health quickly on mobile or desktop."
+        stats={[
+          { label: "Funds", value: fmt(data.totalFunds) },
+          { label: "Expenses", value: fmt(data.totalExpenses) },
+          { label: "Material Cost", value: fmt(data.materialCost) },
+        ]}
+        highlights={[
+          { title: "Finance Signal", description: "Fund, expense, and approval trends", icon: TrendingUp },
+          { title: "Workforce Signal", description: "Unique worker presence across the period", icon: HardHat },
+          { title: "Material Signal", description: "Inflow, outflow, and movement cost", icon: PackageCheck },
+        ]}
+      />
+
+      <SectionHeader
+        eyebrow="Time Filter / সময়সীমা"
+        title="Period-based reporting desk"
+        description="Switch date ranges and export the current view without leaving the report workspace."
+        actions={
+          <div className="flex items-center gap-2">
+            {(["7d", "30d", "90d"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${period === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                {p === "7d" ? "৭ দিন" : p === "30d" ? "৩০ দিন" : "৯০ দিন"}
+              </button>
+            ))}
+            <Button variant="outline" className="h-10 px-3 text-xs" onClick={fetchReport} disabled={loading}>
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+        }
+      />
 
       {/* Stat grid */}
       {loading ? (
@@ -180,6 +201,40 @@ export function ReportsFeature() {
           ))}
         </motion.div>
       )}
+
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Expense Category Signal</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.categoryTotals.map((item) => (
+              <div key={item.label} className="rounded-2xl border border-border/70 bg-background/75 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-foreground">{item.label}</span>
+                  <span className="text-xs text-muted-foreground">{fmt(item.value)}</span>
+                </div>
+              </div>
+            ))}
+            {!data.categoryTotals.length ? <div className="rounded-2xl border border-dashed border-border bg-background/75 px-4 py-8 text-center text-sm text-muted-foreground">No category totals yet.</div> : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Approval Signal</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Pending</p>
+              <p className="mt-2 text-2xl font-semibold text-foreground">{data.pendingExpenses}</p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Approved</p>
+              <p className="mt-2 text-2xl font-semibold text-foreground">{fmt(data.approvedExpenses)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Expense Table */}
       <Card>
@@ -219,6 +274,7 @@ export function ReportsFeature() {
                     <th className="py-2 pr-4">পরিমাণ</th>
                     <th className="py-2 pr-4">ক্যাটাগরি</th>
                     <th className="py-2">স্ট্যাটাস</th>
+                    <th className="py-2 text-right">অ্যাকশন</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -231,6 +287,15 @@ export function ReportsFeature() {
                         <span className={`rounded-full px-2 py-0.5 text-xs ${e.status === "approved" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
                           {e.status === "approved" ? "অনুমোদিত" : "বাকি"}
                         </span>
+                      </td>
+                      <td className="py-2 text-right">
+                        <ActionMenu
+                          items={[
+                            { label: `Category: ${e.metadata?.["category"] || "General"}`, onClick: () => {} },
+                            { label: `Status: ${e.status}`, onClick: () => {} },
+                          ]}
+                          className="ml-auto"
+                        />
                       </td>
                     </tr>
                   ))}
@@ -281,6 +346,7 @@ export function ReportsFeature() {
                     <th className="py-2 pr-4">ধরন</th>
                     <th className="py-2 pr-4">পরিমাণ</th>
                     <th className="py-2">খরচ</th>
+                    <th className="py-2 text-right">অ্যাকশন</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,6 +361,15 @@ export function ReportsFeature() {
                       </td>
                       <td className="py-2 pr-4 text-muted-foreground">{m.quantity}</td>
                       <td className="py-2 text-muted-foreground">{fmt((Number(m.quantity || 0) * Number(m.unit_cost || 0)) ?? 0)}</td>
+                      <td className="py-2 text-right">
+                        <ActionMenu
+                          items={[
+                            { label: `Material: ${m.material_name}`, onClick: () => {} },
+                            { label: `Type: ${m.movement_type}`, onClick: () => {} },
+                          ]}
+                          className="ml-auto"
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

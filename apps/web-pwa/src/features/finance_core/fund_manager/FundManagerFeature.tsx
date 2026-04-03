@@ -18,7 +18,7 @@ const METHOD_OPTIONS = [
   "Other",
 ];
 
-export function FundManagerFeature() {
+export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
   const supabase = useMemo(() => createClient(), []);
   const userId = useAuthStore((s) => s.userId);
   const token  = useAuthStore((s) => s.token);
@@ -61,6 +61,7 @@ export function FundManagerFeature() {
       setAmount("");
       setDescription("");
       setReceiptUrl("");
+      onSaved?.();
     } catch (err) {
       setMessage((err as Error).message);
     }

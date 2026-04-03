@@ -1,5 +1,5 @@
 import { AiPanel } from "@/components/modules/AiPanel";
 
-export default function AiPage() {
+export default function DashboardAiPage() {
   return <AiPanel />;
 }

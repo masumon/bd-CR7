@@ -407,13 +407,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-xl safe-bottom safe-x lg:hidden">
-          <div className="mx-auto flex max-w-5xl items-stretch gap-1.5 overflow-x-auto pb-1">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-1.5 py-1.5 backdrop-blur-xl safe-bottom safe-x lg:hidden">
+          <div className="mx-auto flex max-w-5xl items-stretch gap-1 overflow-x-auto pb-1">
           {nav.map(({ href, label, sublabel, icon: Icon }) => (
-            <Link key={href} href={href} className={cn("flex min-h-14 min-w-[82px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl px-2 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")}>
-              <Icon className="mb-1 h-4 w-4" />
-              <span className="w-full truncate text-center">{label}</span>
-              <span className={cn("hidden w-full truncate text-center text-[10px] sm:block", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
+            <Link key={href} href={href} className={cn("flex min-h-[3.4rem] min-w-[72px] shrink-0 snap-start flex-col items-center justify-center rounded-2xl px-1.5 text-[10px] font-medium transition-all", pathname === href ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted/72 hover:text-foreground")}>
+              <Icon className="mb-0.5 h-4 w-4" />
+              <span className="w-full truncate text-center leading-tight">{label}</span>
+              <span className={cn("hidden w-full truncate text-center text-[9px] sm:block", pathname === href ? "text-primary-foreground/80" : "text-muted-foreground")}>{sublabel}</span>
             </Link>
           ))}
         </div>
