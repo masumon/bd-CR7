@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Noto_Sans_Bengali, Sora } from "next/font/google";
 import ServiceWorkerRegistration from "../src/components/ServiceWorkerRegistration";
 import "./globals.css";
-import "./styles.css";
 
 const bodyFont = Manrope({
   subsets: ["latin"],
@@ -45,8 +44,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f6c5a",
-  colorScheme: "light",
+  themeColor: "#0f141d",
+  colorScheme: "dark",
   viewportFit: "cover",
 };
 

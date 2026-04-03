@@ -24,3 +24,8 @@ venv/
 .DS_Store
 .vscode/*.log
 .vercel/
+
+# next-pwa generated assets
+apps/web-pwa/public/sw.js
+apps/web-pwa/public/workbox-*.js
+apps/web-pwa/public/fallback-*.js

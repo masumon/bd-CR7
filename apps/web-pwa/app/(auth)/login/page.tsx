@@ -18,11 +18,13 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
 import { DEVELOPER_CONFIG } from "@/lib/developers";
+import { ensureBiometricCredential, verifyBiometricAssertion } from "@/lib/webauthn";
 
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const persistedToken = useAuthStore((s) => s.token);
+  const persistedUserId = useAuthStore((s) => s.userId);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,12 +79,25 @@ export default function LoginPage() {
     setError("");
     try {
       const existingSession = await supabase?.auth.getSession();
-      const hasRememberedSession = Boolean(persistedToken || existingSession?.data.session);
+      const session = existingSession?.data.session;
+      const hasRememberedSession = Boolean(persistedToken || session);
 
       if (!hasRememberedSession) {
-        setError("Fingerprint quick unlock works only when a remembered session already exists. Please sign in with email and password first.");
+        setError("Biometric unlock needs a remembered session first. Sign in with email and password once, then try biometric unlock.");
         return;
       }
+
+      const token = persistedToken || session?.access_token;
+      const userId = persistedUserId || session?.user?.id;
+      const userEmail = session?.user?.email || email || "bdcr7.user@local";
+
+      if (!token || !userId) {
+        setError("Session metadata is unavailable. Sign in with email/password first.");
+        return;
+      }
+
+      await ensureBiometricCredential(token, userId, userEmail);
+      await verifyBiometricAssertion(token);
 
       router.push("/dashboard");
     } catch (err) {
@@ -91,7 +106,7 @@ export default function LoginPage() {
     } finally {
       setBiometricLoading(false);
     }
-  }, [persistedToken, router]);
+  }, [email, persistedToken, persistedUserId, router]);
 
   return (
     <main
@@ -247,7 +262,7 @@ export default function LoginPage() {
             </span>
           </button>
           <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
-            Quick unlock uses an existing remembered session. It will not bypass login or create a new biometric account.
+            Quick unlock requires a remembered session and platform biometric verification via WebAuthn.
           </p>
         </div>
       </div>

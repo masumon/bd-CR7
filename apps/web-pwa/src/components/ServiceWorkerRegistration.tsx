@@ -6,25 +6,13 @@ import { setupOfflineSync } from "@/lib/offlineSync";
 
 export default function ServiceWorkerRegistration() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) {
+    if (process.env.NODE_ENV !== "production") {
       return;
     }
 
-    const register = () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // Keep registration failures non-fatal for the shell.
-      });
-    };
-
-    if (document.readyState === "complete") {
-      register();
-    } else {
-      window.addEventListener("load", register, { once: true });
-    }
     const cleanupOfflineSync = setupOfflineSync();
 
     return () => {
-      window.removeEventListener("load", register);
       cleanupOfflineSync();
     };
   }, []);

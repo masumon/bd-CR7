@@ -3,20 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --background: 42 33% 97%;
-  --foreground: 170 28% 12%;
-  --card: 0 0% 100%;
-  --card-foreground: 170 28% 12%;
-  --muted: 45 18% 92%;
-  --muted-foreground: 170 11% 36%;
-  --border: 38 17% 84%;
-  --primary: 168 72% 26%;
-  --primary-foreground: 48 33% 98%;
-  --accent: 33 89% 57%;
-  --accent-foreground: 170 28% 12%;
-  --ring: 168 72% 26%;
-  --surface: 45 50% 99%;
-  --surface-strong: 43 38% 95%;
+  --background: 220 16% 9%;
+  --foreground: 210 20% 96%;
+  --card: 220 14% 12%;
+  --card-foreground: 210 20% 96%;
+  --muted: 220 12% 16%;
+  --muted-foreground: 218 12% 72%;
+  --border: 220 10% 24%;
+  --primary: 190 86% 45%;
+  --primary-foreground: 220 20% 12%;
+  --accent: 190 48% 30%;
+  --accent-foreground: 210 20% 96%;
+  --ring: 190 86% 45%;
+  --surface: 220 16% 9%;
+  --surface-strong: 220 14% 12%;
 }
 
 .dark {
@@ -46,20 +46,8 @@ body {
   min-height: 100svh;
   overflow-x: clip;
   font-family: var(--font-body), var(--font-bengali), "Segoe UI", sans-serif;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(18, 119, 102, 0.18), transparent 28%),
-    radial-gradient(circle at 100% 0%, rgba(226, 167, 77, 0.14), transparent 24%),
-    radial-gradient(circle at 100% 100%, rgba(12, 85, 72, 0.08), transparent 28%),
-    linear-gradient(180deg, hsl(var(--surface)) 0%, hsl(var(--background)) 100%);
+  background: hsl(var(--background));
   @apply text-foreground antialiased;
-}
-
-.dark body {
-  background:
-    radial-gradient(circle at 0% 0%, rgba(250, 204, 21, 0.1), transparent 22%),
-    radial-gradient(circle at 100% 0%, rgba(15, 118, 110, 0.12), transparent 24%),
-    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.08), transparent 18%),
-    linear-gradient(180deg, #08110f 0%, hsl(var(--background)) 100%);
 }
 
 h1,
@@ -208,21 +196,15 @@ a:focus-visible {
 }
 
 .glass {
-  @apply border backdrop-blur-xl;
+  @apply border;
   border-color: hsl(var(--border) / 0.75);
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.9), hsl(var(--card) / 0.78));
-  box-shadow:
-    0 24px 80px rgba(15, 36, 31, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  background: hsl(var(--card));
+  box-shadow: none;
 }
 
 .dark .glass {
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.84));
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: hsl(var(--card));
+  box-shadow: none;
 }
 
 .module-surface {

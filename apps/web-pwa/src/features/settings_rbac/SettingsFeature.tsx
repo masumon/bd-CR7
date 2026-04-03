@@ -20,6 +20,18 @@ interface UserProfile {
 
 type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
 type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Advanced";
+type IntegrationState = {
+  cloudinary: boolean;
+  realtime: boolean;
+  aiVoice: boolean;
+  offlineSync: boolean;
+};
+
+type WorkspacePreferenceRow = {
+  theme?: string;
+  language?: string;
+  integrations?: Partial<IntegrationState>;
+};
 
 const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
   en: {
@@ -66,7 +78,7 @@ export function SettingsFeature() {
   const [dark, setDark] = useState(false);
   const [language, setLanguage] = useState<"en" | "bn">("en");
   const [activeTab, setActiveTab] = useState<SettingsTab>("Profile");
-  const [integrationState, setIntegrationState] = useState({
+  const [integrationState, setIntegrationState] = useState<IntegrationState>({
     cloudinary: true,
     realtime: true,
     aiVoice: true,
@@ -134,6 +146,60 @@ export function SettingsFeature() {
     }
   }, []);
 
+  const saveWorkspacePreferences = useCallback(async (patch: Partial<WorkspacePreferenceRow>) => {
+    if (!userId) {
+      return;
+    }
+
+    const payload: Record<string, unknown> = { user_id: userId };
+    if (typeof patch.theme === "string") {
+      payload.theme = patch.theme;
+    }
+    if (typeof patch.language === "string") {
+      payload.language = patch.language;
+    }
+    if (patch.integrations) {
+      payload.integrations = patch.integrations;
+    }
+
+    await supabase.from("workspace_preferences").upsert(payload, { onConflict: "user_id" });
+  }, [supabase, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadWorkspacePreferences = async () => {
+      const { data } = await supabase
+        .from("workspace_preferences")
+        .select("theme,language,integrations")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (cancelled || !data) {
+        return;
+      }
+
+      const row = data as WorkspacePreferenceRow;
+      if (row.theme === "dark" || row.theme === "light") {
+        setDark(row.theme === "dark");
+      }
+      if (row.language === "bn" || row.language === "en") {
+        setLanguage(row.language);
+      }
+      if (row.integrations) {
+        setIntegrationState((prev) => ({ ...prev, ...row.integrations }));
+      }
+    };
+
+    void loadWorkspacePreferences();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, userId]);
+
   const persistSettings = useCallback((next: SettingItem[]) => {
     setSettingItems(next);
     window.localStorage.setItem("bdcr7-settings-catalog", JSON.stringify(next));
@@ -187,12 +253,14 @@ export function SettingsFeature() {
     const root = document.documentElement;
     root.classList.toggle("dark", dark);
     window.localStorage.setItem("bdcr7-theme", dark ? "dark" : "light");
-  }, [dark]);
+    void saveWorkspacePreferences({ theme: dark ? "dark" : "light" });
+  }, [dark, saveWorkspacePreferences]);
 
   useEffect(() => {
     document.documentElement.lang = language;
     window.localStorage.setItem("bdcr7-language", language);
-  }, [language]);
+    void saveWorkspacePreferences({ language });
+  }, [language, saveWorkspacePreferences]);
 
   const loadProfile = useCallback(async () => {
     if (!userId) {
@@ -253,9 +321,10 @@ export function SettingsFeature() {
     void loadProfile();
   };
 
-  const persistIntegrationState = (next: typeof integrationState) => {
+  const persistIntegrationState = (next: IntegrationState) => {
     setIntegrationState(next);
     window.localStorage.setItem("bdcr7-integration-state", JSON.stringify(next));
+    void saveWorkspacePreferences({ integrations: next });
   };
 
   const resetWorkspacePreferences = () => {
