@@ -1,13 +1,8 @@
-import { LucideIcon } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 
 type WorkspaceHeroProps = {
   badge: string;
-  title?: string;
-  description?: string;
   stats: Array<{ label: string; value: string }>;
-  highlights?: Array<{ title: string; description: string; icon: LucideIcon }>;
   className?: string;
 };
 
@@ -42,7 +37,6 @@ export function WorkspaceHero({ badge, stats, className }: WorkspaceHeroProps) {
 type SectionHeaderProps = {
   eyebrow: string;
   title: string;
-  description?: string;
   actions?: React.ReactNode;
 };
 

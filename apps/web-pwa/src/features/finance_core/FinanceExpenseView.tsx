@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownUp, BadgeDollarSign, ClipboardCheck, MoreHorizontal, ReceiptText, WalletCards } from "lucide-react";
+import { ArrowDownUp, BadgeDollarSign, MoreHorizontal } from "lucide-react";
 
 import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
@@ -100,24 +100,16 @@ export function FinanceExpenseView() {
     <div className="space-y-4">
       <WorkspaceHero
         badge="Finance Workspace / তহবিল ও খরচ"
-        title="Fund intake, expense categories, subcategories, and approval visibility now sit in one finance cockpit."
-        description="This workspace is arranged as intake, ledger, and review so accounting actions feel sequential and readable on both desktop and mobile."
         stats={[
           { label: "Pending Approvals", value: String(pendingApprovals) },
           { label: "Approved Today", value: `৳${approvedToday.toLocaleString("en-BD")}` },
           { label: "Receipts Missing", value: String(receiptsMissing) },
-        ]}
-        highlights={[
-          { title: "Fund Intake", description: "Client, owner, investor, and bank inflow capture", icon: WalletCards },
-          { title: "Expense Engine", description: "Category and subcategory-driven expense creation", icon: ReceiptText },
-          { title: "Approval Desk", description: "Checker-ready records with receipt awareness", icon: ClipboardCheck },
         ]}
       />
 
       <SectionHeader
         eyebrow="Ledger / লেজার"
         title="Finance records with category and subcategory"
-        description="Each finance record exposes a clearer classification and quick action menu before review."
         actions={
           <div className="flex items-center gap-2">
             <Button onClick={() => setOpen(!open)} className="w-full sm:w-auto">{open ? "Close Forms" : "Add Fund / Expense"}</Button>

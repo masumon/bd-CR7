@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock3, Loader2, Minus, PackageSearch, Plus, RefreshCw, Search, ShoppingBasket, ShoppingCart, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock3, Loader2, Minus, Plus, RefreshCw, Search, ShoppingBasket, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ActionMenu } from "@/components/ui/action-menu";
@@ -156,24 +156,16 @@ export function RetailPOSView() {
     <div className="space-y-4">
       <WorkspaceHero
         badge="POS Workspace / পজ ওয়ার্কস্পেস"
-        title="All POS-related actions now live in one sequential workspace for catalog, cart, checkout, and sales review."
-        description="This page is organized as one commerce module so cashiers and managers can move from product selection to checkout and recent sales without jumping between disconnected screens."
         stats={[
           { label: "Products", value: String(products.length) },
           { label: "Low Stock", value: String(lowStockCount) },
           { label: "Recent Sales", value: String(sales.length) },
-        ]}
-        highlights={[
-          { title: "Catalog", description: "Searchable products with stock awareness", icon: PackageSearch },
-          { title: "Cart", description: "Live quantity and total control", icon: ShoppingBasket },
-          { title: "Checkout", description: "Atomic sale save with history refresh", icon: ShoppingCart },
         ]}
       />
 
       <SectionHeader
         eyebrow="Commerce Desk / বাণিজ্য ডেস্ক"
         title="Category, subcategory, and cashier flow"
-        description="Filter products by stock readiness, manage the cart, and review the latest sales from one place."
         actions={
           <Button variant="outline" className="h-10 px-4 text-sm" onClick={fetchProducts} disabled={loadingProducts}>
             {loadingProducts ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}

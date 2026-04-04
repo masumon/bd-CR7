@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock3,
-  CalendarClock,
   CalendarDays,
   FileImage,
   FolderKanban,
@@ -385,24 +384,16 @@ export function ProjectsFeature() {
     <div className="space-y-5">
       <WorkspaceHero
         badge="Project Introduction / প্রকল্প পরিচিতি"
-        title="Each showroom project now gets a proper identity card, schedule lane, and phase context."
-        description="This page acts as the executive project desk where users can create, update, and review each project without mixing it into worker or expense screens."
         stats={[
           { label: "Total Projects", value: String(projects.length) },
           { label: "Active Projects", value: String(projects.filter((project) => project.status === "Active").length) },
           { label: "Completed", value: String(projects.filter((project) => project.status === "Completed").length) },
-        ]}
-        highlights={[
-          { title: "Identity", description: "Project name, cover, summary, and budget", icon: FolderKanban },
-          { title: "Timeline", description: "Start date, deadline, and phase ladder", icon: CalendarClock },
-          { title: "Status", description: "Planning, active, paused, completed, cancelled", icon: Plus },
         ]}
       />
 
       <SectionHeader
         eyebrow="Project Desk / প্রজেক্ট ডেস্ক"
         title="Project cards with update controls"
-        description="Use the add button or each card's 3-dot menu to maintain project information without deleting historical data."
         actions={
           <Button onClick={openCreate} className="gap-1.5 h-10 px-4 text-sm">
             <Plus className="h-4 w-4" /> New Project

@@ -67,8 +67,6 @@ export function WorkforceView() {
     <div className="glass rounded-2xl space-y-4">
       <WorkspaceHero
         badge="Workforce"
-        title="Worker Management"
-        description="Log daily attendance, wages, and GPS-verified check-ins"
         stats={[
           { label: "Present Today", value: String(stats.present) },
           { label: "Total Unpaid", value: fmt(stats.totalUnpaid) },

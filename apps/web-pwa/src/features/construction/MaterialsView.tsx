@@ -71,8 +71,6 @@ export function MaterialsView() {
     <div className="space-y-4">
       <WorkspaceHero
         badge="Materials"
-        title="Materials Management"
-        description="Track purchase, stock levels, and supplier information"
         stats={[
           { label: "Inbound Units", value: String(stats.inbound) },
           { label: "Outbound Units", value: String(stats.outbound) },

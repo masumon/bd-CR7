@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Camera, FolderKanban, HardHat, MapPinned, PackageCheck, Workflow } from "lucide-react";
+import { Camera, MapPinned, Workflow } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -68,17 +68,10 @@ export function ConstructionView() {
     <div className="space-y-4">
       <WorkspaceHero
         badge="Construction Workspace / নির্মাণ ওয়ার্কস্পেস"
-        title="Showroom construction now reads like a real progress control app, not a flat form stack."
-        description="Project overview, workforce, materials, and phase evidence are grouped in a single site workspace so supervisors can move through daily decisions in sequence."
         stats={[
           { label: "Present Workers", value: `${presentWorkers} / ${workers.length}` },
           { label: "Average Stock Readiness", value: `${averageStock}%` },
           { label: "Risk Lines", value: String(riskCount) },
-        ]}
-        highlights={[
-          { title: "Project Control", description: "Project profile, phase, and execution snapshot", icon: FolderKanban },
-          { title: "Workforce", description: "Attendance, zone, wage, and compliance", icon: HardHat },
-          { title: "Material Flow", description: "Stock pressure and replenishment watch", icon: PackageCheck },
         ]}
       />
 
@@ -188,7 +181,6 @@ export function ConstructionView() {
           <SectionHeader
             eyebrow="Workspace Flow / কাজের ধারা"
             title={currentSection.title}
-            description={currentSection.description}
             actions={
               <>
                 <Tabs tabs={sections.map((section) => section.key)} value={activeTab} onChange={setActiveTab} />

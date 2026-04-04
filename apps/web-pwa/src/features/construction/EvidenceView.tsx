@@ -53,8 +53,6 @@ export function EvidenceView() {
     <div className="space-y-4">
       <WorkspaceHero
         badge="Evidence"
-        title="Site Evidence & Documents"
-        description="Upload photos, videos, and GPS-tagged construction progress"
         stats={[
           { label: "Total Files", value: String(stats.total) },
           { label: "Images", value: String(stats.images) },

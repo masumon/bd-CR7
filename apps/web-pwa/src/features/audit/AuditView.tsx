@@ -77,8 +77,6 @@ export function AuditView() {
     <div className="glass rounded-2xl space-y-4">
       <WorkspaceHero
         badge="Audit"
-        title="System Audit Trail"
-        description="Complete record of all system changes, financial activity and user actions"
         stats={[
           { label: "Total Events", value: String(stats.total) },
           { label: "Inserts", value: String(stats.inserts) },
