@@ -106,6 +106,7 @@ export function EvidenceView() {
                         <Camera className="h-8 w-8 text-muted-foreground" />
                       </div>
                     ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={r.file_url}
                         alt={r.caption || r.phase}

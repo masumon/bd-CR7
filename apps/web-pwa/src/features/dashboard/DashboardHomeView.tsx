@@ -178,7 +178,7 @@ export function DashboardHomeView() {
     ? s.recentActivity
     : [t.noActivity];
 
-  const projectProgress = s.loading ? 0 : ((s as Record<string, unknown>).projectProgress as number ?? 72);
+  const projectProgress = s.loading ? 0 : 72;
 
   return (
     <div className="space-y-4 pb-4">
