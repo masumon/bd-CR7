@@ -224,6 +224,7 @@ export function FloatingChat() {
 
   return (
     <>
+      {/* Drag constraints: allow moving up to 600px up and 300px left from default bottom-right position */}
       <motion.button
         drag
         dragMomentum={false}

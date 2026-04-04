@@ -21,10 +21,16 @@ export default function ServiceWorkerRegistration() {
 
           // Request background sync permission if supported
           if ("sync" in registration) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (registration as any).sync
+            type SyncRegistration = ServiceWorkerRegistration & {
+              sync: { register(tag: string): Promise<void> };
+            };
+            (registration as SyncRegistration).sync
               .register("bdcr7-queue-sync")
-              .catch(() => {/* background sync not available */});
+              .catch((err) => {
+                if (process.env.NODE_ENV === "development") {
+                  console.warn("[SW] Background sync registration failed:", err);
+                }
+              });
           }
         })
         .catch((err) => {
