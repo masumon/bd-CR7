@@ -40,6 +40,12 @@ CREATE INDEX IF NOT EXISTS idx_crm_leads_stage        ON public.crm_leads(stage)
 CREATE INDEX IF NOT EXISTS idx_crm_interactions_cust  ON public.crm_interactions(customer_id);
 CREATE INDEX IF NOT EXISTS idx_crm_interactions_lead  ON public.crm_interactions(lead_id);
 
+-- Ensure the set_updated_at helper exists (also defined in 014; idempotent)
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END;
+$$;
+
 -- updated_at trigger for leads
 DROP TRIGGER IF EXISTS trg_crm_leads_updated_at ON public.crm_leads;
 CREATE TRIGGER trg_crm_leads_updated_at

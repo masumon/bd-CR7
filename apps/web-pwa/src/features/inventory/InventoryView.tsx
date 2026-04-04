@@ -6,7 +6,6 @@ import {
   Building2,
   Package,
   Plus,
-  Search,
   Trash2,
   Warehouse,
 } from "lucide-react";
@@ -237,9 +236,12 @@ function AddAdjustmentForm({
     });
     if (adjErr) { setSaving(false); setMsg(adjErr.message); return; }
 
-    // Update stock_qty on the products table
+    // Update stock_qty on the products table based on adjustment type.
+    // transfer = move between warehouses (no net change to global stock_qty).
+    // in/adjustment(+) = add qty; out/adjustment(-) = subtract qty.
+    // The quantity field is always stored as positive; direction is determined by type.
     const product = products.find((p) => p.id === productId);
-    if (product) {
+    if (product && adjType !== "transfer") {
       const delta = adjType === "out" ? -Number(quantity) : Number(quantity);
       const { error: stockErr } = await supabase
         .from("products")
@@ -304,17 +306,13 @@ function BarcodeLookup({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <input
-          className={FIELD}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="বারকোড বা পণ্যের নাম / Barcode or Product Name"
-        />
-        <button type="button" className="shrink-0 rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90">
-          <Search className="h-4 w-4" />
-        </button>
-      </div>
+      <input
+        className={FIELD}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="বারকোড বা পণ্যের নাম / Barcode or Product Name"
+        aria-label="Barcode or product name search"
+      />
       {query.trim() && (
         result ? (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
