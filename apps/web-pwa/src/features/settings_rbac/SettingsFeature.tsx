@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw, Settings2, UserRound, Sun, Moon, Languages } from "lucide-react";
+import { CheckCircle2, Loader2, RefreshCw, Settings2, UserRound, Sun, Moon, Languages, Layers } from "lucide-react";
 
 import { ActionMenu } from "@/components/ui/action-menu";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,52 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
+import { useModuleStore } from "@/store/moduleStore";
+
+function ModuleControlPanel({ language }: { language: "en" | "bn" }) {
+  const modules = useModuleStore((s) => s.modules);
+  const toggleModule = useModuleStore((s) => s.toggleModule);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Layers className="h-4 w-4 text-primary" />
+          {language === "bn" ? "মডিউল কন্ট্রোল" : "Module Control"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground">
+          {language === "bn"
+            ? "ডায়নামিক মডিউল চালু বা বন্ধ করুন। বন্ধ মডিউল নেভিগেশন থেকে লুকিয়ে যাবে।"
+            : "Toggle dynamic modules on or off. Disabled modules are hidden from navigation automatically."}
+        </p>
+        {modules.map((m) => (
+          <div key={m.key} className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/75 p-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">{language === "bn" ? m.labelBn : m.labelEn}</p>
+              <p className="text-xs text-muted-foreground">{language === "bn" ? m.descriptionBn : m.descriptionEn}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleModule(m.key)}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium transition",
+                m.enabled
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {m.enabled
+                ? (language === "bn" ? "চালু" : "ON")
+                : (language === "bn" ? "বন্ধ" : "OFF")}
+            </button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 interface UserProfile {
   id: string;
@@ -19,7 +65,7 @@ interface UserProfile {
 }
 
 type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
-type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Advanced";
+type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Modules" | "Advanced";
 type IntegrationState = {
   cloudinary: boolean;
   realtime: boolean;
@@ -41,6 +87,7 @@ const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
     Security: "Security",
     Data: "Categories",
     Integrations: "Integrations",
+    Modules: "Modules",
     Advanced: "About",
   },
   bn: {
@@ -50,6 +97,7 @@ const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
     Security: "নিরাপত্তা",
     Data: "ক্যাটাগরি",
     Integrations: "ইন্টিগ্রেশন",
+    Modules: "মডিউল",
     Advanced: "তথ্য",
   },
 };
@@ -336,7 +384,7 @@ export function SettingsFeature() {
     setMessage("Workspace preferences reset. Reload page to apply defaults.");
   };
 
-  const tabs: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Advanced"];
+  const tabs: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Modules", "Advanced"];
 
   return (
     <div className="space-y-5">
@@ -607,6 +655,10 @@ export function SettingsFeature() {
           ))}
         </CardContent>
       </Card>
+      ) : null}
+
+      {activeTab === "Modules" ? (
+      <ModuleControlPanel language={language} />
       ) : null}
 
       {activeTab === "Advanced" ? (
