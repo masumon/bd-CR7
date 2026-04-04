@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero, SectionHeader } from "@/components/ui/workspace";
+import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { WorkerLogsFeature } from "@/features/construction/worker_logs/WorkerLogsFeature";
 import { createClient } from "@/lib/supabase/client";
 
@@ -74,6 +75,43 @@ export function WorkforceView() {
           { label: "Total Paid", value: fmt(stats.totalPaid) },
         ]}
       />
+
+      <div className="flex justify-end px-4 pb-1">
+        <ExportPDFButton
+          onBuildOptions={() => ({
+            moduleName: "Workforce",
+            moduleNameBn: "শ্রমিক ব্যবস্থাপনা",
+            description: "Daily worker log with attendance status, wages, and payment records.",
+            descriptionBn: "প্রতিদিনের শ্রমিক লগ — উপস্থিতি, মজুরি এবং পেমেন্ট রেকর্ড।",
+            sections: [
+              {
+                title: "Workforce Overview",
+                titleBn: "শ্রমিক সারসংক্ষেপ",
+                rows: [
+                  { label: "Total Workers Logged", labelBn: "মোট শ্রমিক", value: String(stats.total) },
+                  { label: "Present", labelBn: "উপস্থিত", value: String(stats.present) },
+                  { label: "Total Paid", labelBn: "পরিশোধিত মজুরি", value: fmt(stats.totalPaid) },
+                  { label: "Total Unpaid", labelBn: "বকেয়া মজুরি", value: fmt(stats.totalUnpaid) },
+                ],
+              },
+              {
+                title: "Worker Attendance Register",
+                titleBn: "শ্রমিক উপস্থিতি রেজিস্টার",
+                rows: [],
+                tableHeaders: ["Worker Name", "Role", "Date", "Status", "Wage"],
+                tableHeadersBn: ["শ্রমিকের নাম", "পদ", "তারিখ", "উপস্থিতি", "মজুরি"],
+                tableRows: workers.slice(0, 25).map((w) => [
+                  w.worker_name,
+                  w.role,
+                  w.work_date,
+                  w.attendance_status,
+                  fmt(w.daily_wage),
+                ]),
+              },
+            ],
+          })}
+        />
+      </div>
 
       <Tabs
         tabs={tabs}

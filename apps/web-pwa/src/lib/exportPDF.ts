@@ -1,0 +1,453 @@
+/**
+ * exportPDF.ts
+ * Browser-native A4 PDF export with Bengali font support.
+ * Opens a styled print window → user saves as PDF (or auto-prints).
+ * No external library needed — Bengali text renders natively via Google Fonts.
+ */
+
+export type ExportRow = { label: string; labelBn: string; value: string };
+
+export interface ExportSection {
+  title: string;
+  titleBn: string;
+  rows: ExportRow[];
+  tableHeaders?: string[];
+  tableHeadersBn?: string[];
+  tableRows?: string[][];
+}
+
+export interface ExportPDFOptions {
+  moduleName: string;
+  moduleNameBn: string;
+  description: string;
+  descriptionBn: string;
+  sections: ExportSection[];
+  exportedBy?: string;
+  period?: string;
+}
+
+/* ── BD CR7 logo as inline SVG data-URI ── */
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="48" height="48">
+  <rect width="512" height="512" rx="120" fill="#0f6c5a"/>
+  <path fill="#f6f5ef" d="M128 150h136c76 0 120 40 120 103 0 39-19 71-52 89l55 107h-65l-46-92h-83v92h-65V150zm65 56v95h69c37 0 58-17 58-48 0-30-21-47-58-47h-69z"/>
+  <circle cx="385" cy="137" r="28" fill="#c97f3a"/>
+  <path fill="#c97f3a" d="M115 393c45 0 76-17 98-44l38 38c-34 38-79 58-136 58V393z"/>
+</svg>`;
+
+function pad2(n: number) { return n.toString().padStart(2, "0"); }
+
+function buildHtml(opts: ExportPDFOptions): string {
+  const now = new Date();
+  const dateStr = `${pad2(now.getDate())}/${pad2(now.getMonth() + 1)}/${now.getFullYear()}`;
+  const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+
+  const sectionsHtml = opts.sections.map((sec) => {
+    const summaryRows = sec.rows.length
+      ? `<table class="summary-table">
+          ${sec.rows.map((r) => `
+            <tr>
+              <td class="label">${r.label}<br/><span class="bn">${r.labelBn}</span></td>
+              <td class="value">${r.value}</td>
+            </tr>`).join("")}
+        </table>`
+      : "";
+
+    const dataTable = sec.tableHeaders && sec.tableRows && sec.tableRows.length
+      ? `<div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>${(sec.tableHeaders).map((h, i) => `<th>${h}${sec.tableHeadersBn?.[i] ? `<br/><span class="bn">${sec.tableHeadersBn[i]}</span>` : ""}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${sec.tableRows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`
+      : "";
+
+    return `
+      <section class="section">
+        <div class="section-title">
+          <span>${sec.title}</span>
+          <span class="bn">${sec.titleBn}</span>
+        </div>
+        ${summaryRows}
+        ${dataTable}
+      </section>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>BD CR7 ERP — ${opts.moduleName}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Page setup ── */
+    @page {
+      size: A4;
+      margin: 12mm 14mm 14mm 14mm;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+      font-size: 11px;
+      color: #1a2920;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ── Bengali text class ── */
+    .bn {
+      font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+      font-size: 10.5px;
+      color: #3a5044;
+    }
+
+    /* ── Wrapper ── */
+    .page {
+      max-width: 182mm;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding-bottom: 8px;
+      border-bottom: 2.5px solid #0f6c5a;
+      margin-bottom: 10px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-box {
+      flex-shrink: 0;
+    }
+
+    .company-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f6c5a;
+      letter-spacing: -0.3px;
+      line-height: 1.1;
+    }
+
+    .company-sub {
+      font-size: 10px;
+      font-weight: 500;
+      color: #c97f3a;
+      letter-spacing: 0.05em;
+      margin-top: 1px;
+    }
+
+    .company-address {
+      font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+      font-size: 10px;
+      color: #4a6155;
+      margin-top: 3px;
+      line-height: 1.5;
+    }
+
+    .header-right {
+      text-align: right;
+    }
+
+    .header-right .module-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f6c5a;
+    }
+
+    .header-right .module-name-bn {
+      font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #3a5044;
+      display: block;
+    }
+
+    .header-right .meta {
+      font-size: 9.5px;
+      color: #6b7f74;
+      margin-top: 4px;
+    }
+
+    /* ── Description banner ── */
+    .description-banner {
+      background: #f0f7f4;
+      border-left: 3px solid #0f6c5a;
+      padding: 7px 10px;
+      border-radius: 0 5px 5px 0;
+      margin-bottom: 12px;
+    }
+
+    .description-banner p {
+      font-size: 10.5px;
+      color: #2a4038;
+      line-height: 1.5;
+    }
+
+    .description-banner p.bn-desc {
+      font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+      margin-top: 3px;
+      color: #3a5044;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f6c5a;
+      border-bottom: 1px solid #c8dcd4;
+      padding-bottom: 4px;
+      margin-bottom: 7px;
+    }
+
+    .section-title .bn {
+      font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+      font-size: 11.5px;
+      color: #3a6050;
+    }
+
+    /* ── Summary table (key-value) ── */
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 6px;
+    }
+
+    .summary-table tr:nth-child(even) td {
+      background: #f5faf7;
+    }
+
+    .summary-table td {
+      padding: 5px 8px;
+      font-size: 11px;
+      border: 1px solid #e0ece6;
+    }
+
+    .summary-table td.label {
+      width: 40%;
+      font-weight: 500;
+      color: #2a4038;
+    }
+
+    .summary-table td.value {
+      font-weight: 600;
+      color: #0f6c5a;
+    }
+
+    /* ── Data table ── */
+    .data-table-wrap {
+      overflow: visible;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    .data-table thead tr {
+      background: #0f6c5a;
+      color: #ffffff;
+    }
+
+    .data-table th {
+      padding: 5px 7px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .data-table th .bn {
+      color: #c5e8dc;
+      font-size: 9.5px;
+    }
+
+    .data-table tbody tr:nth-child(even) {
+      background: #f5faf7;
+    }
+
+    .data-table tbody tr:hover {
+      background: #e8f5ef;
+    }
+
+    .data-table td {
+      padding: 4px 7px;
+      border-bottom: 1px solid #e0ece6;
+      color: #2a4038;
+      vertical-align: middle;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: #c8dcd4;
+      margin: 10px 0;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 16px;
+      padding-top: 8px;
+      border-top: 1.5px solid #c97f3a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-left {
+      font-size: 9px;
+      color: #6b7f74;
+      line-height: 1.5;
+    }
+
+    .footer-left .bn {
+      font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+      font-size: 9px;
+      color: #6b7f74;
+    }
+
+    .footer-right {
+      text-align: right;
+    }
+
+    .powered-by {
+      font-size: 10px;
+      font-weight: 700;
+      color: #c97f3a;
+      letter-spacing: 0.04em;
+    }
+
+    .powered-sub {
+      font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+      font-size: 9px;
+      color: #c97f3a;
+      display: block;
+    }
+
+    /* ── Print helpers ── */
+    @media print {
+      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .no-print { display: none !important; }
+    }
+
+    /* ── Print button (screen only) ── */
+    .print-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      background: #0f6c5a;
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    .print-btn:hover { background: #0d5c4c; }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print()">⬇ Save as PDF</button>
+
+  <div class="page">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-box">${LOGO_SVG}</div>
+        <div>
+          <div class="company-name">BD CR7 ERP</div>
+          <div class="company-sub">CONSTRUCTION · FINANCE · AI-POWERED</div>
+          <div class="company-address">
+            বৈরাগী বাজার, বিয়ানীবাজার, সিলেট<br/>
+            Bairagir Bazar, Beanibazar, Sylhet
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="module-name">${opts.moduleName}</div>
+        <span class="module-name-bn">${opts.moduleNameBn}</span>
+        <div class="meta">
+          Date / তারিখ: ${dateStr} &nbsp;|&nbsp; Time: ${timeStr}<br/>
+          ${opts.period ? `Period / সময়কাল: ${opts.period}<br/>` : ""}
+          ${opts.exportedBy ? `Exported by: ${opts.exportedBy}` : ""}
+        </div>
+      </div>
+    </header>
+
+    <!-- Description -->
+    <div class="description-banner">
+      <p>${opts.description}</p>
+      <p class="bn-desc">${opts.descriptionBn}</p>
+    </div>
+
+    <!-- Sections -->
+    ${sectionsHtml}
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-left">
+        BD CR7 ERP System &nbsp;|&nbsp; বৈরাগী বাজার, বিয়ানীবাজার, সিলেট<br/>
+        <span class="bn">এই রিপোর্টটি স্বয়ংক্রিয়ভাবে তৈরি হয়েছে</span>
+      </div>
+      <div class="footer-right">
+        <div class="powered-by">⚡ Powered by SUMONIX AI</div>
+        <span class="powered-sub">SUMONIX AI দ্বারা পরিচালিত</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Auto-trigger print after fonts load
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function() {
+        setTimeout(function() { window.print(); }, 600);
+      });
+    }
+  </script>
+</body>
+</html>`;
+}
+
+/**
+ * Triggers A4 PDF export by opening a print window.
+ * The window loads Bengali fonts, renders the A4 template, then auto-triggers print.
+ * The user can "Save as PDF" from the print dialog.
+ */
+export function exportToPDF(opts: ExportPDFOptions): void {
+  const printWindow = window.open("", "_blank", "width=900,height=700,scrollbars=yes");
+  if (!printWindow) {
+    alert("Pop-up blocked. Please allow pop-ups for this site and try again.");
+    return;
+  }
+  const html = buildHtml(opts);
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
