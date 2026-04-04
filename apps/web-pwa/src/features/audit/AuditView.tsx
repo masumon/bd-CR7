@@ -73,7 +73,7 @@ export function AuditView() {
   const tabs = ["Activity Logs", "Financial Audit", "System Changes"];
 
   return (
-    <div className="space-y-4">
+    <div className="glass rounded-2xl space-y-4">
       <WorkspaceHero
         badge="Audit"
         title="System Audit Trail"

@@ -63,7 +63,7 @@ export function WorkforceView() {
   const tabs = ["Log Entry", "Attendance", "Payments"];
 
   return (
-    <div className="space-y-4">
+    <div className="glass rounded-2xl space-y-4">
       <WorkspaceHero
         badge="Workforce"
         title="Worker Management"
