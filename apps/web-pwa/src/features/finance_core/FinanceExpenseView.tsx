@@ -208,7 +208,8 @@ export function FinanceExpenseView() {
               variant="outline"
               size="sm"
               onClick={() => {
-                exportCSV("finance-expenses.csv", buildExportRows());
+                const rows = buildExportRows();
+                exportCSV("finance-expenses.csv", rows);
               }}
             >
               CSV
@@ -217,7 +218,8 @@ export function FinanceExpenseView() {
               variant="outline"
               size="sm"
               onClick={() => {
-                exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows: buildExportRows() });
+                const rows = buildExportRows();
+                exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows });
               }}
             >
               HTML

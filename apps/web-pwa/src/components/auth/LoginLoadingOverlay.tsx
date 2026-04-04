@@ -8,12 +8,14 @@ interface LoginLoadingOverlayProps {
   onDone: () => void;
 }
 
+const WELCOME_OVERLAY_DURATION = 2000;
+
 export function LoginLoadingOverlay({ visible, onDone }: LoginLoadingOverlayProps) {
   useEffect(() => {
     if (!visible) return;
     const timer = setTimeout(() => {
       onDone();
-    }, 2000);
+    }, WELCOME_OVERLAY_DURATION);
     return () => clearTimeout(timer);
   }, [visible, onDone]);
 

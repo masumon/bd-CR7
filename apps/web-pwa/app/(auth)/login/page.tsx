@@ -52,7 +52,6 @@ export default function LoginPage() {
     try {
       await login(email, password);
       setShowWelcome(true);
-      setTimeout(() => router.push("/dashboard"), 2200);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -103,7 +102,6 @@ export default function LoginPage() {
       await verifyBiometricAssertion(token);
 
       setShowWelcome(true);
-      setTimeout(() => router.push("/dashboard"), 2200);
     } catch (err) {
       const message = (err as Error).message || "Biometric quick unlock failed.";
       setError(message);
