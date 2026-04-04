@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 
 interface ExpenseRow { id: string; amount: number; status: string; created_at: string; metadata?: Record<string, string>; }
@@ -245,6 +246,28 @@ export function ReportsFeature() {
                 ],
               })}
             />
+            <Button
+              variant="outline"
+              className="h-10 px-3 text-xs"
+              onClick={() => {
+                exportHTML({
+                  title: "Reports Summary",
+                  titleBn: "রিপোর্ট সারসংক্ষেপ",
+                  period: period === "7d" ? "7 days" : period === "30d" ? "30 days" : "90 days",
+                  rows: [
+                    { metric: "Total Funds", value: data.totalFunds },
+                    { metric: "Total Expenses", value: data.totalExpenses },
+                    { metric: "Pending Expenses", value: data.pendingExpenses },
+                    { metric: "Approved Expenses", value: data.approvedExpenses },
+                    { metric: "Workers Logged", value: data.totalWorkers },
+                    { metric: "Material In", value: data.totalMaterialIn },
+                    { metric: "Material Out", value: data.totalMaterialOut },
+                  ],
+                });
+              }}
+            >
+              HTML
+            </Button>
           </div>
         }
       />

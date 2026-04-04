@@ -11,6 +11,8 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { WorkerLogsFeature } from "@/features/construction/worker_logs/WorkerLogsFeature";
+import { exportCSV } from "@/lib/exportCSV";
+import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 
 type WorkerRow = {
@@ -71,6 +73,18 @@ export function WorkforceView() {
     return { present, totalUnpaid, totalPaid, total: workers.length };
   }, [workers]);
 
+  const buildExportRows = useCallback(() => {
+    return workers.map((w) => ({
+      workerName: w.worker_name,
+      role: w.role,
+      date: w.work_date,
+      attendance: w.attendance_status,
+      dailyWage: Number(w.daily_wage || 0),
+      paidAmount: Number(w.paid_amount || 0),
+      unpaidBalance: Number(w.unpaid_balance || 0),
+    }));
+  }, [workers]);
+
   const handleEditOpen = (w: WorkerRow) => {
     setEditForm({
       worker_name: w.worker_name,
@@ -122,8 +136,9 @@ export function WorkforceView() {
       />
 
       <div className="flex justify-end px-4 pb-1">
-        <ExportPDFButton
-          onBuildOptions={() => ({
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportPDFButton
+            onBuildOptions={() => ({
             moduleName: "Workforce",
             moduleNameBn: "শ্রমিক ব্যবস্থাপনা",
             description: "Daily worker log with attendance status, wages, and payment records.",
@@ -154,8 +169,27 @@ export function WorkforceView() {
                 ]),
               },
             ],
-          })}
-        />
+            })}
+          />
+          <Button
+            variant="outline"
+            onClick={() => {
+              const rows = buildExportRows();
+              exportCSV("workforce-report.csv", rows);
+            }}
+          >
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const rows = buildExportRows();
+              exportHTML({ title: "Workforce Report", titleBn: "শ্রমিক রিপোর্ট", rows });
+            }}
+          >
+            HTML
+          </Button>
+        </div>
       </div>
 
       <Tabs
@@ -297,20 +331,20 @@ export function WorkforceView() {
         <Dialog open title="Edit Worker Log" onClose={() => setEditTarget(null)}>
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Worker Name</label>
-              <input type="text" value={editForm.worker_name}
+              <label htmlFor="worker-edit-name" className="mb-1 block text-xs text-muted-foreground">Worker Name</label>
+              <input id="worker-edit-name" type="text" value={editForm.worker_name}
                 onChange={(e) => setEditForm((f) => ({ ...f, worker_name: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Role</label>
-              <input type="text" value={editForm.role}
+              <label htmlFor="worker-edit-role" className="mb-1 block text-xs text-muted-foreground">Role</label>
+              <input id="worker-edit-role" type="text" value={editForm.role}
                 onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Attendance Status</label>
-              <select value={editForm.attendance_status}
+              <label htmlFor="worker-edit-status" className="mb-1 block text-xs text-muted-foreground">Attendance Status</label>
+              <select id="worker-edit-status" value={editForm.attendance_status}
                 onChange={(e) => setEditForm((f) => ({ ...f, attendance_status: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition">
                 <option value="Present">Present</option>
@@ -320,14 +354,14 @@ export function WorkforceView() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Daily Wage</label>
-                <input type="number" value={editForm.daily_wage}
+                <label htmlFor="worker-edit-daily-wage" className="mb-1 block text-xs text-muted-foreground">Daily Wage</label>
+                <input id="worker-edit-daily-wage" type="number" value={editForm.daily_wage}
                   onChange={(e) => setEditForm((f) => ({ ...f, daily_wage: Number(e.target.value) }))}
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Paid Amount</label>
-                <input type="number" value={editForm.paid_amount}
+                <label htmlFor="worker-edit-paid-amount" className="mb-1 block text-xs text-muted-foreground">Paid Amount</label>
+                <input id="worker-edit-paid-amount" type="number" value={editForm.paid_amount}
                   onChange={(e) => setEditForm((f) => ({ ...f, paid_amount: Number(e.target.value) }))}
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
               </div>

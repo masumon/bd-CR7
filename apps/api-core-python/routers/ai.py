@@ -5,9 +5,53 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user, require_roles
 from core.db import fetch_all, tx
-from services.risk import dashboard_metrics, financial_anomalies
+from core.supabase import supabase_service
+from services.risk import dashboard_metrics, financial_anomalies, operational_alerts
 
 router = APIRouter()
+
+
+@router.get("/integration-status")
+async def integration_status(user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        return {
+            "status": "degraded",
+            "reason": "supabase_service_not_configured",
+            "modules": {},
+        }
+
+    def check_table(table: str) -> tuple[bool, int]:
+        try:
+            res = supabase_service.table(table).select("id", count="exact").limit(1).execute()
+            return True, int(res.count or 0)
+        except Exception:
+            return False, 0
+
+    materials_ok, materials_count = check_table("material_logs")
+    finance_ok, finance_count = check_table("expenses")
+    payroll_ok, payroll_count = check_table("worker_logs")
+    contractor_ok, contractor_count = check_table("contractor_contracts")
+    project_ok, project_count = check_table("projects")
+
+    module_flags = {
+        "materials_to_finance": materials_ok and finance_ok,
+        "workforce_to_payroll": payroll_ok,
+        "contractor_to_finance": contractor_ok and finance_ok,
+        "project_central": project_ok,
+    }
+    all_ok = all(module_flags.values())
+
+    return {
+        "status": "ok" if all_ok else "partial",
+        "checks": module_flags,
+        "counts": {
+            "material_logs": materials_count,
+            "expenses": finance_count,
+            "worker_logs": payroll_count,
+            "contractor_contracts": contractor_count,
+            "projects": project_count,
+        },
+    }
 
 
 def _log_ai_interaction(*, user_id: str, message: str, intent: str, response_text: str, metadata: dict | None = None) -> None:
@@ -107,6 +151,22 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
     wants_anomaly = any(keyword in normalized for keyword in ("anomal", "risk", "suspicious", "ঝুঁকি", "অস্বাভাবিক"))
     wants_dashboard = any(keyword in normalized for keyword in ("dashboard", "summary", "overview", "balance", "সারসংক্ষেপ", "ব্যালেন্স"))
     wants_module_guide = any(keyword in normalized for keyword in ("module", "workspace", "what can you do", "কি করতে পারো", "কি কি আছে"))
+    wants_operational_signal = any(
+        keyword in normalized
+        for keyword in (
+            "budget",
+            "shortage",
+            "worker",
+            "material",
+            "delay",
+            "forecast",
+            "prediction",
+            "বাজেট",
+            "শ্রমিক",
+            "উপকরণ",
+            "বিলম্ব",
+        )
+    )
 
     if wants_greeting:
         payload = {
@@ -162,6 +222,42 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
             intent="anomalies",
             response_text=reply_text,
             metadata={"count": len(anomalies)},
+        )
+        return payload
+
+    if wants_operational_signal:
+        signals = operational_alerts()
+        lines = ["Operational signal scan:"]
+        lines.append(f"- Budget alert: {'ON' if signals.get('budget_alert') else 'OFF'}")
+        lines.append(f"- Worker shortage: {'YES' if signals.get('worker_shortage') else 'NO'}")
+        lines.append(f"- Material warning: {'YES' if signals.get('material_warning') else 'NO'}")
+        lines.append(f"- Delay prediction: {'RISK' if signals.get('delay_prediction') else 'STABLE'}")
+
+        notes = signals.get("notes") or {}
+        lines.append("")
+        lines.append("Context:")
+        lines.append(f"- Budget: {notes.get('budget', 'n/a')}")
+        lines.append(f"- Workforce: {notes.get('workforce', 'n/a')}")
+        lines.append(f"- Materials: {notes.get('materials', 'n/a')}")
+        lines.append(f"- Delay: {notes.get('delay', 'n/a')}")
+
+        reply_text = "\n".join(lines)
+        payload = {
+            "reply": reply_text,
+            "intent": "operational_alerts",
+            "signals": signals,
+        }
+        _log_ai_interaction(
+            user_id=user.user_id,
+            message=message,
+            intent="operational_alerts",
+            response_text=reply_text,
+            metadata={
+                "budget_alert": signals.get("budget_alert", False),
+                "worker_shortage": signals.get("worker_shortage", False),
+                "material_warning": signals.get("material_warning", False),
+                "delay_prediction": signals.get("delay_prediction", False),
+            },
         )
         return payload
 

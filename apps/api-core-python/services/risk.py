@@ -144,3 +144,103 @@ def dashboard_metrics() -> dict:
         "total_projects": len(projects.data or []),
         "recent_expenses": (expenses.data or [])[:10],
     }
+
+
+def operational_alerts() -> dict:
+    metrics = dashboard_metrics()
+
+    fund_balance = Decimal(str(metrics.get("fund_balance") or 0))
+    total_expenses = Decimal(str(metrics.get("total_expenses") or 0))
+    pending_expenses = int(metrics.get("pending_expenses") or 0)
+
+    budget_pressure = bool(fund_balance > 0 and total_expenses >= fund_balance * Decimal("0.85"))
+    budget_backlog = pending_expenses >= 8
+    budget_alert = budget_pressure or budget_backlog
+
+    worker_shortage = False
+    workforce_note = "workforce data unavailable"
+    if supabase_service is not None:
+        try:
+            worker_logs = (
+                supabase_service.table("worker_logs")
+                .select("attendance_status,work_date")
+                .order("work_date", desc=True)
+                .limit(120)
+                .execute()
+            )
+            logs = worker_logs.data or []
+            recent = [row for row in logs if row.get("attendance_status")]
+            absent = sum(1 for row in recent if str(row.get("attendance_status")).lower() == "absent")
+            present = sum(1 for row in recent if str(row.get("attendance_status")).lower() == "present")
+            sample = len(recent)
+            absent_ratio = (absent / sample) if sample else 0
+            worker_shortage = sample > 0 and (present < 10 or absent_ratio >= 0.35)
+            workforce_note = f"present={present}, absent={absent}, sample={sample}"
+        except Exception:
+            workforce_note = "worker log check failed"
+
+    material_warning = False
+    material_note = "material data unavailable"
+    if supabase_service is not None:
+        try:
+            material_logs = (
+                supabase_service.table("material_logs")
+                .select("item_name,quantity,low_stock_threshold")
+                .limit(200)
+                .execute()
+            )
+            low_items = []
+            for row in (material_logs.data or []):
+                threshold = row.get("low_stock_threshold")
+                quantity = row.get("quantity")
+                if threshold is None or quantity is None:
+                    continue
+                try:
+                    if Decimal(str(quantity)) <= Decimal(str(threshold)):
+                        low_items.append(str(row.get("item_name") or "unknown"))
+                except Exception:
+                    continue
+            material_warning = len(low_items) > 0
+            material_note = ", ".join(low_items[:3]) if low_items else "stock healthy"
+        except Exception:
+            material_note = "material check failed"
+
+    delay_prediction = False
+    delay_note = "project schedule data unavailable"
+    if supabase_service is not None:
+        try:
+            projects = (
+                supabase_service.table("projects")
+                .select("id,name,status,end_date")
+                .limit(200)
+                .execute()
+            )
+            now_date = datetime.now(timezone.utc).date()
+            overdue = 0
+            for row in (projects.data or []):
+                end_date = row.get("end_date")
+                status = str(row.get("status") or "").lower()
+                if not end_date or status in {"completed", "done", "closed"}:
+                    continue
+                try:
+                    if datetime.fromisoformat(str(end_date)).date() < now_date:
+                        overdue += 1
+                except Exception:
+                    continue
+            delay_prediction = overdue > 0
+            delay_note = f"overdue_projects={overdue}"
+        except Exception:
+            delay_note = "delay signal check failed"
+
+    return {
+        "budget_alert": budget_alert,
+        "worker_shortage": worker_shortage,
+        "material_warning": material_warning,
+        "delay_prediction": delay_prediction,
+        "notes": {
+            "budget": f"expense={total_expenses}, fund={fund_balance}, pending={pending_expenses}",
+            "workforce": workforce_note,
+            "materials": material_note,
+            "delay": delay_note,
+        },
+    }

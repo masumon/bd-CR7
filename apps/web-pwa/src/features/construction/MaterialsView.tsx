@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { MaterialTrackFeature } from "@/features/construction/material_track/MaterialTrackFeature";
+import { exportCSV } from "@/lib/exportCSV";
+import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 
 type MaterialRow = {
@@ -76,6 +78,19 @@ export function MaterialsView() {
     return { inbound, outbound, totalCost, lowStock };
   }, [materials]);
 
+  const buildExportRows = useCallback(() => {
+    return materials.map((m) => ({
+      item: m.item_name,
+      quantity: Number(m.quantity || 0),
+      unit: m.unit,
+      movement: m.movement_type,
+      supplier: m.supplier || "",
+      costPerUnit: Number(m.cost_per_unit || 0),
+      threshold: Number(m.low_stock_threshold || 0),
+      createdAt: m.created_at,
+    }));
+  }, [materials]);
+
   const handleEditOpen = (m: MaterialRow) => {
     setEditForm({
       item_name: m.item_name,
@@ -131,8 +146,9 @@ export function MaterialsView() {
       />
 
       <div className="flex justify-end">
-        <ExportPDFButton
-          onBuildOptions={() => ({
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportPDFButton
+            onBuildOptions={() => ({
             moduleName: "Materials",
             moduleNameBn: "উপকরণ ব্যবস্থাপনা",
             description: "Material stock register with inbound, outbound, and supplier information.",
@@ -164,8 +180,27 @@ export function MaterialsView() {
                 ]),
               },
             ],
-          })}
-        />
+            })}
+          />
+          <Button
+            variant="outline"
+            onClick={() => {
+              const rows = buildExportRows();
+              exportCSV("materials-report.csv", rows);
+            }}
+          >
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const rows = buildExportRows();
+              exportHTML({ title: "Materials Report", titleBn: "উপকরণ রিপোর্ট", rows });
+            }}
+          >
+            HTML
+          </Button>
+        </div>
       </div>
 
       {stats.lowStock > 0 && (
@@ -303,28 +338,28 @@ export function MaterialsView() {
         <Dialog open title="Edit Material" onClose={() => setEditTarget(null)}>
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Item Name</label>
-              <input type="text" value={editForm.item_name}
+              <label htmlFor="material-edit-item-name" className="mb-1 block text-xs text-muted-foreground">Item Name</label>
+              <input id="material-edit-item-name" type="text" value={editForm.item_name}
                 onChange={(e) => setEditForm((f) => ({ ...f, item_name: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Unit</label>
-                <input type="text" value={editForm.unit}
+                <label htmlFor="material-edit-unit" className="mb-1 block text-xs text-muted-foreground">Unit</label>
+                <input id="material-edit-unit" type="text" value={editForm.unit}
                   onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))}
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Quantity</label>
-                <input type="number" value={editForm.quantity}
+                <label htmlFor="material-edit-quantity" className="mb-1 block text-xs text-muted-foreground">Quantity</label>
+                <input id="material-edit-quantity" type="number" value={editForm.quantity}
                   onChange={(e) => setEditForm((f) => ({ ...f, quantity: Number(e.target.value) }))}
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Movement Type</label>
-              <select value={editForm.movement_type}
+              <label htmlFor="material-edit-movement-type" className="mb-1 block text-xs text-muted-foreground">Movement Type</label>
+              <select id="material-edit-movement-type" value={editForm.movement_type}
                 onChange={(e) => setEditForm((f) => ({ ...f, movement_type: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition">
                 <option value="in">In</option>
@@ -334,21 +369,21 @@ export function MaterialsView() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Cost / Unit</label>
-                <input type="number" value={editForm.cost_per_unit}
+                <label htmlFor="material-edit-cost-unit" className="mb-1 block text-xs text-muted-foreground">Cost / Unit</label>
+                <input id="material-edit-cost-unit" type="number" value={editForm.cost_per_unit}
                   onChange={(e) => setEditForm((f) => ({ ...f, cost_per_unit: Number(e.target.value) }))}
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Low Stock Threshold</label>
-                <input type="number" value={editForm.low_stock_threshold}
+                <label htmlFor="material-edit-low-threshold" className="mb-1 block text-xs text-muted-foreground">Low Stock Threshold</label>
+                <input id="material-edit-low-threshold" type="number" value={editForm.low_stock_threshold}
                   onChange={(e) => setEditForm((f) => ({ ...f, low_stock_threshold: Number(e.target.value) }))}
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Supplier</label>
-              <input type="text" value={editForm.supplier}
+              <label htmlFor="material-edit-supplier" className="mb-1 block text-xs text-muted-foreground">Supplier</label>
+              <input id="material-edit-supplier" type="text" value={editForm.supplier}
                 onChange={(e) => setEditForm((f) => ({ ...f, supplier: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
             </div>

@@ -16,6 +16,9 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { Button } from "@/components/ui/button";
+import { exportCSV } from "@/lib/exportCSV";
+import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -394,6 +397,19 @@ export function ContractorView() {
     return { totalContractors: contractors.length, activeCount, totalContractValue, totalPaid };
   }, [contractors, contracts, payments]);
 
+  const buildExportRows = useCallback(() => {
+    return contracts.map((c) => ({
+      project: c.project_name,
+      contractor: c.contractors?.name ?? "",
+      contractAmount: Number(c.contract_amount || 0),
+      paidAmount: Number(c.paid_amount || 0),
+      dueAmount: Number(c.contract_amount || 0) - Number(c.paid_amount || 0),
+      status: c.status,
+      startDate: c.start_date ?? "",
+      endDate: c.end_date ?? "",
+    }));
+  }, [contracts]);
+
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = useCallback(async () => {
@@ -446,8 +462,9 @@ export function ContractorView() {
       />
 
       <div className="flex justify-end">
-        <ExportPDFButton
-          onBuildOptions={() => ({
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportPDFButton
+            onBuildOptions={() => ({
             moduleName: "Contractor",
             moduleNameBn: "ঠিকাদার ব্যবস্থাপনা",
             description: "Contractor register with contracts and payment records.",
@@ -492,8 +509,27 @@ export function ContractorView() {
                 ]),
               },
             ],
-          })}
-        />
+            })}
+          />
+          <Button
+            variant="outline"
+            onClick={() => {
+              const rows = buildExportRows();
+              exportCSV("contractor-contracts.csv", rows);
+            }}
+          >
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const rows = buildExportRows();
+              exportHTML({ title: "Contractor Contracts", titleBn: "ঠিকাদার চুক্তি", rows });
+            }}
+          >
+            HTML
+          </Button>
+        </div>
       </div>
 
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
