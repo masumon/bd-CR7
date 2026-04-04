@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
+import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { MaterialTrackFeature } from "@/features/construction/material_track/MaterialTrackFeature";
 import { createClient } from "@/lib/supabase/client";
 
@@ -78,6 +79,44 @@ export function MaterialsView() {
           { label: "Total Value", value: fmt(stats.totalCost) },
         ]}
       />
+
+      <div className="flex justify-end">
+        <ExportPDFButton
+          onBuildOptions={() => ({
+            moduleName: "Materials",
+            moduleNameBn: "উপকরণ ব্যবস্থাপনা",
+            description: "Material stock register with inbound, outbound, and supplier information.",
+            descriptionBn: "উপকরণ স্টক রেজিস্টার — প্রবেশ, বের এবং সরবরাহকারীর তথ্য।",
+            sections: [
+              {
+                title: "Materials Overview",
+                titleBn: "উপকরণ সারসংক্ষেপ",
+                rows: [
+                  { label: "Total Inbound (units)", labelBn: "মোট প্রবেশ (একক)", value: String(stats.inbound) },
+                  { label: "Total Outbound (units)", labelBn: "মোট বের (একক)", value: String(stats.outbound) },
+                  { label: "Total Stock Value", labelBn: "মোট স্টক মূল্য", value: fmt(stats.totalCost) },
+                  { label: "Low Stock Items", labelBn: "কম স্টক আইটেম", value: String(stats.lowStock) },
+                ],
+              },
+              {
+                title: "Stock Register",
+                titleBn: "স্টক রেজিস্টার",
+                rows: [],
+                tableHeaders: ["Item Name", "Qty", "Unit", "Type", "Cost/Unit", "Supplier"],
+                tableHeadersBn: ["আইটেমের নাম", "পরিমাণ", "একক", "ধরন", "প্রতি একক মূল্য", "সরবরাহকারী"],
+                tableRows: materials.slice(0, 25).map((m) => [
+                  m.item_name,
+                  String(m.quantity),
+                  m.unit,
+                  m.movement_type === "in" ? "IN প্রবেশ" : m.movement_type === "out" ? "OUT বের" : "Adjust",
+                  m.cost_per_unit != null ? fmt(m.cost_per_unit) : "—",
+                  m.supplier ?? "—",
+                ]),
+              },
+            ],
+          })}
+        />
+      </div>
 
       {stats.lowStock > 0 && (
         <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">

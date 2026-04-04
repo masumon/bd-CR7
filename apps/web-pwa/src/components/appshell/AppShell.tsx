@@ -79,7 +79,7 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
   ], [coreItems]);
 
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="min-h-dvh app-gradient text-foreground">
       <TopBar
         title="BD CR7 ERP"
         online={online}

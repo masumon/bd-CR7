@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { createClient } from "@/lib/supabase/client";
 import { FundManagerFeature } from "./fund_manager/FundManagerFeature";
 import { ExpenseEngineFeature } from "./expense_engine/ExpenseEngineFeature";
@@ -96,7 +97,7 @@ export function FinanceExpenseView() {
   }, [rows]);
 
   return (
-    <div className="space-y-4">
+    <div className="glass rounded-2xl space-y-4">
       <WorkspaceHero
         badge="Finance Workspace / তহবিল ও খরচ"
         title="Fund intake, expense categories, subcategories, and approval visibility now sit in one finance cockpit."
@@ -117,7 +118,60 @@ export function FinanceExpenseView() {
         eyebrow="Ledger / লেজার"
         title="Finance records with category and subcategory"
         description="Each finance record exposes a clearer classification and quick action menu before review."
-        actions={<Button onClick={() => setOpen(!open)} className="w-full sm:w-auto">{open ? "Close Forms" : "Add Fund / Expense"}</Button>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setOpen(!open)} className="w-full sm:w-auto">{open ? "Close Forms" : "Add Fund / Expense"}</Button>
+            <ExportPDFButton
+              onBuildOptions={() => ({
+                moduleName: "Finance",
+                moduleNameBn: "অর্থায়ন ও ব্যয়",
+                description: "Finance ledger showing expense records, categories, and approval status.",
+                descriptionBn: "অর্থায়ন লেজার — ব্যয়ের রেকর্ড, ক্যাটাগরি এবং অনুমোদনের অবস্থা।",
+                sections: [
+                  {
+                    title: "Finance Overview",
+                    titleBn: "আর্থিক সংক্ষিপ্ত বিবরণ",
+                    rows: [
+                      { label: "Pending Approvals", labelBn: "অনুমোদন বাকি", value: String(pendingApprovals) },
+                      { label: "Approved Today", labelBn: "আজ অনুমোদিত", value: `৳${approvedToday.toLocaleString("en-BD")}` },
+                      { label: "Receipts Missing", labelBn: "রসিদ নেই", value: String(receiptsMissing) },
+                      { label: "Total Records", labelBn: "মোট রেকর্ড", value: String(rows.length) },
+                    ],
+                  },
+                  {
+                    title: "Category Breakdown",
+                    titleBn: "ক্যাটাগরি বিশ্লেষণ",
+                    rows: categoryBreakdown.map((c) => ({
+                      label: c.label,
+                      labelBn: c.label,
+                      value: `৳${c.value.toLocaleString("en-BD")}`,
+                    })),
+                  },
+                  {
+                    title: "Expense Ledger",
+                    titleBn: "ব্যয় লেজার",
+                    rows: [],
+                    tableHeaders: ["ID", "Category", "Subcategory", "Amount", "Status"],
+                    tableHeadersBn: ["আইডি", "ক্যাটাগরি", "উপ-ক্যাটাগরি", "পরিমাণ", "স্ট্যাটাস"],
+                    tableRows: rows.slice(0, 20).map((row) => {
+                      const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
+                      const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
+                      const category = metaCategory || row.description?.split(" ")[0] || "General";
+                      const approved = String(row.status).toLowerCase() === "approved";
+                      return [
+                        row.id.slice(0, 8).toUpperCase(),
+                        category,
+                        metaSubcategory,
+                        `৳${Number(row.amount || 0).toLocaleString("en-BD")}`,
+                        approved ? "✓ Approved" : "⏳ Pending",
+                      ];
+                    }),
+                  },
+                ],
+              })}
+            />
+          </div>
+        }
       />
 
       <div className="grid gap-4 xl:grid-cols-[1.45fr_0.55fr]">

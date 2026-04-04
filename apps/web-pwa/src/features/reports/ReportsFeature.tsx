@@ -19,6 +19,7 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { createClient } from "@/lib/supabase/client";
 
 interface ExpenseRow { id: string; amount: number; status: string; created_at: string; metadata?: Record<string, string>; }
@@ -153,7 +154,7 @@ export function ReportsFeature() {
         title="Period-based reporting desk"
         description="Switch date ranges and export the current view without leaving the report workspace."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {(["7d", "30d", "90d"] as const).map((p) => (
               <button
                 key={p}
@@ -167,6 +168,65 @@ export function ReportsFeature() {
             <Button variant="outline" className="h-10 px-3 text-xs" onClick={fetchReport} disabled={loading}>
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             </Button>
+            <ExportPDFButton
+              onBuildOptions={() => ({
+                moduleName: "Reports",
+                moduleNameBn: "রিপোর্ট",
+                description: "Summary report for finance, workforce, and materials over the selected period.",
+                descriptionBn: "নির্বাচিত সময়কালে অর্থায়ন, শ্রমিক এবং উপকরণের সারসংক্ষেপ রিপোর্ট।",
+                period: period === "7d" ? "Last 7 days / ৭ দিন" : period === "30d" ? "Last 30 days / ৩০ দিন" : "Last 90 days / ৯০ দিন",
+                sections: [
+                  {
+                    title: "Financial Summary",
+                    titleBn: "আর্থিক সারসংক্ষেপ",
+                    rows: [
+                      { label: "Total Funds Received", labelBn: "মোট তহবিল প্রাপ্তি", value: fmt(data.totalFunds) },
+                      { label: "Total Expenses", labelBn: "মোট ব্যয়", value: fmt(data.totalExpenses) },
+                      { label: "Approved Expenses", labelBn: "অনুমোদিত ব্যয়", value: fmt(data.approvedExpenses) },
+                      { label: "Pending Approvals", labelBn: "অনুমোদন বাকি", value: String(data.pendingExpenses) },
+                    ],
+                  },
+                  {
+                    title: "Workforce Summary",
+                    titleBn: "শ্রমিক সারসংক্ষেপ",
+                    rows: [
+                      { label: "Unique Workers Logged", labelBn: "মোট শ্রমিক উপস্থিত", value: String(data.totalWorkers) },
+                    ],
+                  },
+                  {
+                    title: "Materials Summary",
+                    titleBn: "উপকরণ সারসংক্ষেপ",
+                    rows: [
+                      { label: "Material Received (units)", labelBn: "উপকরণ প্রবেশ (একক)", value: String(data.totalMaterialIn) },
+                      { label: "Material Issued (units)", labelBn: "উপকরণ বের (একক)", value: String(data.totalMaterialOut) },
+                      { label: "Material Cost", labelBn: "উপকরণ খরচ", value: fmt(data.materialCost) },
+                    ],
+                  },
+                  {
+                    title: "Expense Category Breakdown",
+                    titleBn: "ব্যয় ক্যাটাগরি বিশ্লেষণ",
+                    rows: data.categoryTotals.map((c) => ({
+                      label: c.label,
+                      labelBn: c.label,
+                      value: fmt(c.value),
+                    })),
+                  },
+                  {
+                    title: "Recent Expenses",
+                    titleBn: "সাম্প্রতিক ব্যয়",
+                    rows: [],
+                    tableHeaders: ["Date", "Amount", "Category", "Status"],
+                    tableHeadersBn: ["তারিখ", "পরিমাণ", "ক্যাটাগরি", "স্ট্যাটাস"],
+                    tableRows: data.recentExpenses.slice(0, 15).map((e) => [
+                      e.created_at?.slice(0, 10) ?? "—",
+                      fmt(e.amount),
+                      e.metadata?.["category"] ?? "General",
+                      e.status === "approved" ? "✓ অনুমোদিত" : "⏳ বাকি",
+                    ]),
+                  },
+                ],
+              })}
+            />
           </div>
         }
       />
