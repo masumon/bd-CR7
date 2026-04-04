@@ -298,7 +298,8 @@ function AddPaymentForm({
     e.preventDefault();
     if (!contractorId) { setMsg("ঠিকাদার নির্বাচন করুন।"); return; }
     setSaving(true);
-    const { error } = await supabase.from("contractor_payments").insert({
+
+    const { error: payErr } = await supabase.from("contractor_payments").insert({
       contractor_id: contractorId,
       contract_id: contractId || null,
       amount: Number(amount),
@@ -306,18 +307,26 @@ function AddPaymentForm({
       method,
       notes: notes.trim() || null,
     });
-    // If contract selected, update paid_amount
-    if (!error && contractId) {
+    if (payErr) { setSaving(false); setMsg(payErr.message); return; }
+
+    // Update contract paid_amount — use increment via RPC if available, else read-then-write
+    if (contractId) {
       const contract = contracts.find((c) => c.id === contractId);
       if (contract) {
-        await supabase
+        const { error: updateErr } = await supabase
           .from("contractor_contracts")
           .update({ paid_amount: Number(contract.paid_amount) + Number(amount) })
           .eq("id", contractId);
+        if (updateErr) {
+          setSaving(false);
+          setMsg(`পেমেন্ট সংরক্ষিত হয়েছে, কিন্তু চুক্তি আপডেট ব্যর্থ: ${updateErr.message}`);
+          onSaved();
+          return;
+        }
       }
     }
+
     setSaving(false);
-    if (error) { setMsg(error.message); return; }
     setMsg("পেমেন্ট সংরক্ষিত হয়েছে।");
     setAmount("0"); setNotes(""); setContractId("");
     onSaved();
@@ -385,15 +394,23 @@ export function ContractorView() {
     return { totalContractors: contractors.length, activeCount, totalContractValue, totalPaid };
   }, [contractors, contracts, payments]);
 
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     const { type, id } = deleteTarget;
+    let error: { message: string } | null = null;
     if (type === "contractor") {
-      await supabase.from("contractors").delete().eq("id", id);
+      ({ error } = await supabase.from("contractors").delete().eq("id", id));
     } else if (type === "contract") {
-      await supabase.from("contractor_contracts").delete().eq("id", id);
+      ({ error } = await supabase.from("contractor_contracts").delete().eq("id", id));
     } else if (type === "payment") {
-      await supabase.from("contractor_payments").delete().eq("id", id);
+      ({ error } = await supabase.from("contractor_payments").delete().eq("id", id));
+    }
+    if (error) {
+      setDeleteError(error.message);
+      setDeleteTarget(null);
+      return;
     }
     setDeleteTarget(null);
     void load();
@@ -409,6 +426,13 @@ export function ContractorView() {
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
         />
+      )}
+
+      {deleteError && (
+        <div className="flex items-center justify-between rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-400">
+          <span>{deleteError}</span>
+          <button type="button" onClick={() => setDeleteError(null)} className="ml-3 shrink-0 text-rose-400 hover:text-rose-600">✕</button>
+        </div>
       )}
 
       <WorkspaceHero
