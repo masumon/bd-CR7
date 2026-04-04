@@ -1,16 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Noto_Sans_Bengali, Sora } from "next/font/google";
+import { Inter, Poppins, Noto_Sans_Bengali } from "next/font/google";
 import ServiceWorkerRegistration from "../src/components/ServiceWorkerRegistration";
 import "./globals.css";
 
-const bodyFont = Manrope({
+const bodyFont = Inter({
   subsets: ["latin"],
   variable: "--font-body",
 });
 
-const displayFont = Sora({
+const displayFont = Poppins({
   subsets: ["latin"],
   variable: "--font-display",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const bengaliFont = Noto_Sans_Bengali({
@@ -44,14 +45,14 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f141d",
+  themeColor: "#0a1512",
   colorScheme: "dark",
   viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${bodyFont.variable} ${displayFont.variable} ${bengaliFont.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`dark ${bodyFont.variable} ${displayFont.variable} ${bengaliFont.variable}`}>
       <body className="screen-shell">
         <ServiceWorkerRegistration />
         {children}

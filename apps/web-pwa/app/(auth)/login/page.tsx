@@ -110,7 +110,7 @@ export default function LoginPage() {
 
   return (
     <main
-      className="flex min-h-[100dvh] flex-col bg-gradient-to-br from-[#eef2ec] via-white to-[#e8f5ec] safe-top safe-bottom dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+      className="login-shell flex flex-col auth-bg-dark safe-bottom overflow-y-auto"
     >
       {/* TOP SECTION: Greeting & Branding */}
       <div className="flex-none px-6 pt-10 pb-2 text-center">
@@ -128,7 +128,7 @@ export default function LoginPage() {
               priority
             />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
             BD CR7
           </h1>
           <p className="text-xs text-muted-foreground">Smart · Secure · AI Powered</p>
@@ -207,7 +207,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_4px_14px_rgba(15,108,90,0.35)] transition-all active:scale-[0.98] disabled:opacity-60"
+              className="btn-gold flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? "Signing in..." : "Sign in"}

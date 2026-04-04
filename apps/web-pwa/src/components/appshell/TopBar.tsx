@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Languages, Menu, Moon, Sun } from "lucide-react";
+import { Bell, Languages, Menu, Moon, Sun, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,36 +23,61 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
   const initials = role ? role.slice(0, 2).toUpperCase() : "U";
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-border bg-background/95 px-2 backdrop-blur-sm">
+    <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-border/60 bg-background/90 px-2 backdrop-blur-md">
       <div className="mx-auto flex h-full max-w-7xl items-center gap-1">
+        {/* Mobile hamburger */}
         <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label="Open menu">
           <Menu className="h-4 w-4" />
         </Button>
 
-        <div className="min-w-0 flex-1 px-1">
-          <p className="truncate text-sm font-semibold text-foreground">{title}</p>
-          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{online ? "online" : "offline"}</p>
-        </div>
+        {/* Project selector / branding */}
+        <button
+          className="flex min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 py-1.5 transition hover:bg-muted/50"
+          aria-label="Select project"
+        >
+          <div className="flex min-w-0 flex-col text-left">
+            <p className="truncate font-display text-sm font-semibold text-foreground leading-tight">{title}</p>
+            <p className={cn(
+              "text-[10px] uppercase tracking-[0.12em] leading-tight",
+              online ? "text-emerald-400" : "text-rose-400"
+            )}>
+              {online ? "● online" : "○ offline"}
+            </p>
+          </div>
+          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+        </button>
 
+        {/* Theme toggle */}
         <Button variant="ghost" className="h-11 w-11 p-0" onClick={onToggleTheme} aria-label="Toggle theme">
-          {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {dark ? <Sun className="h-4 w-4 text-gold" /> : <Moon className="h-4 w-4" />}
         </Button>
 
-        <Button variant="ghost" className="h-11 w-11 p-0" onClick={onToggleLanguage} aria-label="Toggle language">
-          <Languages className="h-4 w-4" />
-          <span className="sr-only">{language === "bn" ? "Bangla" : "English"}</span>
-        </Button>
+        {/* Language toggle */}
+        <button
+          className="flex h-9 items-center justify-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+          onClick={onToggleLanguage}
+          aria-label="Toggle language"
+        >
+          <Languages className="h-3 w-3" />
+          <span>{language === "bn" ? "বাং" : "EN"}</span>
+        </button>
 
+        {/* Notifications */}
         <Button variant="ghost" className="relative h-11 w-11 p-0" onClick={onOpenNotifications} aria-label="Notifications">
           <Bell className="h-4 w-4" />
-          {unread > 0 ? <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-rose-500" /> : null}
+          {unread > 0 && (
+            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </Button>
 
+        {/* User avatar */}
         <button
           className={cn(
             "flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold",
             "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm",
-            "transition hover:opacity-90 active:scale-95"
+            "transition hover:opacity-90 active:scale-95 animate-gold-glow"
           )}
           onClick={onOpenUserDrawer}
           aria-label="Open user profile"
