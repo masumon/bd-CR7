@@ -135,24 +135,16 @@ export function ReportsFeature() {
     <div className="space-y-6">
       <WorkspaceHero
         badge="Reports Workspace / রিপোর্ট ও বিশ্লেষণ"
-        title="Reports now summarize finance, workers, and materials as one decision desk with Bengali-first readability."
-        description="The reporting workspace groups time filters, exports, and cross-module signals so managers can review the site and showroom health quickly on mobile or desktop."
         stats={[
           { label: "Funds", value: fmt(data.totalFunds) },
           { label: "Expenses", value: fmt(data.totalExpenses) },
           { label: "Material Cost", value: fmt(data.materialCost) },
-        ]}
-        highlights={[
-          { title: "Finance Signal", description: "Fund, expense, and approval trends", icon: TrendingUp },
-          { title: "Workforce Signal", description: "Unique worker presence across the period", icon: HardHat },
-          { title: "Material Signal", description: "Inflow, outflow, and movement cost", icon: PackageCheck },
         ]}
       />
 
       <SectionHeader
         eyebrow="Time Filter / সময়সীমা"
         title="Period-based reporting desk"
-        description="Switch date ranges and export the current view without leaving the report workspace."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {(["7d", "30d", "90d"] as const).map((p) => (

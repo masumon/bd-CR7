@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, BrainCircuit, Loader2, Radar, Search, Sparkles } from "lucide-react";
+import { BrainCircuit, Loader2, Radar, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -93,17 +93,10 @@ export function AiPanel() {
     <div className="space-y-5">
       <WorkspaceHero
         badge="SUMONIX AI / বুদ্ধিমান সহকারী"
-        title="SUMONIX AI is now positioned as a ready assistant for ERP guidance, summary, and anomaly review."
-        description="Use it like a chatbot: ask for a dashboard summary, risky expense signals, project context, or workflow help."
         stats={[
           { label: "Assistant Mode", value: "Ready" },
           { label: "Anomaly Feed", value: String(anomalies.length) },
           { label: "Auth Status", value: token ? "Active" : "Login Required" },
-        ]}
-        highlights={[
-          { title: "Chat", description: "Natural questions and ready answers", icon: Bot },
-          { title: "Anomaly Review", description: "Risk-oriented finance scanning", icon: Radar },
-          { title: "Memory Search", description: "Similarity lookup for stored context", icon: BrainCircuit },
         ]}
       />
 
@@ -112,7 +105,6 @@ export function AiPanel() {
           <SectionHeader
             eyebrow="Assistant Desk / সহকারী ডেস্ক"
             title="Ask SUMONIX like a real chatbot"
-            description="Quick prompts and guided tools are kept together so the assistant feels operational, not experimental."
           />
 
           {!token ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">Please login to activate AI tools.</div> : null}
