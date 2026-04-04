@@ -85,7 +85,7 @@ BEGIN
       'INSERT',
       TG_TABLE_NAME,
       NEW.id::TEXT,
-      (SELECT auth.uid()),
+      (SELECT auth.uid() -- may be NULL for service-role operations; column is nullable),
       to_jsonb(NEW)
     );
     RETURN NEW;
@@ -96,7 +96,7 @@ BEGIN
       'UPDATE',
       TG_TABLE_NAME,
       NEW.id::TEXT,
-      (SELECT auth.uid()),
+      (SELECT auth.uid() -- may be NULL for service-role operations; column is nullable),
       to_jsonb(OLD),
       to_jsonb(NEW)
     );
@@ -108,7 +108,7 @@ BEGIN
       'DELETE',
       TG_TABLE_NAME,
       OLD.id::TEXT,
-      (SELECT auth.uid()),
+      (SELECT auth.uid() -- may be NULL for service-role operations; column is nullable),
       to_jsonb(OLD)
     );
     RETURN OLD;
@@ -118,7 +118,15 @@ BEGIN
 END;
 $$;
 
--- Attach audit trigger to key ERP tables (idempotent)
+-- Attach audit trigger to key ERP tables (idempotent).
+-- MAINTENANCE NOTE: When adding new ERP tables that require audit tracking,
+-- add the table name to tbl_list below and re-run this migration, OR
+-- create a dedicated trigger with:
+--   CREATE TRIGGER trg_audit_<tablename>
+--   AFTER INSERT OR UPDATE OR DELETE ON public.<tablename>
+--   FOR EACH ROW EXECUTE FUNCTION public.fn_audit_log();
+-- Criteria for inclusion: tables holding financial, HR, or project data
+-- that require change history for compliance and review.
 DO $$
 DECLARE
   tbl TEXT;

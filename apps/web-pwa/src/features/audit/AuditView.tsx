@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BadgeDollarSign, FileSearch, ShieldCheck, Users } from "lucide-react";
+import { Activity, BadgeDollarSign, FileSearch, ShieldCheck } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";

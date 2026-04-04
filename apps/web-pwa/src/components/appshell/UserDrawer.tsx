@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Mail, ShieldCheck, User, Activity, X } from "lucide-react";
+import { LogOut, Activity, ShieldCheck, User, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
