@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BadgeDollarSign, FileSearch, ShieldCheck } from "lucide-react";
+import { Activity, BadgeDollarSign, FileSearch, Search, ShieldCheck } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
@@ -41,6 +41,8 @@ export function AuditView() {
   const [expenses, setExpenses] = useState<ExpenseAuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Activity Logs");
+  const [search, setSearch] = useState("");
+  const [actionFilter, setActionFilter] = useState<"ALL" | "INSERT" | "UPDATE" | "DELETE">("ALL");
 
   useEffect(() => {
     const load = async () => {
@@ -70,6 +72,22 @@ export function AuditView() {
     const deletes = auditLogs.filter((l) => l.action === "DELETE").length;
     return { total: auditLogs.length, inserts, updates, deletes };
   }, [auditLogs]);
+
+  const filteredLogs = useMemo(() => {
+    return auditLogs.filter((log) => {
+      if (actionFilter !== "ALL" && log.action !== actionFilter) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        return (
+          (log.action?.toLowerCase().includes(q)) ||
+          (log.table_name?.toLowerCase().includes(q)) ||
+          (log.record_id?.toLowerCase().includes(q)) ||
+          (log.changed_by?.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [auditLogs, search, actionFilter]);
 
   const tabs = ["Activity Logs", "Financial Audit", "System Changes"];
 
@@ -136,6 +154,36 @@ export function AuditView() {
 
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 
+      {/* Search + Filter */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 min-w-[160px]">
+          <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search logs..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+          />
+        </div>
+        <div className="flex gap-1">
+          {(["ALL", "INSERT", "UPDATE", "DELETE"] as const).map((a) => (
+            <button
+              key={a}
+              type="button"
+              onClick={() => setActionFilter(a)}
+              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                actionFilter === a
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70"
+              }`}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {activeTab === "Activity Logs" && (
         <Card>
           <CardHeader>
@@ -152,6 +200,8 @@ export function AuditView() {
                 <ShieldCheck className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">No audit logs yet. Actions will appear here as the system is used.</p>
               </div>
+            ) : filteredLogs.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">No results match your search.</p>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -165,7 +215,7 @@ export function AuditView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {auditLogs.map((log) => (
+                    {filteredLogs.map((log) => (
                       <tr key={log.id}>
                         <Td>
                           <span className={`text-xs font-semibold ${ACTION_COLORS[log.action] ?? "text-foreground"}`}>
@@ -252,7 +302,7 @@ export function AuditView() {
               <p className="py-4 text-center text-sm text-muted-foreground">No system changes recorded yet.</p>
             ) : (
               <div className="space-y-3">
-                {auditLogs
+                {filteredLogs
                   .filter((l) => l.action === "UPDATE" || l.action === "DELETE")
                   .map((log) => (
                     <div key={log.id} className="rounded-xl border border-border px-4 py-3">

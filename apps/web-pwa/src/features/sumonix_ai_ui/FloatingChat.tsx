@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Loader2, Mic, Send, X } from "lucide-react";
+import { Bot, Loader2, Mic, Minus, Send, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api";
@@ -80,6 +80,7 @@ function formatAIResponse(endpoint: "anomalies" | "dashboard" | "general", data:
 
 export function FloatingChat() {
   const [open, setOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [voice, setVoice] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [listening, setListening] = useState(false);
@@ -223,13 +224,18 @@ export function FloatingChat() {
 
   return (
     <>
+      {/* Drag constraints: allow moving up to 600px up and 300px left from default bottom-right position */}
       <motion.button
+        drag
+        dragMomentum={false}
+        dragElastic={0.1}
+        dragConstraints={{ top: -600, left: -300, right: 0, bottom: 0 }}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close SUMONIX AI" : "Open SUMONIX AI"}
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-[linear-gradient(135deg,#16a34a,#15803d)] shadow-float animate-float lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 flex h-14 w-14 cursor-grab items-center justify-center rounded-full border border-white/20 bg-[linear-gradient(135deg,#16a34a,#15803d)] shadow-float animate-float active:cursor-grabbing lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
         style={{ maxWidth: 56, maxHeight: 56 }}
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -263,8 +269,8 @@ export function FloatingChat() {
         )}
       </motion.button>
 
-      <AnimatePresence>
-        {open && (
+          <AnimatePresence>
+        {open && !minimized && (
           <motion.div
             initial={{ opacity: 0, y: 16, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -299,6 +305,22 @@ export function FloatingChat() {
               >
                 <Mic className="h-4 w-4" />
                 {voice && <span className="absolute inset-0 animate-ping rounded-full border border-rose-400" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMinimized(true)}
+                aria-label="Minimize chat"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-muted/80 active:scale-95"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close chat"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-rose-100 hover:text-rose-600 active:scale-95 dark:hover:bg-rose-900/40"
+              >
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
@@ -378,6 +400,23 @@ export function FloatingChat() {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Minimized pill */}
+      <AnimatePresence>
+        {open && minimized && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            type="button"
+            onClick={() => setMinimized(false)}
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+7rem)] right-4 z-50 flex items-center gap-2 rounded-full border border-primary/30 bg-background/95 px-3 py-2 text-xs font-medium text-primary shadow-lg backdrop-blur-md lg:bottom-[calc(env(safe-area-inset-bottom)+2.5rem)]"
+          >
+            <Bot className="h-3.5 w-3.5" />
+            SUMONIX AI
+          </motion.button>
         )}
       </AnimatePresence>
     </>

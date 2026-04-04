@@ -21,16 +21,16 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
       {mobileOpen && (
         <button
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 lg:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
         className={cn(
-          "fixed bottom-14 left-0 top-14 z-50 border-r border-border/60 bg-background/95 backdrop-blur-md transition-transform",
+          "fixed bottom-14 left-0 top-14 z-50 border-r border-border/60 bg-background/95 backdrop-blur-md transition-transform duration-300 ease-in-out",
           "w-64 lg:bottom-0 lg:w-16 lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >
         <nav className="h-full overflow-y-auto py-2">
