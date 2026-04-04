@@ -5,6 +5,7 @@ import {
   BadgeDollarSign,
   BarChart3,
   Bot,
+  Briefcase,
   Building2,
   ClipboardList,
   FolderKanban,
@@ -41,11 +42,13 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
   const enabledModules = useModuleStore((s) => s.enabledModules);
 
   const dynamicItems = useMemo<NavItem[]>(() => {
-    return enabledModules().map((m) => ({
-      href: m.href,
-      label: language === "bn" ? m.labelBn : m.labelEn,
-      icon: PackageOpen,
-    }));
+    return enabledModules()
+      .filter((m) => m.key !== "contractor") // contractor is now a core nav item
+      .map((m) => ({
+        href: m.href,
+        label: language === "bn" ? m.labelBn : m.labelEn,
+        icon: PackageOpen,
+      }));
   }, [enabledModules, language]);
 
   const coreItems = useMemo<NavItem[]>(() => {
@@ -60,6 +63,7 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
       { href: "/dashboard/reports", label: isEn ? "Reports" : "রিপোর্ট", icon: BarChart3 },
       { href: "/dashboard/ai", label: "SUMONIX AI", icon: Bot },
       { href: "/dashboard/audit", label: isEn ? "Audit" : "অডিট", icon: ShieldCheck },
+      { href: "/dashboard/contractor", label: isEn ? "Contractor" : "ঠিকাদার", icon: Briefcase },
       { href: "/dashboard/settings", label: isEn ? "Settings" : "সেটিংস", icon: Settings2 },
     ];
   }, [language]);
