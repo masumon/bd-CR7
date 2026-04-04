@@ -208,19 +208,7 @@ export function FinanceExpenseView() {
               variant="outline"
               size="sm"
               onClick={() => {
-                const exportRows = rows.map((row) => {
-                  const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
-                  const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
-                  return {
-                    ID: row.id.slice(0, 8).toUpperCase(),
-                    Category: metaCategory || row.description?.split(" ")[0] || "General",
-                    Subcategory: metaSubcategory,
-                    Amount: row.amount,
-                    Status: row.status,
-                    Date: row.created_at?.slice(0, 10) ?? "",
-                  };
-                });
-                exportCSV("finance-expenses.csv", exportRows);
+                exportCSV("finance-expenses.csv", buildExportRows());
               }}
             >
               CSV
@@ -229,19 +217,7 @@ export function FinanceExpenseView() {
               variant="outline"
               size="sm"
               onClick={() => {
-                const exportRows = rows.map((row) => {
-                  const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
-                  const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
-                  return {
-                    ID: row.id.slice(0, 8).toUpperCase(),
-                    Category: metaCategory || row.description?.split(" ")[0] || "General",
-                    Subcategory: metaSubcategory,
-                    Amount: row.amount,
-                    Status: row.status,
-                    Date: row.created_at?.slice(0, 10) ?? "",
-                  };
-                });
-                exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows: exportRows });
+                exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows: buildExportRows() });
               }}
             >
               HTML

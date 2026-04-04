@@ -53,6 +53,9 @@ function fmt(n: number) {
   return `৳${n.toLocaleString("en-BD")}`;
 }
 
+const MIN_BAR_HEIGHT_PX = 4;
+const MAX_BAR_HEIGHT_PX = 64;
+
 function MiniBarChart({ data, color = "#22c55e" }: { data: Array<{ label: string; value: number }>; color?: string }) {
   if (!data.length) return null;
   const max = Math.max(...data.map((d) => d.value), 1);
@@ -63,7 +66,7 @@ function MiniBarChart({ data, color = "#22c55e" }: { data: Array<{ label: string
           <div
             className="w-full rounded-t-sm transition-all duration-500"
             style={{
-              height: `${Math.max(4, (d.value / max) * 64)}px`,
+              height: `${Math.max(MIN_BAR_HEIGHT_PX, (d.value / max) * MAX_BAR_HEIGHT_PX)}px`,
               background: color,
               opacity: 0.85,
             }}

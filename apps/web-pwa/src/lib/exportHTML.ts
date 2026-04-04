@@ -13,7 +13,6 @@ export function exportHTML(opts: HtmlExportOptions) {
   if (!rows.length) return;
   const headers = Object.keys(rows[0]);
   const dateStr = new Date().toLocaleDateString("bn-BD");
-  const filename = title;
   const html = `<!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -44,6 +43,8 @@ export function exportHTML(opts: HtmlExportOptions) {
   const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = `${filename || title}.html`; a.click();
+  a.href = url;
+  a.download = `${title}.html`;
+  a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
