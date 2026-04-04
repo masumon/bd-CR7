@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   Bot,
+  Building2,
+  ClipboardList,
   FolderKanban,
+  HardHat,
   Home,
-  Import,
   Settings2,
-  ShoppingCart,
-  Users,
+  ShieldCheck,
 } from "lucide-react";
 
 import { ActivityList } from "@/components/dashboard/ActivityList";
@@ -40,13 +41,15 @@ export function DashboardHomeView() {
 
   const modules = useMemo(
     () => [
-      { href: "/dashboard", label: lang === "bn" ? "হোম" : "Home", icon: Home },
+      { href: "/dashboard", label: lang === "bn" ? "ড্যাশবোর্ড" : "Dashboard", icon: Home },
       { href: "/dashboard/construction/projects", label: lang === "bn" ? "প্রজেক্ট" : "Projects", icon: FolderKanban },
       { href: "/dashboard/finance", label: lang === "bn" ? "ফাইন্যান্স" : "Finance", icon: BarChart3 },
-      { href: "/dashboard/import", label: lang === "bn" ? "ইমপোর্ট" : "Import", icon: Import },
-      { href: "/dashboard/pos", label: "POS", icon: ShoppingCart },
-      { href: "/dashboard/reports", label: lang === "bn" ? "রিপোর্ট" : "Reports", icon: Users },
-      { href: "/dashboard/ai", label: "AI", icon: Bot },
+      { href: "/dashboard/workforce", label: lang === "bn" ? "শ্রমিক" : "Workforce", icon: HardHat },
+      { href: "/dashboard/materials", label: lang === "bn" ? "মালামাল" : "Materials", icon: Building2 },
+      { href: "/dashboard/evidence", label: lang === "bn" ? "ডকুমেন্ট" : "Evidence", icon: ClipboardList },
+      { href: "/dashboard/reports", label: lang === "bn" ? "রিপোর্ট" : "Reports", icon: BarChart3 },
+      { href: "/dashboard/ai", label: "SUMONIX AI", icon: Bot },
+      { href: "/dashboard/audit", label: lang === "bn" ? "অডিট" : "Audit", icon: ShieldCheck },
       { href: "/dashboard/settings", label: lang === "bn" ? "সেটিংস" : "Settings", icon: Settings2 },
     ],
     [lang]

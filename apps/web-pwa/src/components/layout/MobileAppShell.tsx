@@ -26,6 +26,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthStore((state) => state.hydrated);
   const loading = useAuthStore((state) => state.loading);
   const userId = useAuthStore((state) => state.userId);
+  const role = useAuthStore((state) => state.role);
 
   const [dark, setDark] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn">("en");
@@ -128,6 +129,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
         language={language}
         online={online}
         unread={unread}
+        role={role}
         onToggleTheme={() => setDark((v) => !v)}
         onToggleLanguage={() => setLanguage((v) => (v === "en" ? "bn" : "en"))}
         onOpenNotifications={() => setOpenNotifications(true)}

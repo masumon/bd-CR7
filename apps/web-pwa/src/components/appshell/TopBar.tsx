@@ -3,6 +3,7 @@
 import { Bell, Languages, Menu, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type TopBarProps = {
   title: string;
@@ -10,13 +11,17 @@ type TopBarProps = {
   unread: number;
   dark: boolean;
   language: "en" | "bn";
+  role?: string | null;
   onMenu: () => void;
   onToggleTheme: () => void;
   onToggleLanguage: () => void;
   onOpenNotifications: () => void;
+  onOpenUserDrawer: () => void;
 };
 
-export function TopBar({ title, online, unread, dark, language, onMenu, onToggleTheme, onToggleLanguage, onOpenNotifications }: TopBarProps) {
+export function TopBar({ title, online, unread, dark, language, role, onMenu, onToggleTheme, onToggleLanguage, onOpenNotifications, onOpenUserDrawer }: TopBarProps) {
+  const initials = role ? role.slice(0, 2).toUpperCase() : "U";
+
   return (
     <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-border bg-background/95 px-2 backdrop-blur-sm">
       <div className="mx-auto flex h-full max-w-7xl items-center gap-1">
@@ -42,6 +47,18 @@ export function TopBar({ title, online, unread, dark, language, onMenu, onToggle
           <Bell className="h-4 w-4" />
           {unread > 0 ? <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-rose-500" /> : null}
         </Button>
+
+        <button
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold",
+            "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm",
+            "transition hover:opacity-90 active:scale-95"
+          )}
+          onClick={onOpenUserDrawer}
+          aria-label="Open user profile"
+        >
+          {initials}
+        </button>
       </div>
     </header>
   );
