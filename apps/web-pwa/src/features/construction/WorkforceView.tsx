@@ -332,6 +332,7 @@ export function WorkforceView() {
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
               </div>
             </div>
+            {mutationError && <p className="mb-2 text-xs text-rose-500">{mutationError}</p>}
             <div className="flex gap-2 pt-1">
               <Button onClick={handleEditSubmit} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
               <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
@@ -343,6 +344,7 @@ export function WorkforceView() {
       {deleteTarget && (
         <Dialog open title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
           <p className="text-sm text-muted-foreground mb-4">Are you sure you want to delete this worker log? This action cannot be undone.</p>
+          {mutationError && <p className="mb-2 text-xs text-rose-500">{mutationError}</p>}
           <div className="flex gap-2">
             <Button onClick={handleDeleteWorker}>Delete</Button>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>

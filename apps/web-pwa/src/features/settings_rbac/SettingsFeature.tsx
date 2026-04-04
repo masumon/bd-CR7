@@ -25,6 +25,7 @@ function SyncControlPanel({ language }: { language: "en" | "bn" }) {
   const [autoSync, setAutoSync] = useState(true);
 
   useEffect(() => {
+    // useEffect only runs client-side, so window access is safe here
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
     window.addEventListener("online", onOnline);
@@ -48,6 +49,7 @@ function SyncControlPanel({ language }: { language: "en" | "bn" }) {
     setSyncing(true);
     try {
       const cleanup = setupOfflineSync();
+      // Give the sync a moment to fire the first flush
       await new Promise((r) => setTimeout(r, SYNC_TIMEOUT_MS));
       cleanup();
       const now = new Date();

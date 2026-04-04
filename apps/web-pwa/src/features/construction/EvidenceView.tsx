@@ -198,6 +198,7 @@ export function EvidenceView() {
       {deleteTarget && (
         <Dialog open title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
           <p className="text-sm text-muted-foreground mb-4">Are you sure you want to delete this evidence file? This action cannot be undone.</p>
+          {mutationError && <p className="mb-2 text-xs text-rose-500">{mutationError}</p>}
           <div className="flex gap-2">
             <Button onClick={handleDelete}>Delete</Button>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
