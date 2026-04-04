@@ -78,6 +78,10 @@ function formatAIResponse(endpoint: "anomalies" | "dashboard" | "general", data:
   }
 }
 
+const FAB_SIZE_PX = 56; // matches h-14 w-14 (Tailwind: 3.5rem = 56px)
+const FAB_EDGE_MARGIN_PX = 16; // right-4 default
+const LONG_PRESS_DURATION_MS = 500;
+
 export function FloatingChat() {
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
@@ -233,18 +237,15 @@ export function FloatingChat() {
   const handleDragEnd = () => {
     isDragging.current = false;
     if (typeof window === "undefined") return;
-    // FAB default position: bottom-right (right: 16px). x=0 means at default.
-    // Compute absolute left of button center relative to viewport
-    const fabSize = 56;
-    const rightEdgeDefault = window.innerWidth - 16 - fabSize; // px from left
+    // FAB default position: bottom-right (right: FAB_EDGE_MARGIN_PX). x=0 means at default.
+    const rightEdgeDefault = window.innerWidth - FAB_EDGE_MARGIN_PX - FAB_SIZE_PX; // px from left
     const currentAbsLeft = rightEdgeDefault + fabX.get();
-    const center = currentAbsLeft + fabSize / 2;
-    const margin = 16;
+    const center = currentAbsLeft + FAB_SIZE_PX / 2;
 
     // Snap to left or right edge
     if (center < window.innerWidth / 2) {
       // Snap to left
-      const targetX = -(rightEdgeDefault - margin);
+      const targetX = -(rightEdgeDefault - FAB_EDGE_MARGIN_PX);
       animate(fabX, targetX, { type: "spring", stiffness: 400, damping: 30 });
     } else {
       // Snap to right (default position x=0)
@@ -259,7 +260,7 @@ export function FloatingChat() {
       if (!isDragging.current) {
         setLongPressMenu(true);
       }
-    }, 500);
+    }, LONG_PRESS_DURATION_MS);
   };
 
   const cancelLongPress = () => {
@@ -337,7 +338,7 @@ export function FloatingChat() {
         dragMomentum={false}
         dragElastic={0.08}
         dragConstraints={{ top: -600, left: -300, right: 0, bottom: 0 }}
-        style={{ x: fabX, y: fabY, maxWidth: 56, maxHeight: 56 }}
+        style={{ x: fabX, y: fabY, maxWidth: FAB_SIZE_PX, maxHeight: FAB_SIZE_PX }}
         onDragStart={() => { isDragging.current = true; cancelLongPress(); }}
         onDragEnd={handleDragEnd}
         whileHover={{ scale: 1.08 }}
