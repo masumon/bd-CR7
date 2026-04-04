@@ -38,6 +38,13 @@ function fmt(n: number) {
 
 const PIE_COLORS = ["hsl(167,46%,46%)", "hsl(40,93%,64%)", "hsl(210,80%,56%)", "hsl(0,72%,51%)"];
 
+const pieData = [
+  { name: "Labour", value: 35 },
+  { name: "Materials", value: 28 },
+  { name: "Equipment", value: 20 },
+  { name: "Other", value: 17 },
+];
+
 const weeklyData = [
   { day: "Mon", amount: 42000 },
   { day: "Tue", amount: 38000 },
@@ -118,7 +125,10 @@ export function DashboardHomeView() {
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem("bdcr7-language") : null;
-    if (stored === "bn" || stored === "en") { setLang(stored); return; }
+    if (stored === "bn" || stored === "en") {
+      setLang(stored);
+      return;
+    }
     if (typeof document !== "undefined") {
       setLang(document.documentElement.lang === "bn" ? "bn" : "en");
     }
@@ -157,13 +167,6 @@ export function DashboardHomeView() {
     },
   ];
 
-  const pieData = [
-    { name: "Labour", value: 35 },
-    { name: "Materials", value: 28 },
-    { name: "Equipment", value: 20 },
-    { name: "Other", value: 17 },
-  ];
-
   const quickActions = [
     { label: t.addExpense, icon: BadgeDollarSign, href: "/dashboard/finance", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
     { label: t.addWorker, icon: HardHat, href: "/dashboard/workforce", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
@@ -174,6 +177,8 @@ export function DashboardHomeView() {
   const activityItems = s.recentActivity?.length
     ? s.recentActivity
     : [t.noActivity];
+
+  const projectProgress = s.loading ? 0 : ((s as Record<string, unknown>).projectProgress as number ?? 72);
 
   return (
     <div className="space-y-4 pb-4">
@@ -208,15 +213,15 @@ export function DashboardHomeView() {
       <div className="glass rounded-2xl p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-[14px] font-semibold text-foreground">{t.progress}</p>
-          <span className="text-[12px] font-medium text-primary">72%</span>
+          <span className="text-[12px] font-medium text-primary">{projectProgress}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-700"
-            style={{ width: "72%" }}
+            style={{ width: `${projectProgress}%` }}
           />
         </div>
-        <p className="mt-2 text-[12px] text-muted-foreground">{t.completion}: 72%</p>
+        <p className="mt-2 text-[12px] text-muted-foreground">{t.completion}: {projectProgress}%</p>
       </div>
 
       {/* Quick Actions */}
