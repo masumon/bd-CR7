@@ -97,7 +97,7 @@ export function FinanceExpenseView() {
   }, [rows]);
 
   return (
-    <div className="glass rounded-2xl space-y-4">
+    <div className="space-y-4">
       <WorkspaceHero
         badge="Finance Workspace / তহবিল ও খরচ"
         title="Fund intake, expense categories, subcategories, and approval visibility now sit in one finance cockpit."
