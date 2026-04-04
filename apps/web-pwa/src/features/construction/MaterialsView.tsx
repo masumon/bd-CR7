@@ -45,6 +45,7 @@ export function MaterialsView() {
   const [editTarget, setEditTarget] = useState<MaterialRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mutationError, setMutationError] = useState("");
   const [editForm, setEditForm] = useState({
     item_name: "", unit: "", quantity: 0, movement_type: "in",
     cost_per_unit: 0, supplier: "", low_stock_threshold: 0,
@@ -91,7 +92,8 @@ export function MaterialsView() {
   const handleEditSubmit = async () => {
     if (!editTarget) return;
     setSaving(true);
-    await supabase.from("material_logs").update({
+    setMutationError("");
+    const { error } = await supabase.from("material_logs").update({
       item_name: editForm.item_name,
       unit: editForm.unit,
       quantity: editForm.quantity,
@@ -101,13 +103,16 @@ export function MaterialsView() {
       low_stock_threshold: editForm.low_stock_threshold,
     }).eq("id", editTarget.id);
     setSaving(false);
+    if (error) { setMutationError(error.message); return; }
     setEditTarget(null);
     await loadMaterials();
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await supabase.from("material_logs").delete().eq("id", deleteTarget);
+    setMutationError("");
+    const { error } = await supabase.from("material_logs").delete().eq("id", deleteTarget);
+    if (error) { setMutationError(error.message); return; }
     setDeleteTarget(null);
     await loadMaterials();
   };

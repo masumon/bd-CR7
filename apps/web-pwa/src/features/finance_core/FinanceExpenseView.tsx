@@ -44,6 +44,7 @@ export function FinanceExpenseView() {
   const [editTarget, setEditTarget] = useState<ExpenseRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mutationError, setMutationError] = useState("");
   const [editForm, setEditForm] = useState({ amount: 0, status: "pending", description: "", category: "", subcategory: "" });
 
   const loadExpenses = useCallback(async () => {
@@ -114,20 +115,24 @@ export function FinanceExpenseView() {
   const handleEditSubmit = async () => {
     if (!editTarget) return;
     setSaving(true);
-    await supabase.from("expenses").update({
+    setMutationError("");
+    const { error } = await supabase.from("expenses").update({
       amount: editForm.amount,
       status: editForm.status,
       description: editForm.description,
       metadata: { category: editForm.category, subcategory: editForm.subcategory },
     }).eq("id", editTarget.id);
     setSaving(false);
+    if (error) { setMutationError(error.message); return; }
     setEditTarget(null);
     await loadExpenses();
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await supabase.from("expenses").delete().eq("id", deleteTarget);
+    setMutationError("");
+    const { error } = await supabase.from("expenses").delete().eq("id", deleteTarget);
+    if (error) { setMutationError(error.message); return; }
     setDeleteTarget(null);
     await loadExpenses();
   };

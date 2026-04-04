@@ -14,10 +14,12 @@ import { useModuleStore } from "@/store/moduleStore";
 import useOfflineQueue from "@/store/offlineQueue";
 import { setupOfflineSync } from "@/lib/offlineSync";
 
+const SYNC_TIMEOUT_MS = 1500;
+
 function SyncControlPanel({ language }: { language: "en" | "bn" }) {
   const queue = useOfflineQueue((s) => s.queue);
   const clearQueue = useOfflineQueue((s) => s.clearQueue);
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(typeof window !== "undefined" ? window.navigator.onLine : true);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [autoSync, setAutoSync] = useState(true);
@@ -46,7 +48,7 @@ function SyncControlPanel({ language }: { language: "en" | "bn" }) {
     setSyncing(true);
     try {
       const cleanup = setupOfflineSync();
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, SYNC_TIMEOUT_MS));
       cleanup();
       const now = new Date();
       setLastSync(now);

@@ -28,6 +28,7 @@ export function EvidenceView() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Upload");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState("");
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
@@ -53,7 +54,9 @@ export function EvidenceView() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await supabase.from("progress_cam").delete().eq("id", deleteTarget);
+    setMutationError("");
+    const { error } = await supabase.from("progress_cam").delete().eq("id", deleteTarget);
+    if (error) { setMutationError(error.message); return; }
     setDeleteTarget(null);
     await loadRecords();
   };

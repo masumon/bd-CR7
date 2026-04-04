@@ -44,6 +44,7 @@ export function WorkforceView() {
   const [editTarget, setEditTarget] = useState<WorkerRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mutationError, setMutationError] = useState("");
   const [editForm, setEditForm] = useState({
     worker_name: "", role: "", attendance_status: "Present", daily_wage: 0, paid_amount: 0,
   });
@@ -84,7 +85,8 @@ export function WorkforceView() {
   const handleEditSubmit = async () => {
     if (!editTarget) return;
     setSaving(true);
-    await supabase.from("worker_logs").update({
+    setMutationError("");
+    const { error } = await supabase.from("worker_logs").update({
       worker_name: editForm.worker_name,
       role: editForm.role,
       attendance_status: editForm.attendance_status,
@@ -92,13 +94,16 @@ export function WorkforceView() {
       paid_amount: editForm.paid_amount,
     }).eq("id", editTarget.id);
     setSaving(false);
+    if (error) { setMutationError(error.message); return; }
     setEditTarget(null);
     await loadWorkers();
   };
 
   const handleDeleteWorker = async () => {
     if (!deleteTarget) return;
-    await supabase.from("worker_logs").delete().eq("id", deleteTarget);
+    setMutationError("");
+    const { error } = await supabase.from("worker_logs").delete().eq("id", deleteTarget);
+    if (error) { setMutationError(error.message); return; }
     setDeleteTarget(null);
     await loadWorkers();
   };
