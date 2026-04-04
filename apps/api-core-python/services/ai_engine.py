@@ -98,6 +98,28 @@ INTENT_PHRASES: dict[str, list[str]] = {
         "ডলার", "এক্সচেঞ্জ রেট", "কারেন্সি",
         "dollar rate", "usd to bdt", "1 dollar koto taka",
     ],
+    "weather": [
+        "weather", "rain", "temperature", "forecast", "climate", "will it rain",
+        "আবহাওয়া", "বৃষ্টি", "তাপমাত্রা", "আজকের আবহাওয়া", "কাজ করা যাবে",
+        "abohaoa", "bristi hobe", "aaj ki kaj hobe", "weather kemon",
+    ],
+    "material_price": [
+        "material price", "cement price", "rod price", "steel price", "brick price",
+        "sand price", "construction cost", "how much cement", "material rate",
+        "সিমেন্টের দাম", "রডের দাম", "ইটের দাম", "বালির দাম", "মালামালের দাম",
+        "cement er dam", "rod er dam", "brick er dam", "malamal er dam",
+    ],
+    "construction_report": [
+        "construction report", "site report", "full analysis", "project analysis",
+        "today briefing", "construction intelligence", "site intelligence",
+        "নির্মাণ রিপোর্ট", "সাইট রিপোর্ট", "পূর্ণ বিশ্লেষণ", "আজকের রিপোর্ট",
+        "nirman report", "full report", "aaj er report", "construction update",
+    ],
+    "news": [
+        "news", "latest news", "construction news", "real estate news",
+        "সংবাদ", "নিউজ", "নির্মাণ সংবাদ", "আবাসন নিউজ",
+        "notun news", "ki hocche", "songbad", "latest update",
+    ],
     "my_info": [
         "my expense", "my attendance", "my wage", "my salary", "my work",
         "আমার খরচ", "আমার হাজিরা", "আমার বেতন", "আমার কাজ",
@@ -522,10 +544,18 @@ def handle_audit(role: str) -> str:
 def handle_help(role: str) -> str:
     base = [
         "🤖 SUMONIX AI — What I can do:",
+        "",
+        "🌐 LIVE INTERNET DATA:",
+        "  🌦️ Weather forecast (type: 'weather dhaka' or 'aaj bristi hobe?')",
+        "  🧱 Material prices (type: 'cement price' or 'rod er dam koto')",
+        "  💱 USD/BDT rate (type: 'dollar rate' or '1 dollar koto taka')",
+        "  📰 Construction news (type: 'news' or 'notun update')",
+        "  📋 Full site report (type: 'full report' or 'construction report')",
+        "",
+        "📊 PROJECT DATA:",
         "  📊 Dashboard summary (type: 'dashboard' or 'summary')",
         "  💸 Finance & expenses (type: 'expense' or 'khoroch')",
         "  📈 Predictions & forecast (type: 'predict' or 'purba vash')",
-        "  💱 USD/BDT exchange rate (type: 'dollar rate')",
     ]
     if role in PRIVILEGED_ROLES:
         base += [
@@ -541,8 +571,20 @@ def handle_help(role: str) -> str:
         ]
     if role in ("worker", "mason"):
         base.append("  👤 Your attendance & wages (type: 'amar hajira')")
-    base.append("\n📝 You can type in Bengali, English, or Banglish!")
+    base.append("\n📝 যেকোনো ভাষায় লিখুন — বাংলা, English, বা Banglish!")
     return "\n".join(base)
+
+
+# ─── City Extractor ──────────────────────────────────────────────────────────
+
+def _extract_city(text: str) -> str | None:
+    """Extract Bangladesh city name from user message."""
+    from services.construction_intel import CITIES
+    t = text.lower()
+    for city in CITIES:
+        if city != "default" and city in t:
+            return city
+    return None
 
 
 # ─── Main Entry Point ─────────────────────────────────────────────────────────
@@ -612,6 +654,21 @@ def process_message(message: str, role: str, user_id: str) -> dict[str, Any]:
         reply_en = handle_audit(role)
     elif intent == "exchange_rate":
         reply_en = handle_exchange_rate()
+    elif intent == "weather":
+        # Extract city name from message if mentioned
+        city = _extract_city(english_text) or _extract_city(message)
+        from services.construction_intel import format_weather
+        reply_en = format_weather(city or "dhaka")
+    elif intent == "material_price":
+        from services.construction_intel import format_material_prices
+        reply_en = format_material_prices()
+    elif intent == "construction_report":
+        city = _extract_city(english_text) or _extract_city(message)
+        from services.construction_intel import full_construction_analysis
+        reply_en = full_construction_analysis(city or "dhaka")
+    elif intent == "news":
+        from services.construction_intel import fetch_construction_news
+        reply_en = fetch_construction_news()
     elif intent == "my_info":
         reply_en = handle_my_info(role, user_id)
     else:
