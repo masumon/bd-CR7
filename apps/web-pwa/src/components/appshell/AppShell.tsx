@@ -19,9 +19,10 @@ import {
   Users2,
   Warehouse,
 } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import type { DynamicModuleKey } from "@/store/moduleStore";
 
-const MODULE_ICONS: Record<DynamicModuleKey, React.ComponentType<{ className?: string }>> = {
+const MODULE_ICONS: Record<DynamicModuleKey, LucideIcon> = {
   import_lc: Truck,
   pos: ShoppingCart,
   crm: Users2,
