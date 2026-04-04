@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Loader2, Mic, Send, Sparkles, X } from "lucide-react";
+import { Bot, Loader2, Mic, Send, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api";
@@ -224,15 +224,43 @@ export function FloatingChat() {
   return (
     <>
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.94 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close SUMONIX AI chat" : "Open SUMONIX AI chat"}
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.65rem)] right-3 z-50 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/20 bg-[linear-gradient(135deg,rgba(15,108,90,0.96),rgba(8,74,63,0.94))] px-3 text-primary-foreground shadow-[0_18px_40px_rgba(15,108,90,0.38)] sm:right-6 sm:h-13 sm:px-4 lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+        aria-label={open ? "Close SUMONIX AI" : "Open SUMONIX AI"}
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-[linear-gradient(135deg,#16a34a,#15803d)] shadow-float animate-float lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+        style={{ maxWidth: 56, maxHeight: 56 }}
       >
-        {open ? <X className="h-4.5 w-4.5" /> : <Sparkles className="h-4.5 w-4.5" />}
-        <span className="text-[11px] font-semibold tracking-[0.14em] sm:text-xs">SUMONIX AI</span>
+        <AnimatePresence mode="wait" initial={false}>
+          {open ? (
+            <motion.span
+              key="close"
+              initial={{ opacity: 0, rotate: -90, scale: 0.6 }}
+              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+              exit={{ opacity: 0, rotate: 90, scale: 0.6 }}
+              transition={{ duration: 0.18 }}
+            >
+              <X className="h-5 w-5 text-white" />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="s-logo"
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.6 }}
+              transition={{ duration: 0.18 }}
+              className="font-display text-[22px] font-bold leading-none tracking-tight text-white"
+              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.35)" }}
+            >
+              S
+            </motion.span>
+          )}
+        </AnimatePresence>
+        {/* pulse ring */}
+        {!open && (
+          <span className="absolute inset-0 rounded-full border-2 border-erp-accent/30 animate-erp-pulse" />
+        )}
       </motion.button>
 
       <AnimatePresence>
