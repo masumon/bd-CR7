@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownUp, BadgeDollarSign, MoreHorizontal } from "lucide-react";
+import { ArrowDownUp, BadgeDollarSign, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-import { ActionMenu } from "@/components/ui/action-menu";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -41,6 +41,11 @@ export function FinanceExpenseView() {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editTarget, setEditTarget] = useState<ExpenseRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [mutationError, setMutationError] = useState("");
+  const [editForm, setEditForm] = useState({ amount: 0, status: "pending", description: "", category: "", subcategory: "" });
 
   const loadExpenses = useCallback(async () => {
     setLoading(true);
@@ -95,6 +100,42 @@ export function FinanceExpenseView() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
   }, [rows]);
+
+  const handleEditOpen = (row: ExpenseRow) => {
+    setEditForm({
+      amount: Number(row.amount),
+      status: String(row.status),
+      description: row.description ?? "",
+      category: typeof row.metadata?.category === "string" ? row.metadata.category : "",
+      subcategory: typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "",
+    });
+    setEditTarget(row);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTarget) return;
+    setSaving(true);
+    setMutationError("");
+    const { error } = await supabase.from("expenses").update({
+      amount: editForm.amount,
+      status: editForm.status,
+      description: editForm.description,
+      metadata: { category: editForm.category, subcategory: editForm.subcategory },
+    }).eq("id", editTarget.id);
+    setSaving(false);
+    if (error) { setMutationError(error.message); return; }
+    setEditTarget(null);
+    await loadExpenses();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setMutationError("");
+    const { error } = await supabase.from("expenses").delete().eq("id", deleteTarget);
+    if (error) { setMutationError(error.message); return; }
+    setDeleteTarget(null);
+    await loadExpenses();
+  };
 
   return (
     <div className="space-y-4">
@@ -203,14 +244,22 @@ export function FinanceExpenseView() {
                         </span>
                       </Td>
                       <Td className="text-right">
-                        <ActionMenu
-                          items={[
-                            { label: `Category: ${category}`, onClick: () => {} },
-                            { label: `Subcategory: ${metaSubcategory}`, onClick: () => {} },
-                            { label: `Status: ${approved ? "Approved" : "Pending"}`, onClick: () => {} },
-                          ]}
-                          className="ml-auto"
-                        />
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleEditOpen(row)}
+                            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(row.id)}
+                            className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </Td>
                     </tr>
                     );
@@ -270,6 +319,76 @@ export function FinanceExpenseView() {
           <ExpenseEngineFeature onSaved={loadExpenses} />
         </div>
       </Dialog>
+
+      {editTarget && (
+        <Dialog open title="Edit Expense" onClose={() => setEditTarget(null)}>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Amount</label>
+              <input
+                type="number"
+                value={editForm.amount}
+                onChange={(e) => setEditForm((f) => ({ ...f, amount: Number(e.target.value) }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Status</label>
+              <select
+                value={editForm.status}
+                onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition"
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Description</label>
+              <input
+                type="text"
+                value={editForm.description}
+                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Category</label>
+              <input
+                type="text"
+                value={editForm.category}
+                onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Subcategory</label>
+              <input
+                type="text"
+                value={editForm.subcategory}
+                onChange={(e) => setEditForm((f) => ({ ...f, subcategory: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition"
+              />
+            </div>
+            {mutationError && <p className="mb-2 text-xs text-rose-500">{mutationError}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button onClick={handleEditSubmit} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {deleteTarget && (
+        <Dialog open title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
+          <p className="text-sm text-muted-foreground mb-4">Are you sure you want to delete this expense? This action cannot be undone.</p>
+          {mutationError && <p className="mb-2 text-xs text-rose-500">{mutationError}</p>}
+          <div className="flex gap-2">
+            <Button onClick={handleDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }
