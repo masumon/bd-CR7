@@ -1,11 +1,12 @@
 import json
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import UserContext, get_current_user, require_roles
 from core.db import fetch_all, tx
 from core.supabase import supabase_service
+from schemas.ai import ChatMessage, MemoryCreate
 from services.risk import dashboard_metrics, financial_anomalies, operational_alerts
 
 router = APIRouter()
@@ -108,11 +109,11 @@ async def get_dashboard(user: UserContext = Depends(get_current_user)):
 
 
 @router.post("/memory")
-async def add_ai_memory(payload: dict, user: UserContext = Depends(require_roles("admin", "maker", "checker"))):
+async def add_ai_memory(payload: MemoryCreate, user: UserContext = Depends(require_roles("admin", "maker", "checker"))):
     memory_id = str(uuid4())
-    content = payload.get("content", "")
-    embedding = payload.get("embedding", [])
-    metadata = payload.get("metadata", {})
+    # Format embedding as PostgreSQL vector literal: [f1,f2,...,fN]
+    embedding_literal = "[" + ",".join(str(f) for f in payload.embedding) + "]"
+    metadata_json = json.dumps(payload.metadata, ensure_ascii=False)
 
     with tx() as conn:
         conn.exec_driver_sql(
@@ -120,14 +121,28 @@ async def add_ai_memory(payload: dict, user: UserContext = Depends(require_roles
             INSERT INTO ai_memory (id, content, embedding, metadata, created_by)
             VALUES (%s, %s, %s::vector, %s::jsonb, %s)
             """,
-            (memory_id, content, str(embedding), str(metadata).replace("'", '"'), user.user_id),
+            (memory_id, payload.content, embedding_literal, metadata_json, user.user_id),
         )
 
     return {"id": memory_id}
 
 
 @router.get("/memory/search")
-async def search_memory(vector: str, top_k: int = 5, user: UserContext = Depends(get_current_user)):
+async def search_memory(
+    vector: str = Query(min_length=1, description="Comma-separated floats representing a 1536-dim embedding"),
+    top_k: int = Query(default=5, ge=1, le=20),
+    user: UserContext = Depends(get_current_user),
+):
+    # Validate and normalise vector string before it reaches SQL
+    raw = vector.strip().lstrip("[").rstrip("]")
+    try:
+        parts = [float(x.strip()) for x in raw.split(",") if x.strip()]
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="vector must be a comma-separated list of floats") from exc
+    if len(parts) != 1536:
+        raise HTTPException(status_code=422, detail=f"vector must have 1536 dimensions, got {len(parts)}")
+    safe_vector = "[" + ",".join(str(f) for f in parts) + "]"
+
     rows = fetch_all(
         """
         SELECT id, content, metadata
@@ -135,16 +150,14 @@ async def search_memory(vector: str, top_k: int = 5, user: UserContext = Depends
         ORDER BY embedding <-> CAST(:vector AS vector)
         LIMIT :top_k
         """,
-        {"vector": vector, "top_k": max(1, min(top_k, 20))},
+        {"vector": safe_vector, "top_k": top_k},
     )
     return [dict(x) for x in rows]
 
 
 @router.post("/chat")
-async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
-    message = str(payload.get("message", "")).strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="message is required")
+async def ai_chat(payload: ChatMessage, user: UserContext = Depends(get_current_user)):
+    message = payload.message.strip()
 
     normalized = message.lower()
     wants_greeting = any(keyword in normalized for keyword in ("hello", "hi", "hey", "assalamualaikum", "সালাম", "হ্যালো"))
@@ -169,44 +182,34 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
     )
 
     if wants_greeting:
-        payload = {
-            "reply": (
-                "আমি SUMONIX AI। আমি finance summary, anomaly review, project snapshot, এবং module guidance দিতে পারি।\n\n"
-                "I can help with dashboard summaries, risky expense signals, project context, and workflow guidance."
-            ),
-            "intent": "general",
-        }
-        _log_ai_interaction(user_id=user.user_id, message=message, intent="general", response_text=payload["reply"])
-        return payload
+        reply = (
+            "আমি SUMONIX AI। আমি finance summary, anomaly review, project snapshot, এবং module guidance দিতে পারি।\n\n"
+            "I can help with dashboard summaries, risky expense signals, project context, and workflow guidance."
+        )
+        _log_ai_interaction(user_id=user.user_id, message=message, intent="general", response_text=reply)
+        return {"reply": reply, "intent": "general"}
 
     if wants_module_guide:
-        payload = {
-            "reply": (
-                "Available workspaces:\n"
-                "1. Dashboard: executive overview\n"
-                "2. Project Intro: project identity and phases\n"
-                "3. Site Progress: workers, materials, progress evidence\n"
-                "4. Fund & Expense: cashflow and approvals\n"
-                "5. Supply Chain: L/C and shipment records\n"
-                "6. POS Workspace: catalog, cart, checkout, and sales history\n"
-                "7. Reports: exports and analysis\n\n"
-                "Ask me for a summary of any workspace and I will guide you."
-            ),
-            "intent": "general",
-        }
-        _log_ai_interaction(user_id=user.user_id, message=message, intent="general", response_text=payload["reply"])
-        return payload
+        reply = (
+            "Available workspaces:\n"
+            "1. Dashboard: executive overview\n"
+            "2. Project Intro: project identity and phases\n"
+            "3. Site Progress: workers, materials, progress evidence\n"
+            "4. Fund & Expense: cashflow and approvals\n"
+            "5. Supply Chain: L/C and shipment records\n"
+            "6. POS Workspace: catalog, cart, checkout, and sales history\n"
+            "7. Reports: exports and analysis\n\n"
+            "Ask me for a summary of any workspace and I will guide you."
+        )
+        _log_ai_interaction(user_id=user.user_id, message=message, intent="general", response_text=reply)
+        return {"reply": reply, "intent": "general"}
 
     if wants_anomaly:
         anomalies = financial_anomalies()
         if not anomalies:
-            payload = {
-                "reply": "No high-signal anomaly was found in recent expenses. Current records do not show a severe spike pattern.",
-                "intent": "anomalies",
-                "count": 0,
-            }
-            _log_ai_interaction(user_id=user.user_id, message=message, intent="anomalies", response_text=payload["reply"], metadata={"count": 0})
-            return payload
+            reply = "No high-signal anomaly was found in recent expenses. Current records do not show a severe spike pattern."
+            _log_ai_interaction(user_id=user.user_id, message=message, intent="anomalies", response_text=reply, metadata={"count": 0})
+            return {"reply": reply, "intent": "anomalies", "count": 0}
         top = anomalies[:3]
         lines = [f"Found {len(anomalies)} anomalous expense records. Top signals:"]
         for idx, row in enumerate(top, 1):
@@ -214,16 +217,9 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
                 f"{idx}. Expense {row.get('id')} amount {_format_currency(row.get('amount'))} (account: {row.get('account_id')})"
             )
         lines.append("Review the related account, receipt quality, and approval path before releasing payment.")
-        reply_text = "\n".join(lines)
-        payload = {"reply": reply_text, "intent": "anomalies", "count": len(anomalies), "items": top}
-        _log_ai_interaction(
-            user_id=user.user_id,
-            message=message,
-            intent="anomalies",
-            response_text=reply_text,
-            metadata={"count": len(anomalies)},
-        )
-        return payload
+        reply = "\n".join(lines)
+        _log_ai_interaction(user_id=user.user_id, message=message, intent="anomalies", response_text=reply, metadata={"count": len(anomalies)})
+        return {"reply": reply, "intent": "anomalies", "count": len(anomalies), "items": top}
 
     if wants_operational_signal:
         signals = operational_alerts()
@@ -232,47 +228,21 @@ async def ai_chat(payload: dict, user: UserContext = Depends(get_current_user)):
         lines.append(f"- Worker shortage: {'YES' if signals.get('worker_shortage') else 'NO'}")
         lines.append(f"- Material warning: {'YES' if signals.get('material_warning') else 'NO'}")
         lines.append(f"- Delay prediction: {'RISK' if signals.get('delay_prediction') else 'STABLE'}")
-
         notes = signals.get("notes") or {}
-        lines.append("")
-        lines.append("Context:")
-        lines.append(f"- Budget: {notes.get('budget', 'n/a')}")
-        lines.append(f"- Workforce: {notes.get('workforce', 'n/a')}")
-        lines.append(f"- Materials: {notes.get('materials', 'n/a')}")
-        lines.append(f"- Delay: {notes.get('delay', 'n/a')}")
-
-        reply_text = "\n".join(lines)
-        payload = {
-            "reply": reply_text,
-            "intent": "operational_alerts",
-            "signals": signals,
-        }
+        lines += ["", "Context:",
+                  f"- Budget: {notes.get('budget', 'n/a')}",
+                  f"- Workforce: {notes.get('workforce', 'n/a')}",
+                  f"- Materials: {notes.get('materials', 'n/a')}",
+                  f"- Delay: {notes.get('delay', 'n/a')}"]
+        reply = "\n".join(lines)
         _log_ai_interaction(
-            user_id=user.user_id,
-            message=message,
-            intent="operational_alerts",
-            response_text=reply_text,
-            metadata={
-                "budget_alert": signals.get("budget_alert", False),
-                "worker_shortage": signals.get("worker_shortage", False),
-                "material_warning": signals.get("material_warning", False),
-                "delay_prediction": signals.get("delay_prediction", False),
-            },
+            user_id=user.user_id, message=message, intent="operational_alerts", response_text=reply,
+            metadata={k: signals.get(k, False) for k in ("budget_alert", "worker_shortage", "material_warning", "delay_prediction")},
         )
-        return payload
+        return {"reply": reply, "intent": "operational_alerts", "signals": signals}
 
     metrics = dashboard_metrics()
-    reply_text = _dashboard_reply(metrics)
-    payload = {
-        "reply": _dashboard_reply(metrics),
-        "intent": "dashboard" if wants_dashboard else "general",
-        "data": metrics,
-    }
-    _log_ai_interaction(
-        user_id=user.user_id,
-        message=message,
-        intent=payload["intent"],
-        response_text=reply_text,
-        metadata={"has_metrics": True},
-    )
-    return payload
+    reply = _dashboard_reply(metrics)
+    intent = "dashboard" if wants_dashboard else "general"
+    _log_ai_interaction(user_id=user.user_id, message=message, intent=intent, response_text=reply, metadata={"has_metrics": True})
+    return {"reply": reply, "intent": intent, "data": metrics}

@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  AlertCircle,
   ArrowRight,
   BadgeDollarSign,
   Bot,
@@ -38,31 +40,17 @@ function fmt(n: number) {
 
 const PIE_COLORS = ["hsl(167,46%,46%)", "hsl(40,93%,64%)", "hsl(210,80%,56%)", "hsl(0,72%,51%)"];
 
-const pieData = [
-  { name: "Labour", value: 35 },
-  { name: "Materials", value: 28 },
-  { name: "Equipment", value: 20 },
-  { name: "Other", value: 17 },
-];
-
-const weeklyData = [
-  { day: "Mon", amount: 42000 },
-  { day: "Tue", amount: 38000 },
-  { day: "Wed", amount: 65000 },
-  { day: "Thu", amount: 29000 },
-  { day: "Fri", amount: 71000 },
-  { day: "Sat", amount: 55000 },
-  { day: "Sun", amount: 33000 },
-];
-
-const progressData = [
-  { month: "Jan", progress: 10, cost: 120000 },
-  { month: "Feb", progress: 22, cost: 280000 },
-  { month: "Mar", progress: 38, cost: 420000 },
-  { month: "Apr", progress: 51, cost: 580000 },
-  { month: "May", progress: 64, cost: 720000 },
-  { month: "Jun", progress: 72, cost: 850000 },
-];
+function KpiSkeleton() {
+  return (
+    <div className="glass rounded-2xl border p-3 animate-pulse">
+      <div className="flex items-start justify-between">
+        <div className="h-3 w-16 rounded bg-muted" />
+        <div className="h-7 w-7 rounded-xl bg-muted" />
+      </div>
+      <div className="mt-2 h-5 w-20 rounded bg-muted" />
+    </div>
+  );
+}
 
 const T = {
   en: {
@@ -124,47 +112,19 @@ export function DashboardHomeView() {
   const [lang, setLang] = useState<"en" | "bn">("en");
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem("bdcr7-language") : null;
-    if (stored === "bn" || stored === "en") {
-      setLang(stored);
-      return;
-    }
-    if (typeof document !== "undefined") {
-      setLang(document.documentElement.lang === "bn" ? "bn" : "en");
-    }
+    // Read language from localStorage after hydration to avoid server/client mismatch
+    const stored = window.localStorage.getItem("bdcr7-language");
+    if (stored === "bn" || stored === "en") setLang(stored);
+    else if (document.documentElement.lang === "bn") setLang("bn");
   }, []);
 
   const t = T[lang];
 
   const kpis = [
-    {
-      label: t.budget,
-      value: s.loading ? "..." : fmt(s.totalFundsReceived),
-      icon: BadgeDollarSign,
-      cls: "kpi-green",
-      iconCls: "text-emerald-400",
-    },
-    {
-      label: t.cost,
-      value: s.loading ? "..." : fmt(s.totalExpenses),
-      icon: TrendingUp,
-      cls: "kpi-red",
-      iconCls: "text-rose-400",
-    },
-    {
-      label: t.balance,
-      value: s.loading ? "..." : fmt(s.currentBalance),
-      icon: Wallet,
-      cls: "kpi-gold",
-      iconCls: "text-yellow-400",
-    },
-    {
-      label: t.workers,
-      value: s.loading ? "..." : String(s.totalWorkers),
-      icon: Users,
-      cls: "kpi-blue",
-      iconCls: "text-blue-400",
-    },
+    { label: t.budget, value: fmt(s.totalFundsReceived), icon: BadgeDollarSign, cls: "kpi-green", iconCls: "text-emerald-400" },
+    { label: t.cost, value: fmt(s.totalExpenses), icon: TrendingUp, cls: "kpi-red", iconCls: "text-rose-400" },
+    { label: t.balance, value: fmt(s.currentBalance), icon: Wallet, cls: "kpi-gold", iconCls: "text-yellow-400" },
+    { label: t.workers, value: String(s.totalWorkers), icon: Users, cls: "kpi-blue", iconCls: "text-blue-400" },
   ];
 
   const quickActions = [
@@ -174,11 +134,39 @@ export function DashboardHomeView() {
     { label: t.addMaterial, icon: Building2, href: "/dashboard/materials", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
   ];
 
-  const activityItems = s.recentActivity?.length
-    ? s.recentActivity
-    : [t.noActivity];
+  const activityItems = s.recentActivity?.length ? s.recentActivity : [t.noActivity];
 
-  const projectProgress = s.loading ? 0 : 72;
+  // Real project progress: ratio of approved expenses vs total funds received (capped 0–100)
+  const projectProgress = s.loading || s.totalFundsReceived === 0
+    ? 0
+    : Math.min(100, Math.round((s.totalExpenses / s.totalFundsReceived) * 100));
+
+  // Real pie data from DB categories; fallback to empty array while loading
+  const pieData = s.expenseBreakdown.length > 0 ? s.expenseBreakdown : [];
+
+  // Real monthly bar data from DB
+  const monthlyBarData = s.monthlySeries.map((m) => ({ day: m.name, amount: m.expense }));
+
+  // Real progress vs cost line data
+  const progressLineData = s.monthlySeries.map((m, i, arr) => {
+    const cumExpense = arr.slice(0, i + 1).reduce((acc, x) => acc + x.expense, 0);
+    const cumFund = arr.slice(0, i + 1).reduce((acc, x) => acc + x.fund, 0);
+    const pct = cumFund > 0 ? Math.min(100, Math.round((cumExpense / cumFund) * 100)) : 0;
+    return { month: m.name, progress: pct, cost: cumExpense };
+  });
+
+  // Error state
+  if (s.error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <AlertCircle className="h-8 w-8 text-rose-400" />
+        <p className="text-[14px] font-semibold text-foreground">
+          {lang === "bn" ? "ডেটা লোড হয়নি" : "Failed to load dashboard"}
+        </p>
+        <p className="text-[12px] text-muted-foreground">{s.error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 pb-4">
@@ -191,25 +179,27 @@ export function DashboardHomeView() {
         <p className="mt-0.5 text-[12px] text-muted-foreground tracking-wide">{t.subtitle}</p>
       </div>
 
-      {/* KPI Cards */}
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpis.map((k) => {
-          const Icon = k.icon;
-          return (
-            <div key={k.label} className={`glass rounded-2xl border p-3 ${k.cls}`}>
-              <div className="flex items-start justify-between">
-                <p className="text-[12px] font-medium text-muted-foreground leading-tight">{k.label}</p>
-                <span className={`flex h-7 w-7 items-center justify-center rounded-xl bg-background/50 ${k.iconCls}`}>
-                  <Icon className="h-3.5 w-3.5" />
-                </span>
-              </div>
-              <p className="mt-2 font-display text-[16px] font-semibold text-foreground">{k.value}</p>
-            </div>
-          );
-        })}
+      {/* KPI Cards — skeleton while loading */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Key performance indicators">
+        {s.loading
+          ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
+          : kpis.map((k) => {
+              const Icon = k.icon;
+              return (
+                <div key={k.label} className={`glass rounded-2xl border p-3 ${k.cls}`}>
+                  <div className="flex items-start justify-between">
+                    <p className="text-[12px] font-medium text-muted-foreground leading-tight">{k.label}</p>
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-xl bg-background/50 ${k.iconCls}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                  <p className="mt-2 font-display text-[16px] font-semibold text-foreground">{k.value}</p>
+                </div>
+              );
+            })}
       </section>
 
-      {/* Project Progress */}
+      {/* Project Progress — real computed value */}
       <div className="glass rounded-2xl p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-[14px] font-semibold text-foreground">{t.progress}</p>
@@ -224,14 +214,14 @@ export function DashboardHomeView() {
         <p className="mt-2 text-[12px] text-muted-foreground">{t.completion}: {projectProgress}%</p>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions — Next.js Link for client-side navigation */}
       <section>
         <p className="mb-2 px-1 text-[14px] font-semibold text-foreground">{t.quickActions}</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {quickActions.map((a) => {
             const Icon = a.icon;
             return (
-              <a
+              <Link
                 key={a.label}
                 href={a.href}
                 className={`flex items-center gap-2.5 rounded-2xl border px-3 py-3 text-[13px] font-medium transition-all hover:scale-[1.02] active:scale-[0.98] ${a.color}`}
@@ -240,81 +230,101 @@ export function DashboardHomeView() {
                   <Icon className="h-4 w-4" />
                 </span>
                 {a.label}
-              </a>
+              </Link>
             );
           })}
         </div>
       </section>
 
-      {/* Charts Row */}
+      {/* Charts Row — real DB data */}
       <div className="grid gap-3 sm:grid-cols-2">
-        {/* Pie Chart - Expense Breakdown */}
+        {/* Pie Chart — real expense category breakdown */}
         <div className="glass rounded-2xl p-4">
           <p className="mb-3 text-[14px] font-semibold text-foreground">{t.expenseBreakdown}</p>
-          <div className="flex items-center gap-4">
-            <ResponsiveContainer width={100} height={100}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={28} outerRadius={46} dataKey="value" strokeWidth={0}>
-                  {pieData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex-1 space-y-1.5">
-              {pieData.map((entry, i) => (
-                <div key={entry.name} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    <span className="text-[11px] text-muted-foreground">{entry.name}</span>
+          {pieData.length === 0 ? (
+            <p className="py-6 text-center text-[12px] text-muted-foreground">
+              {s.loading ? "Loading..." : lang === "bn" ? "কোনো ডেটা নেই" : "No expense data yet"}
+            </p>
+          ) : (
+            <div className="flex items-center gap-4">
+              <ResponsiveContainer width={100} height={100}>
+                <PieChart aria-label={t.expenseBreakdown}>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={28} outerRadius={46} dataKey="value" strokeWidth={0}>
+                    {pieData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 space-y-1.5">
+                {pieData.map((entry, i) => (
+                  <div key={entry.name} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <span className="text-[11px] text-muted-foreground">{entry.name}</span>
+                    </div>
+                    <span className="text-[11px] font-medium text-foreground">{fmt(entry.value)}</span>
                   </div>
-                  <span className="text-[11px] font-medium text-foreground">{entry.value}%</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Bar Chart - Weekly Spending */}
+        {/* Bar Chart — real monthly expense data */}
         <div className="glass rounded-2xl p-4">
           <p className="mb-3 text-[14px] font-semibold text-foreground">{t.weeklySpend}</p>
-          <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={weeklyData} barSize={8}>
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
-                formatter={(v: number) => [fmt(v), "Amount"]}
-              />
-              <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {monthlyBarData.length === 0 ? (
+            <p className="py-6 text-center text-[12px] text-muted-foreground">
+              {s.loading ? "Loading..." : lang === "bn" ? "কোনো ডেটা নেই" : "No data yet"}
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={100}>
+              <BarChart data={monthlyBarData} barSize={8} aria-label={t.weeklySpend}>
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
+                  formatter={(v: number) => [fmt(v), "Amount"]}
+                />
+                <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
-      {/* Line Chart - Progress vs Cost */}
+      {/* Line Chart — real cumulative progress vs cost */}
       <div className="glass rounded-2xl p-4">
         <p className="mb-3 text-[14px] font-semibold text-foreground">{t.progressVsCost}</p>
-        <ResponsiveContainer width="100%" height={120}>
-          <LineChart data={progressData}>
-            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis hide />
-            <Tooltip
-              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
-            />
-            <Line type="monotone" dataKey="progress" stroke="hsl(167,46%,46%)" strokeWidth={2} dot={false} name="Progress %" />
-            <Line type="monotone" dataKey="cost" stroke="hsl(40,93%,64%)" strokeWidth={2} dot={false} name="Cost ৳" />
-          </LineChart>
-        </ResponsiveContainer>
-        <div className="mt-2 flex gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-4 rounded-full bg-emerald-500" />
-            <span className="text-[11px] text-muted-foreground">Progress</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-4 rounded-full bg-yellow-400" />
-            <span className="text-[11px] text-muted-foreground">Cost</span>
-          </div>
-        </div>
+        {progressLineData.length === 0 ? (
+          <p className="py-6 text-center text-[12px] text-muted-foreground">
+            {s.loading ? "Loading..." : lang === "bn" ? "কোনো ডেটা নেই" : "No data yet"}
+          </p>
+        ) : (
+          <>
+            <ResponsiveContainer width="100%" height={120}>
+              <LineChart data={progressLineData} aria-label={t.progressVsCost}>
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
+                />
+                <Line type="monotone" dataKey="progress" stroke="hsl(167,46%,46%)" strokeWidth={2} dot={false} name="Progress %" />
+                <Line type="monotone" dataKey="cost" stroke="hsl(40,93%,64%)" strokeWidth={2} dot={false} name="Cost ৳" />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="mt-2 flex gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-4 rounded-full bg-emerald-500" />
+                <span className="text-[11px] text-muted-foreground">Progress</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-4 rounded-full bg-yellow-400" />
+                <span className="text-[11px] text-muted-foreground">Cost</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Fund Flow */}
@@ -360,27 +370,29 @@ export function DashboardHomeView() {
           </ul>
         </div>
 
-        {/* AI Panel */}
+        {/* AI Panel — honest label, rule-based system */}
         <div className="glass rounded-2xl">
           <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
             <Bot className="h-4 w-4 text-primary" />
             <p className="text-[14px] font-semibold text-foreground">{t.aiPanel}</p>
-            <span className="ml-auto rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-medium text-emerald-400">LIVE</span>
+            <span className="ml-auto rounded-full bg-blue-400/15 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+              {lang === "bn" ? "বিশ্লেষণ" : "Analytics"}
+            </span>
           </div>
           <div className="p-4">
             <p className="mb-3 text-[12px] text-muted-foreground leading-relaxed">
               {lang === "bn"
                 ? "AI আপনার প্রজেক্টের ডেটা বিশ্লেষণ করে insights দিচ্ছে।"
-                : "AI is analyzing your project data and providing insights."}
+                : "Analyzes your project data and surfaces finance, risk, and operational insights."}
             </p>
-            <a
+            <Link
               href="/dashboard/ai"
               className="btn-gold flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
             >
               <Bot className="h-4 w-4" />
               {lang === "bn" ? "AI চ্যাট খুলুন" : "Open AI Chat"}
               <Plus className="h-3.5 w-3.5" />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

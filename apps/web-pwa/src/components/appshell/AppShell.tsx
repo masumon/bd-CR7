@@ -14,7 +14,20 @@ import {
   PackageOpen,
   Settings2,
   ShieldCheck,
+  ShoppingCart,
+  Truck,
+  Users2,
+  Warehouse,
 } from "lucide-react";
+import type { DynamicModuleKey } from "@/store/moduleStore";
+
+const MODULE_ICONS: Record<DynamicModuleKey, React.ComponentType<{ className?: string }>> = {
+  import_lc: Truck,
+  pos: ShoppingCart,
+  crm: Users2,
+  contractor: Briefcase,
+  inventory_advanced: Warehouse,
+};
 
 import { TopBar } from "@/components/appshell/TopBar";
 import { BottomNav } from "@/components/appshell/BottomNav";
@@ -43,11 +56,11 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
 
   const dynamicItems = useMemo<NavItem[]>(() => {
     return enabledModules()
-      .filter((m) => m.key !== "contractor") // contractor is now a core nav item
+      .filter((m) => m.key !== "contractor") // contractor is a core nav item
       .map((m) => ({
         href: m.href,
         label: language === "bn" ? m.labelBn : m.labelEn,
-        icon: PackageOpen,
+        icon: MODULE_ICONS[m.key] ?? PackageOpen,
       }));
   }, [enabledModules, language]);
 

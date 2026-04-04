@@ -5,6 +5,13 @@ import { supabase } from "@/lib/supabase";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+// Only fetch last 6 months of transactional data to avoid unbounded scans
+function sixMonthsAgo(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 6);
+  return d.toISOString();
+}
+
 export interface DashboardStats {
   totalFundsReceived: number;
   currentBalance: number;
@@ -16,7 +23,9 @@ export interface DashboardStats {
   pendingApprovals: number;
   recentActivity: string[];
   monthlySeries: { name: string; fund: number; expense: number }[];
+  expenseBreakdown: { name: string; value: number }[];
   loading: boolean;
+  error: string | null;
 }
 
 const DEFAULT: DashboardStats = {
@@ -30,7 +39,9 @@ const DEFAULT: DashboardStats = {
   pendingApprovals: 0,
   recentActivity: [],
   monthlySeries: [],
+  expenseBreakdown: [],
   loading: true,
+  error: null,
 };
 
 export function useDashboardStats(): DashboardStats {
@@ -38,7 +49,7 @@ export function useDashboardStats(): DashboardStats {
 
   useEffect(() => {
     if (!supabase) {
-      setStats({ ...DEFAULT, loading: false });
+      setStats({ ...DEFAULT, loading: false, error: null });
       return;
     }
     void fetchAll();
@@ -46,6 +57,7 @@ export function useDashboardStats(): DashboardStats {
 
   async function fetchAll() {
     if (!supabase) return;
+    const cutoff = sixMonthsAgo();
     try {
       const [
         { data: accounts },
@@ -55,10 +67,18 @@ export function useDashboardStats(): DashboardStats {
         { count: projectCount },
         { count: approvalCount },
         { data: auditRows },
+        { data: catBreakdown },
       ] = await Promise.all([
         supabase.from("fund_accounts").select("balance"),
-        supabase.from("fund_transactions").select("amount, direction, created_at"),
-        supabase.from("expenses").select("amount, status, created_at"),
+        // Filtered to last 6 months — prevents full-table scan
+        supabase
+          .from("fund_transactions")
+          .select("amount, direction, created_at")
+          .gte("created_at", cutoff),
+        supabase
+          .from("expenses")
+          .select("amount, status, created_at, category_id")
+          .gte("created_at", cutoff),
         supabase.from("workers").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("projects").select("id", { count: "exact", head: true }),
         supabase.from("approvals").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -67,6 +87,13 @@ export function useDashboardStats(): DashboardStats {
           .select("action, entity_type, created_at")
           .order("created_at", { ascending: false })
           .limit(5),
+        // Real expense category breakdown (join with expense_categories)
+        supabase
+          .from("expenses")
+          .select("amount, expense_categories(name)")
+          .eq("status", "approved")
+          .gte("created_at", cutoff)
+          .limit(500),
       ]);
 
       const currentBalance = (accounts ?? []).reduce((s, r) => s + Number(r.balance), 0);
@@ -83,7 +110,7 @@ export function useDashboardStats(): DashboardStats {
 
       const pendingExpenses = expList.filter((e) => e.status === "pending").length;
 
-      // Last 6 months series
+      // Client-side monthly aggregation over bounded 6-month dataset
       const now = new Date();
       const monthlySeries = Array.from({ length: 6 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
@@ -98,6 +125,17 @@ export function useDashboardStats(): DashboardStats {
         const expense = inMonth(expList).reduce((s, r) => s + Number(r.amount), 0);
         return { name: MONTHS[m], fund, expense };
       });
+
+      // Real expense breakdown by category
+      const categoryTotals: Record<string, number> = {};
+      for (const row of catBreakdown ?? []) {
+        const catName = (row as { expense_categories?: { name?: string } }).expense_categories?.name ?? "Other";
+        categoryTotals[catName] = (categoryTotals[catName] ?? 0) + Number(row.amount);
+      }
+      const sortedCats = Object.entries(categoryTotals)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 4);
+      const expenseBreakdown = sortedCats.map(([name, value]) => ({ name, value }));
 
       const recentActivity = (auditRows ?? []).map(
         (r) =>
@@ -118,10 +156,13 @@ export function useDashboardStats(): DashboardStats {
         pendingApprovals: approvalCount ?? 0,
         recentActivity: recentActivity.length ? recentActivity : ["No recent activity recorded"],
         monthlySeries,
+        expenseBreakdown,
         loading: false,
+        error: null,
       });
-    } catch {
-      setStats((prev) => ({ ...prev, loading: false }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load dashboard data";
+      setStats((prev) => ({ ...prev, loading: false, error: message }));
     }
   }
 

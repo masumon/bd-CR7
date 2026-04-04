@@ -44,11 +44,16 @@ def create_app() -> Any:
 
     configure_logging(settings.log_level)
 
+    # Disable interactive API docs in production — schema is still available via /openapi.json
+    # for internal tooling, but the browsable UI should not be publicly exposed.
+    docs_url = None if settings.is_production else "/docs"
+    redoc_url = None if settings.is_production else "/redoc"
+
     app = FastAPI(
         title=settings.app_name,
         version="1.0.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url=docs_url,
+        redoc_url=redoc_url,
     )
 
     allowed_origins = list(settings.cors_origins)
@@ -58,7 +63,7 @@ def create_app() -> Any:
         allow_origins=allowed_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
     )
     app.add_middleware(
         RateLimitMiddleware,
