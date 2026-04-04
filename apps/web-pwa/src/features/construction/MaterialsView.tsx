@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Package, ShoppingCart, TrendingDown, Warehouse } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Package, Pencil, ShoppingCart, Trash2, TrendingDown, Warehouse } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { MaterialTrackFeature } from "@/features/construction/material_track/MaterialTrackFeature";
 import { createClient } from "@/lib/supabase/client";
@@ -40,20 +42,28 @@ export function MaterialsView() {
   const [materials, setMaterials] = useState<MaterialRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Log Entry");
+  const [editTarget, setEditTarget] = useState<MaterialRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    item_name: "", unit: "", quantity: 0, movement_type: "in",
+    cost_per_unit: 0, supplier: "", low_stock_threshold: 0,
+  });
+
+  const loadMaterials = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("material_logs")
+      .select("id,item_name,unit,quantity,movement_type,cost_per_unit,supplier,low_stock_threshold,created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setMaterials((data as MaterialRow[]) || []);
+    setLoading(false);
+  }, [supabase]);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("material_logs")
-        .select("id,item_name,unit,quantity,movement_type,cost_per_unit,supplier,low_stock_threshold,created_at")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      setMaterials((data as MaterialRow[]) || []);
-      setLoading(false);
-    };
-    void load();
-  }, [supabase]);
+    void loadMaterials();
+  }, [loadMaterials]);
 
   const stats = useMemo(() => {
     const inbound = materials.filter((m) => m.movement_type === "in").reduce((s, m) => s + Number(m.quantity), 0);
@@ -64,6 +74,43 @@ export function MaterialsView() {
     ).length;
     return { inbound, outbound, totalCost, lowStock };
   }, [materials]);
+
+  const handleEditOpen = (m: MaterialRow) => {
+    setEditForm({
+      item_name: m.item_name,
+      unit: m.unit,
+      quantity: Number(m.quantity),
+      movement_type: m.movement_type,
+      cost_per_unit: Number(m.cost_per_unit ?? 0),
+      supplier: m.supplier ?? "",
+      low_stock_threshold: Number(m.low_stock_threshold ?? 0),
+    });
+    setEditTarget(m);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTarget) return;
+    setSaving(true);
+    await supabase.from("material_logs").update({
+      item_name: editForm.item_name,
+      unit: editForm.unit,
+      quantity: editForm.quantity,
+      movement_type: editForm.movement_type,
+      cost_per_unit: editForm.cost_per_unit,
+      supplier: editForm.supplier,
+      low_stock_threshold: editForm.low_stock_threshold,
+    }).eq("id", editTarget.id);
+    setSaving(false);
+    setEditTarget(null);
+    await loadMaterials();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await supabase.from("material_logs").delete().eq("id", deleteTarget);
+    setDeleteTarget(null);
+    await loadMaterials();
+  };
 
   const tabs = ["Log Entry", "Stock Log", "Low Stock"];
 
@@ -164,6 +211,7 @@ export function MaterialsView() {
                       <Th>Unit</Th>
                       <Th>Type</Th>
                       <Th>Supplier</Th>
+                      <Th className="w-20 text-right">Action</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -179,6 +227,24 @@ export function MaterialsView() {
                           </span>
                         </Td>
                         <Td className="text-xs text-muted-foreground">{m.supplier || "—"}</Td>
+                        <Td className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleEditOpen(m)}
+                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(m.id)}
+                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </Td>
                       </tr>
                     ))}
                   </tbody>
@@ -226,6 +292,77 @@ export function MaterialsView() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {editTarget && (
+        <Dialog open title="Edit Material" onClose={() => setEditTarget(null)}>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Item Name</label>
+              <input type="text" value={editForm.item_name}
+                onChange={(e) => setEditForm((f) => ({ ...f, item_name: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Unit</label>
+                <input type="text" value={editForm.unit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Quantity</label>
+                <input type="number" value={editForm.quantity}
+                  onChange={(e) => setEditForm((f) => ({ ...f, quantity: Number(e.target.value) }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Movement Type</label>
+              <select value={editForm.movement_type}
+                onChange={(e) => setEditForm((f) => ({ ...f, movement_type: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition">
+                <option value="in">In</option>
+                <option value="out">Out</option>
+                <option value="adjust">Adjust</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Cost / Unit</label>
+                <input type="number" value={editForm.cost_per_unit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, cost_per_unit: Number(e.target.value) }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Low Stock Threshold</label>
+                <input type="number" value={editForm.low_stock_threshold}
+                  onChange={(e) => setEditForm((f) => ({ ...f, low_stock_threshold: Number(e.target.value) }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Supplier</label>
+              <input type="text" value={editForm.supplier}
+                onChange={(e) => setEditForm((f) => ({ ...f, supplier: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button onClick={handleEditSubmit} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {deleteTarget && (
+        <Dialog open title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
+          <p className="text-sm text-muted-foreground mb-4">Are you sure you want to delete this material log? This action cannot be undone.</p>
+          <div className="flex gap-2">
+            <Button onClick={handleDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          </div>
+        </Dialog>
       )}
     </div>
   );

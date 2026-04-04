@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { HardHat, Users, Wallet } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { HardHat, Pencil, Trash2, Users, Wallet } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero, SectionHeader } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { WorkerLogsFeature } from "@/features/construction/worker_logs/WorkerLogsFeature";
 import { createClient } from "@/lib/supabase/client";
 
@@ -39,20 +41,27 @@ export function WorkforceView() {
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Log Entry");
+  const [editTarget, setEditTarget] = useState<WorkerRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    worker_name: "", role: "", attendance_status: "Present", daily_wage: 0, paid_amount: 0,
+  });
+
+  const loadWorkers = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("worker_logs")
+      .select("id,worker_name,role,attendance_status,daily_wage,paid_amount,unpaid_balance,work_date")
+      .order("work_date", { ascending: false })
+      .limit(40);
+    setWorkers((data as WorkerRow[]) || []);
+    setLoading(false);
+  }, [supabase]);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("worker_logs")
-        .select("id,worker_name,role,attendance_status,daily_wage,paid_amount,unpaid_balance,work_date")
-        .order("work_date", { ascending: false })
-        .limit(40);
-      setWorkers((data as WorkerRow[]) || []);
-      setLoading(false);
-    };
-    void load();
-  }, [supabase]);
+    void loadWorkers();
+  }, [loadWorkers]);
 
   const stats = useMemo(() => {
     const present = workers.filter((w) => w.attendance_status === "Present").length;
@@ -60,6 +69,39 @@ export function WorkforceView() {
     const totalPaid = workers.reduce((s, w) => s + Number(w.paid_amount || 0), 0);
     return { present, totalUnpaid, totalPaid, total: workers.length };
   }, [workers]);
+
+  const handleEditOpen = (w: WorkerRow) => {
+    setEditForm({
+      worker_name: w.worker_name,
+      role: w.role,
+      attendance_status: w.attendance_status,
+      daily_wage: Number(w.daily_wage),
+      paid_amount: Number(w.paid_amount),
+    });
+    setEditTarget(w);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTarget) return;
+    setSaving(true);
+    await supabase.from("worker_logs").update({
+      worker_name: editForm.worker_name,
+      role: editForm.role,
+      attendance_status: editForm.attendance_status,
+      daily_wage: editForm.daily_wage,
+      paid_amount: editForm.paid_amount,
+    }).eq("id", editTarget.id);
+    setSaving(false);
+    setEditTarget(null);
+    await loadWorkers();
+  };
+
+  const handleDeleteWorker = async () => {
+    if (!deleteTarget) return;
+    await supabase.from("worker_logs").delete().eq("id", deleteTarget);
+    setDeleteTarget(null);
+    await loadWorkers();
+  };
 
   const tabs = ["Log Entry", "Attendance", "Payments"];
 
@@ -154,6 +196,7 @@ export function WorkforceView() {
                       <Th>Date</Th>
                       <Th>Status</Th>
                       <Th>Wage</Th>
+                      <Th className="w-20 text-right">Action</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -169,6 +212,18 @@ export function WorkforceView() {
                           </span>
                         </Td>
                         <Td className="text-xs">{fmt(Number(w.daily_wage))}</Td>
+                        <Td className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleEditOpen(w)}
+                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition" title="Edit">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setDeleteTarget(w.id)}
+                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition" title="Delete">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </Td>
                       </tr>
                     ))}
                   </tbody>
@@ -201,6 +256,7 @@ export function WorkforceView() {
                       <Th>Date</Th>
                       <Th>Paid</Th>
                       <Th>Unpaid</Th>
+                      <Th className="w-20 text-right">Action</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -210,6 +266,18 @@ export function WorkforceView() {
                         <Td className="text-xs">{w.work_date}</Td>
                         <Td className="text-xs text-emerald-600">{fmt(Number(w.paid_amount))}</Td>
                         <Td className="text-xs text-rose-500">{fmt(Number(w.unpaid_balance))}</Td>
+                        <Td className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleEditOpen(w)}
+                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition" title="Edit">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setDeleteTarget(w.id)}
+                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition" title="Delete">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </Td>
                       </tr>
                     ))}
                   </tbody>
@@ -218,6 +286,63 @@ export function WorkforceView() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {editTarget && (
+        <Dialog open title="Edit Worker Log" onClose={() => setEditTarget(null)}>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Worker Name</label>
+              <input type="text" value={editForm.worker_name}
+                onChange={(e) => setEditForm((f) => ({ ...f, worker_name: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Role</label>
+              <input type="text" value={editForm.role}
+                onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Attendance Status</label>
+              <select value={editForm.attendance_status}
+                onChange={(e) => setEditForm((f) => ({ ...f, attendance_status: e.target.value }))}
+                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition">
+                <option value="Present">Present</option>
+                <option value="Absent">Absent</option>
+                <option value="Half">Half</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Daily Wage</label>
+                <input type="number" value={editForm.daily_wage}
+                  onChange={(e) => setEditForm((f) => ({ ...f, daily_wage: Number(e.target.value) }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Paid Amount</label>
+                <input type="number" value={editForm.paid_amount}
+                  onChange={(e) => setEditForm((f) => ({ ...f, paid_amount: Number(e.target.value) }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button onClick={handleEditSubmit} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {deleteTarget && (
+        <Dialog open title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
+          <p className="text-sm text-muted-foreground mb-4">Are you sure you want to delete this worker log? This action cannot be undone.</p>
+          <div className="flex gap-2">
+            <Button onClick={handleDeleteWorker}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          </div>
+        </Dialog>
       )}
     </div>
   );
