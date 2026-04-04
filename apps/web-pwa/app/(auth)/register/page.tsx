@@ -167,7 +167,7 @@ export default function RegisterPage() {
           {/* Full Name */}
           <div className="space-y-2">
             <label htmlFor="fullName" className="text-xs font-medium text-foreground/70">
-              Full Name *
+              Full Name / পূর্ণ নাম *
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -199,7 +199,7 @@ export default function RegisterPage() {
           {/* Email */}
           <div className="space-y-2">
             <label htmlFor="email" className="text-xs font-medium text-foreground/70">
-              Email Address *
+              Email / ইমেইল *
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -263,7 +263,7 @@ export default function RegisterPage() {
           {/* Password */}
           <div className="space-y-2">
             <label htmlFor="password" className="text-xs font-medium text-foreground/70">
-              Password (min. 8 characters) *
+              Password / পাসওয়ার্ড (min. 8 characters) *
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -411,7 +411,7 @@ export default function RegisterPage() {
             {loading ? (
               <Loader className="w-4 h-4 animate-spin" />
             ) : (
-              "Create Account"
+              "Register / নিবন্ধন করুন"
             )}
           </Button>
         </form>

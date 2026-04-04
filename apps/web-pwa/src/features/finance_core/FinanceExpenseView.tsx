@@ -10,6 +10,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { exportCSV } from "@/lib/exportCSV";
+import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 import { FundManagerFeature } from "./fund_manager/FundManagerFeature";
 import { ExpenseEngineFeature } from "./expense_engine/ExpenseEngineFeature";
@@ -155,8 +157,7 @@ export function FinanceExpenseView() {
           <div className="flex items-center gap-2">
             <Button onClick={() => setOpen(!open)} className="w-full sm:w-auto">{open ? "Close Forms" : "Add Fund / Expense"}</Button>
             <ExportPDFButton
-              onBuildOptions={() => ({
-                moduleName: "Finance",
+              onBuildOptions={() => ({                moduleName: "Finance",
                 moduleNameBn: "অর্থায়ন ও ব্যয়",
                 description: "Finance ledger showing expense records, categories, and approval status.",
                 descriptionBn: "অর্থায়ন লেজার — ব্যয়ের রেকর্ড, ক্যাটাগরি এবং অনুমোদনের অবস্থা।",
@@ -203,6 +204,48 @@ export function FinanceExpenseView() {
                 ],
               })}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const exportRows = rows.map((row) => {
+                  const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
+                  const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
+                  return {
+                    ID: row.id.slice(0, 8).toUpperCase(),
+                    Category: metaCategory || row.description?.split(" ")[0] || "General",
+                    Subcategory: metaSubcategory,
+                    Amount: row.amount,
+                    Status: row.status,
+                    Date: row.created_at?.slice(0, 10) ?? "",
+                  };
+                });
+                exportCSV("finance-expenses.csv", exportRows);
+              }}
+            >
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const exportRows = rows.map((row) => {
+                  const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
+                  const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
+                  return {
+                    ID: row.id.slice(0, 8).toUpperCase(),
+                    Category: metaCategory || row.description?.split(" ")[0] || "General",
+                    Subcategory: metaSubcategory,
+                    Amount: row.amount,
+                    Status: row.status,
+                    Date: row.created_at?.slice(0, 10) ?? "",
+                  };
+                });
+                exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows: exportRows });
+              }}
+            >
+              HTML
+            </Button>
           </div>
         }
       />
