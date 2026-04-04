@@ -53,6 +53,32 @@ function fmt(n: number) {
   return `৳${n.toLocaleString("en-BD")}`;
 }
 
+const MIN_BAR_HEIGHT_PX = 4;
+const MAX_BAR_HEIGHT_PX = 64;
+
+function MiniBarChart({ data, color = "#22c55e" }: { data: Array<{ label: string; value: number }>; color?: string }) {
+  if (!data.length) return null;
+  const max = Math.max(...data.map((d) => d.value), 1);
+  return (
+    <div className="flex items-end gap-1 h-20 w-full">
+      {data.map((d) => (
+        <div key={d.label} className="flex flex-col items-center gap-1 flex-1 min-w-0">
+          <div
+            className="w-full rounded-t-sm transition-all duration-500"
+            style={{
+              height: `${Math.max(MIN_BAR_HEIGHT_PX, (d.value / max) * MAX_BAR_HEIGHT_PX)}px`,
+              background: color,
+              opacity: 0.85,
+            }}
+            title={`${d.label}: ${d.value}`}
+          />
+          <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">{d.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
   const headers = Object.keys(rows[0]);
@@ -252,6 +278,29 @@ export function ReportsFeature() {
             </motion.div>
           ))}
         </motion.div>
+      )}
+
+      {/* Charts section */}
+      {!loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">ব্যয় চার্ট / Expense Chart</CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <MiniBarChart
+              data={
+                data.categoryTotals.length
+                  ? data.categoryTotals
+                  : [
+                      { label: "Fund", value: data.totalFunds },
+                      { label: "Expense", value: data.totalExpenses },
+                      { label: "Pending", value: data.pendingExpenses },
+                      { label: "Approved", value: data.approvedExpenses },
+                    ]
+              }
+            />
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">

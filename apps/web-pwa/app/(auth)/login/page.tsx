@@ -19,6 +19,7 @@ import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
 import { DEVELOPER_CONFIG } from "@/lib/developers";
 import { ensureBiometricCredential, verifyBiometricAssertion } from "@/lib/webauthn";
+import { LoginLoadingOverlay } from "@/components/auth/LoginLoadingOverlay";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function LoginPage() {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [biometricMode, setBiometricMode] = useState<"fingerprint" | "face">("fingerprint");
   const [error, setError] = useState("");
+  const [showWelcome, setShowWelcome] = useState(false);
 
   // Restore theme preference
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push("/dashboard");
+      setShowWelcome(true);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -99,7 +101,7 @@ export default function LoginPage() {
       await ensureBiometricCredential(token, userId, userEmail);
       await verifyBiometricAssertion(token);
 
-      router.push("/dashboard");
+      setShowWelcome(true);
     } catch (err) {
       const message = (err as Error).message || "Biometric quick unlock failed.";
       setError(message);
@@ -109,6 +111,8 @@ export default function LoginPage() {
   }, [email, persistedToken, persistedUserId, router]);
 
   return (
+    <>
+    <LoginLoadingOverlay visible={showWelcome} onDone={() => router.push("/dashboard")} />
     <main
       className="login-shell flex flex-col auth-bg-dark safe-bottom overflow-y-auto"
     >
@@ -153,7 +157,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-3">
             <div className="space-y-1.5">
               <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                Email
+                Email / ইমেইল
               </label>
               <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
                 <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -172,15 +176,14 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Password
+                  Password / পাসওয়ার্ড
                 </label>
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
+                <a
+                  href="/forgot-password"
                   className="text-[11px] text-primary/80 hover:text-primary underline-offset-2 hover:underline transition-colors"
                 >
-                  Forgot password?
-                </button>
+                  Forgot password? / পাসওয়ার্ড ভুলে গেছেন?
+                </a>
               </div>
               <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
                 <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -210,17 +213,17 @@ export default function LoginPage() {
               className="btn-gold flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Signing in..." : "Sign in / সাইন ইন"}
             </button>
           </form>
 
           <p className="text-center text-xs text-muted-foreground">
-            No account?{" "}
+            No account? / অ্যাকাউন্ট নেই?{" "}
             <a
               href="/register"
               className="font-medium text-primary hover:underline underline-offset-2"
             >
-              Create one
+              Create one / তৈরি করুন
             </a>
           </p>
         </div>
@@ -231,7 +234,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-3 w-full max-w-sm">
           <span className="flex-1 h-px bg-border/60" />
           <span className="text-[11px] text-muted-foreground tracking-wider uppercase">
-            or biometric
+            or biometric / বায়োমেট্রিক
           </span>
           <span className="flex-1 h-px bg-border/60" />
         </div>
@@ -318,5 +321,6 @@ export default function LoginPage() {
         </div>
       </footer>
     </main>
+    </>
   );
 }

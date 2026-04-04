@@ -389,7 +389,7 @@ export function FloatingChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,249,247,0.96))] backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(15,24,21,0.98),rgba(10,19,17,0.97))] sm:inset-x-auto sm:bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] sm:right-6 sm:top-auto sm:max-h-[min(74svh,44rem)] sm:w-[min(460px,calc(100vw-2rem))] sm:rounded-[1.65rem] sm:border sm:border-white/20 sm:shadow-2xl lg:bottom-24"
+            className="fixed z-50 flex flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,249,247,0.96))] backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(15,24,21,0.98),rgba(10,19,17,0.97))] bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] right-2 left-2 max-h-[min(74svh,44rem)] rounded-[1.65rem] border border-white/20 shadow-2xl sm:left-auto sm:right-6 sm:w-[min(460px,calc(100vw-2rem))] lg:bottom-24"
           >
             <div className="safe-top flex items-center justify-between border-b border-border/70 bg-primary/8 px-4 py-3">
               <div className="flex items-center gap-2">
@@ -437,7 +437,7 @@ export function FloatingChat() {
               </button>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto p-4 pb-40 text-[13px] sm:pb-4 sm:text-sm">
+            <div className="flex-1 space-y-3 overflow-y-auto p-4 pb-2 text-[13px] sm:text-sm">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "ai" && (
@@ -480,7 +480,7 @@ export function FloatingChat() {
               ))}
             </div>
 
-            <div className="safe-bottom fixed inset-x-0 bottom-0 border-t border-border bg-background/96 p-3 backdrop-blur sm:static sm:bg-transparent sm:p-3 sm:backdrop-blur-0">
+            <div className="border-t border-border/60 bg-background/90 p-3 backdrop-blur-sm">
               <div className="mx-auto flex w-full max-w-[28rem] items-center gap-2 rounded-[1.2rem] border border-border bg-background px-3 py-2">
                 {voice ? (
                   <button

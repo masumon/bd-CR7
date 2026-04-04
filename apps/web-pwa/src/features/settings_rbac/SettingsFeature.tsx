@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw, Settings2, UserRound, Sun, Moon, Languages, Layers, Wifi, WifiOff, CloudUpload, Clock, Trash2 } from "lucide-react";
+import type { ElementType } from "react";
+import { Bell, CheckCircle2, Database, Globe, Loader2, RefreshCw, Settings2, Shield, UserRound, Sun, Moon, Languages, Layers, Wifi, WifiOff, CloudUpload, Clock, Trash2 } from "lucide-react";
 
 import { ActionMenu } from "@/components/ui/action-menu";
 import { cn } from "@/lib/utils";
@@ -574,6 +575,18 @@ export function SettingsFeature() {
 
   const tabs: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Modules", "Sync", "Advanced"];
 
+  const TAB_META: Record<SettingsTab, { Icon: ElementType; desc: string }> = {
+    Profile:       { Icon: UserRound,   desc: "আপনার তথ্য" },
+    Workspace:     { Icon: Layers,      desc: "থিম ও ভাষা" },
+    Notifications: { Icon: Bell,        desc: "অ্যালার্ট সেটিং" },
+    Security:      { Icon: Shield,      desc: "নিরাপত্তা" },
+    Data:          { Icon: Database,    desc: "ডেটা ম্যানেজ" },
+    Integrations:  { Icon: Globe,       desc: "API কানেকশন" },
+    Modules:       { Icon: Layers,      desc: "মডিউল চালু/বন্ধ" },
+    Sync:          { Icon: CloudUpload, desc: "সিঙ্ক কন্ট্রোল" },
+    Advanced:      { Icon: Settings2,   desc: "অ্যাডভান্সড" },
+  };
+
   return (
     <div className="space-y-5">
       <div>
@@ -583,22 +596,22 @@ export function SettingsFeature() {
 
       <Card>
         <CardContent className="p-3">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "rounded-xl border px-3 py-2 text-xs font-medium transition",
-                  activeTab === tab
-                    ? "border-primary/35 bg-primary/10 text-primary"
-                    : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {TAB_LABELS[language][tab]}
-              </button>
-            ))}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 xl:grid-cols-9">
+            {tabs.map((tab) => {
+              const { Icon, desc } = TAB_META[tab];
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex flex-col items-center gap-1 rounded-2xl border p-3 text-center transition-all ${activeTab === tab ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"}`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-[11px] font-medium leading-tight">{TAB_LABELS[language][tab]}</span>
+                  <span className="text-[9px] leading-tight opacity-70">{desc}</span>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

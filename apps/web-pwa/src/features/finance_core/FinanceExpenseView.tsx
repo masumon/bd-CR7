@@ -10,6 +10,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { exportCSV } from "@/lib/exportCSV";
+import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 import { FundManagerFeature } from "./fund_manager/FundManagerFeature";
 import { ExpenseEngineFeature } from "./expense_engine/ExpenseEngineFeature";
@@ -155,8 +157,7 @@ export function FinanceExpenseView() {
           <div className="flex items-center gap-2">
             <Button onClick={() => setOpen(!open)} className="w-full sm:w-auto">{open ? "Close Forms" : "Add Fund / Expense"}</Button>
             <ExportPDFButton
-              onBuildOptions={() => ({
-                moduleName: "Finance",
+              onBuildOptions={() => ({                moduleName: "Finance",
                 moduleNameBn: "অর্থায়ন ও ব্যয়",
                 description: "Finance ledger showing expense records, categories, and approval status.",
                 descriptionBn: "অর্থায়ন লেজার — ব্যয়ের রেকর্ড, ক্যাটাগরি এবং অনুমোদনের অবস্থা।",
@@ -203,6 +204,26 @@ export function FinanceExpenseView() {
                 ],
               })}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const rows = buildExportRows();
+                exportCSV("finance-expenses.csv", rows);
+              }}
+            >
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const rows = buildExportRows();
+                exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows });
+              }}
+            >
+              HTML
+            </Button>
           </div>
         }
       />
