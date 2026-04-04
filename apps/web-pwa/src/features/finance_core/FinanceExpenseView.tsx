@@ -103,6 +103,26 @@ export function FinanceExpenseView() {
       .slice(0, 5);
   }, [rows]);
 
+  const buildExportRows = useCallback(() => {
+    return rows.map((row) => {
+      const category = typeof row.metadata?.category === "string"
+        ? row.metadata.category
+        : row.description?.split(" ")[0] || "General";
+      const subcategory = typeof row.metadata?.subcategory === "string"
+        ? row.metadata.subcategory
+        : "General";
+
+      return {
+        id: row.id,
+        category,
+        subcategory,
+        amount: Number(row.amount || 0),
+        status: String(row.status),
+        createdAt: row.created_at || "",
+      };
+    });
+  }, [rows]);
+
   const handleEditOpen = (row: ExpenseRow) => {
     setEditForm({
       amount: Number(row.amount),
@@ -206,7 +226,6 @@ export function FinanceExpenseView() {
             />
             <Button
               variant="outline"
-              size="sm"
               onClick={() => {
                 const rows = buildExportRows();
                 exportCSV("finance-expenses.csv", rows);
@@ -216,7 +235,6 @@ export function FinanceExpenseView() {
             </Button>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => {
                 const rows = buildExportRows();
                 exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows });
@@ -345,8 +363,9 @@ export function FinanceExpenseView() {
         <Dialog open title="Edit Expense" onClose={() => setEditTarget(null)}>
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Amount</label>
+              <label htmlFor="expense-edit-amount" className="mb-1 block text-xs text-muted-foreground">Amount</label>
               <input
+                id="expense-edit-amount"
                 type="number"
                 value={editForm.amount}
                 onChange={(e) => setEditForm((f) => ({ ...f, amount: Number(e.target.value) }))}
@@ -354,8 +373,9 @@ export function FinanceExpenseView() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Status</label>
+              <label htmlFor="expense-edit-status" className="mb-1 block text-xs text-muted-foreground">Status</label>
               <select
+                id="expense-edit-status"
                 value={editForm.status}
                 onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition"
@@ -365,8 +385,9 @@ export function FinanceExpenseView() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Description</label>
+              <label htmlFor="expense-edit-description" className="mb-1 block text-xs text-muted-foreground">Description</label>
               <input
+                id="expense-edit-description"
                 type="text"
                 value={editForm.description}
                 onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -374,8 +395,9 @@ export function FinanceExpenseView() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Category</label>
+              <label htmlFor="expense-edit-category" className="mb-1 block text-xs text-muted-foreground">Category</label>
               <input
+                id="expense-edit-category"
                 type="text"
                 value={editForm.category}
                 onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
@@ -383,8 +405,9 @@ export function FinanceExpenseView() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Subcategory</label>
+              <label htmlFor="expense-edit-subcategory" className="mb-1 block text-xs text-muted-foreground">Subcategory</label>
               <input
+                id="expense-edit-subcategory"
                 type="text"
                 value={editForm.subcategory}
                 onChange={(e) => setEditForm((f) => ({ ...f, subcategory: e.target.value }))}

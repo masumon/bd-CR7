@@ -108,7 +108,7 @@ export default function LoginPage() {
     } finally {
       setBiometricLoading(false);
     }
-  }, [email, persistedToken, persistedUserId, router]);
+  }, [email, persistedToken, persistedUserId]);
 
   return (
     <>
