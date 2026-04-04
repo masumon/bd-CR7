@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Loader2, Mic, Minus, Send, X } from "lucide-react";
+import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
+import { Bot, Loader2, Mic, Minus, Plus, Send, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api";
@@ -86,9 +86,16 @@ export function FloatingChat() {
   const [listening, setListening] = useState(false);
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
+  const [longPressMenu, setLongPressMenu] = useState(false);
   const token = useAuthStore((s) => s.token);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDragging = useRef(false);
+
+  // Motion values for FAB snap-to-edge
+  const fabX = useMotionValue(0);
+  const fabY = useMotionValue(0);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -222,21 +229,126 @@ export function FloatingChat() {
     }
   };
 
+  // Snap FAB to nearest horizontal edge after drag
+  const handleDragEnd = () => {
+    isDragging.current = false;
+    if (typeof window === "undefined") return;
+    // FAB default position: bottom-right (right: 16px). x=0 means at default.
+    // Compute absolute left of button center relative to viewport
+    const fabSize = 56;
+    const rightEdgeDefault = window.innerWidth - 16 - fabSize; // px from left
+    const currentAbsLeft = rightEdgeDefault + fabX.get();
+    const center = currentAbsLeft + fabSize / 2;
+    const margin = 16;
+
+    // Snap to left or right edge
+    if (center < window.innerWidth / 2) {
+      // Snap to left
+      const targetX = -(rightEdgeDefault - margin);
+      animate(fabX, targetX, { type: "spring", stiffness: 400, damping: 30 });
+    } else {
+      // Snap to right (default position x=0)
+      animate(fabX, 0, { type: "spring", stiffness: 400, damping: 30 });
+    }
+  };
+
+  // Long-press detection
+  const startLongPress = () => {
+    isDragging.current = false;
+    longPressTimer.current = setTimeout(() => {
+      if (!isDragging.current) {
+        setLongPressMenu(true);
+      }
+    }, 500);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleFabClick = () => {
+    if (longPressMenu) return; // menu was shown via long-press, don't toggle chat
+    setOpen((v) => !v);
+  };
+
   return (
     <>
-      {/* Drag constraints: allow moving up to 600px up and 300px left from default bottom-right position */}
+      {/* Long-press context menu */}
+      <AnimatePresence>
+        {longPressMenu && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
+              onClick={() => setLongPressMenu(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 12 }}
+              transition={{ duration: 0.18 }}
+              className="fixed bottom-[calc(env(safe-area-inset-bottom)+7.5rem)] right-4 z-50 flex flex-col gap-1.5 rounded-2xl border border-border/60 bg-background/97 p-2 shadow-2xl backdrop-blur-lg lg:bottom-[calc(env(safe-area-inset-bottom)+3.5rem)]"
+            >
+              <button
+                type="button"
+                onClick={() => { setLongPressMenu(false); setOpen(true); setMinimized(false); }}
+                className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Bot className="h-4 w-4 text-primary" />
+                Open AI Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLongPressMenu(false); setText("Quick Add: "); setOpen(true); setMinimized(false); }}
+                className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Plus className="h-4 w-4 text-emerald-500" />
+                Quick Add
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLongPressMenu(false); setVoice(true); setOpen(true); setMinimized(false); }}
+                className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Mic className="h-4 w-4 text-sky-500" />
+                Voice Input
+              </button>
+              <button
+                type="button"
+                onClick={() => setLongPressMenu(false)}
+                className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+                Dismiss
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Draggable FAB with snap-to-edge */}
       <motion.button
         drag
         dragMomentum={false}
-        dragElastic={0.1}
+        dragElastic={0.08}
         dragConstraints={{ top: -600, left: -300, right: 0, bottom: 0 }}
+        style={{ x: fabX, y: fabY, maxWidth: 56, maxHeight: 56 }}
+        onDragStart={() => { isDragging.current = true; cancelLongPress(); }}
+        onDragEnd={handleDragEnd}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onPointerDown={startLongPress}
+        onPointerUp={cancelLongPress}
+        onPointerLeave={cancelLongPress}
+        onClick={handleFabClick}
         aria-label={open ? "Close SUMONIX AI" : "Open SUMONIX AI"}
         className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 flex h-14 w-14 cursor-grab items-center justify-center rounded-full border border-white/20 bg-[linear-gradient(135deg,#16a34a,#15803d)] shadow-float animate-float active:cursor-grabbing lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
-        style={{ maxWidth: 56, maxHeight: 56 }}
       >
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
