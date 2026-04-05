@@ -441,6 +441,7 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
    ═══════════════════════════════════════ */
 interface SigninViewProps {
   onBack: () => void;
+  onSignup: () => void;
   onOtp: () => void;
   onGoogle: () => void;
   loading: boolean;
@@ -458,7 +459,7 @@ interface SigninViewProps {
   error: string;
 }
 function SigninView({
-  onBack, onOtp, onGoogle, loading, onSubmit,
+  onBack, onSignup, onOtp, onGoogle, loading, onSubmit,
   email, setEmail, password, setPassword,
   showPass, setShowPass, remember, setRemember,
   capsLock, setCapsLock, error,
@@ -599,7 +600,7 @@ function SigninView({
           No account?{" "}
           <button
             type="button"
-            onClick={onBack}
+            onClick={onSignup}
             style={{ color: "rgba(251,189,35,0.9)" }}
             className="font-semibold hover:underline"
           >
@@ -810,6 +811,9 @@ function SignupView({
   const [emailBlurred, setEmailBlurred] = useState(false);
   const passwordsMatch = Boolean(confirmPass) && password === confirmPass;
   const passwordError = Boolean(password) && password.length < 8;
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  const emailError = emailBlurred && Boolean(email) && !isValidEmail(email);
+  const canSubmit = !loading && fullName.trim().length > 0 && isValidEmail(email) && password.length >= 8 && passwordsMatch;
 
   const formatPhone = (v: string) => {
     const d = v.replace(/\D/g, "");
@@ -889,7 +893,7 @@ function SignupView({
             </div>
 
             {/* Email */}
-            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={emailBlurred && Boolean(email) && !email.includes("@")}>
+            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={emailError}>
               <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Email / ইমেইল</label>
               <input
@@ -903,8 +907,12 @@ function SignupView({
                 className="bdcr7-input"
                 required
                 aria-label="Email address"
+                aria-invalid={emailError}
               />
             </div>
+            {emailError && (
+              <p className="text-[11px] text-rose-300/90">Please enter a valid email address.</p>
+            )}
 
             {/* Phone */}
             <div className="bdcr7-input-wrap" data-filled={Boolean(phone)}>
@@ -1002,7 +1010,7 @@ function SignupView({
             <div className="auth-sticky-cta">
               <button
                 type="submit"
-                disabled={loading || !fullName.trim() || !email.includes("@") || password.length < 8 || !passwordsMatch}
+                disabled={!canSubmit}
                 className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -1041,19 +1049,28 @@ export default function AuthSPA() {
   const persistedToken = useAuthStore((s) => s.token);
   const persistedUserId = useAuthStore((s) => s.userId);
 
-  const [view, setView] = useState<View>("landing");
+  const [view, setView] = useState<View>("splash");
   const [showOverlay, setShowOverlay] = useState(false);
   const [authDone, setAuthDone] = useState(false);
 
-  // Splash guard: run once on mount — if a persisted token exists, verify with
-  // Supabase and redirect to dashboard. Dependencies intentionally omitted so
-  // this only fires on initial render, not on every token change.
+  // Splash guard: show splash briefly, check for existing session.
+  // If a valid session is found → redirect to dashboard.
+  // Otherwise → transition to landing after 1.5 s.
   const persistedTokenRef = useRef(persistedToken);
   useEffect(() => {
-    if (!persistedTokenRef.current) return;
-    supabase?.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace("/dashboard");
-    });
+    let splashTimer: ReturnType<typeof setTimeout> | undefined;
+    const run = async () => {
+      if (persistedTokenRef.current && supabase) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          router.replace("/dashboard");
+          return;
+        }
+      }
+      splashTimer = setTimeout(() => setView("landing"), 1500);
+    };
+    void run();
+    return () => clearTimeout(splashTimer);
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restore theme
@@ -1169,6 +1186,8 @@ export default function AuthSPA() {
     }
     const { role: currentRole } = useAuthStore.getState();
     useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
+    // Fetch the user's role so the dashboard can enforce RBAC correctly.
+    await useAuthStore.getState().fetchUser().catch(() => {});
     setOtpSuccess(true);
     setShowOverlay(true);
     setAuthDone(true);
@@ -1299,6 +1318,7 @@ export default function AuthSPA() {
               <SigninView
                 key="signin"
                 onBack={() => setView("landing")}
+                onSignup={() => setView("signup")}
                 onOtp={() => setView("otp")}
                 onGoogle={handleGoogleLogin}
                 loading={siLoading}
