@@ -98,7 +98,7 @@ function DevFooter() {
             aria-label="Facebook"
             className="auth-social-icon auth-social-icon--facebook"
           >
-            <img src="/icons/brands/facebook.svg" alt="Facebook" width={16} height={16} />
+            <Image src="/icons/brands/facebook.svg" alt="Facebook" width={16} height={16} />
           </a>
           <a
             href={DEVELOPER_CONFIG.whatsapp}
@@ -107,7 +107,7 @@ function DevFooter() {
             aria-label="WhatsApp"
             className="auth-social-icon auth-social-icon--whatsapp"
           >
-            <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={16} height={16} />
+            <Image src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={16} height={16} />
           </a>
           <a
             href={`mailto:${DEVELOPER_CONFIG.email}`}
@@ -1067,7 +1067,7 @@ export default function AuthSPA() {
           return;
         }
       }
-      splashTimer = setTimeout(() => setView("landing"), 1500);
+      splashTimer = setTimeout(() => setView("landing"), 800);
     };
     void run();
     return () => clearTimeout(splashTimer);

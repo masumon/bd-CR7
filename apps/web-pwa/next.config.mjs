@@ -33,6 +33,15 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@bdcr7/media-engine", "@bdcr7/rbac-engine", "@bdcr7/ui-system", "@bdcr7/core-logic"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {
