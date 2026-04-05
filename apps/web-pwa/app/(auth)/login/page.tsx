@@ -75,31 +75,22 @@ function ThemeToggle() {
   );
 }
 
-/* ── Developer footer ── */
+/* ── Branding footer — no personal name ── */
 function DevFooter() {
   return (
     <footer className="w-full pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="h-px w-full bg-white/[0.1]" />
-      <div className="pt-2.5 text-center">
+      <div className="h-px w-full bg-white/[0.08]" />
+      <div className="pt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
         <p
-          className="text-[10px] uppercase tracking-[0.2em]"
-          style={{ color: "rgba(255,255,255,0.35)" }}
+          className="text-[10px] tracking-[0.15em] whitespace-nowrap"
+          style={{ color: "rgba(255,255,255,0.30)" }}
         >
-          Powered by
+          Powered by{" "}
+          <span className="gold-text-gradient font-semibold uppercase tracking-[0.18em]">
+            SUMONIX AI
+          </span>
         </p>
-        <p className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em] gold-text-gradient">
-          SUMONIX AI
-        </p>
-        <p
-          className="mt-1.5 text-sm font-bold tracking-wide text-white"
-          style={{ fontFamily: "var(--font-outfit-var)" }}
-        >
-          {DEVELOPER_CONFIG.name}
-        </p>
-        <p className="mt-0.5 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-          AI Solution Architect
-        </p>
-        <div className="mt-2 flex items-center justify-center gap-3">
+        <div className="flex items-center gap-2">
           <a
             href={DEVELOPER_CONFIG.facebook}
             target="_blank"
@@ -107,7 +98,7 @@ function DevFooter() {
             aria-label="Facebook"
             className="auth-social-icon auth-social-icon--facebook"
           >
-            <img src="/icons/brands/facebook.svg" alt="Facebook" width={20} height={20} />
+            <img src="/icons/brands/facebook.svg" alt="Facebook" width={16} height={16} />
           </a>
           <a
             href={DEVELOPER_CONFIG.whatsapp}
@@ -116,14 +107,14 @@ function DevFooter() {
             aria-label="WhatsApp"
             className="auth-social-icon auth-social-icon--whatsapp"
           >
-            <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={20} height={20} />
+            <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={16} height={16} />
           </a>
           <a
             href={`mailto:${DEVELOPER_CONFIG.email}`}
             aria-label="Email"
             className="auth-social-icon auth-social-icon--email"
           >
-            <Mail className="h-[20px] w-[20px]" />
+            <Mail className="h-[16px] w-[16px]" />
           </a>
           <a
             href={DEVELOPER_CONFIG.website}
@@ -132,7 +123,7 @@ function DevFooter() {
             aria-label="Website"
             className="auth-social-icon auth-social-icon--web"
           >
-            <Globe className="h-[20px] w-[20px]" />
+            <Globe className="h-[16px] w-[16px]" />
           </a>
         </div>
       </div>
@@ -253,12 +244,6 @@ function SplashView() {
         <p className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em] gold-text-gradient">
           SUMONIX AI
         </p>
-        <p className="mt-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.32)" }}>
-          Developed by
-        </p>
-        <p className="mt-0.5 text-xs font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
-          Mumain Ahmed
-        </p>
       </div>
     </motion.main>
   );
@@ -267,6 +252,8 @@ function SplashView() {
 /* ═══════════════════════════════════════
    VIEW 2 — LANDING
    ═══════════════════════════════════════ */
+type BiometricState = "idle" | "scanning" | "success" | "failed";
+
 interface LandingViewProps {
   onSignin: () => void;
   onSignup: () => void;
@@ -274,14 +261,15 @@ interface LandingViewProps {
   onBiometric: () => void;
   bioLoading: boolean;
   bioError: string;
+  bioState: BiometricState;
 }
-function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioError }: LandingViewProps) {
+function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioError, bioState }: LandingViewProps) {
   return (
     <motion.main
       key="landing"
       {...fadeUp}
       transition={{ duration: 0.4, ease: easeAuth }}
-      className="flex h-[100dvh] w-full flex-col items-center justify-between overflow-hidden px-5"
+      className="flex h-[100dvh] w-full flex-col items-center overflow-hidden px-5"
       style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}
     >
       {/* Logo */}
@@ -294,8 +282,8 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
         </p>
       </header>
 
-      {/* Center content */}
-      <div className="flex w-full max-w-sm flex-col items-center gap-5">
+      {/* Auth card */}
+      <div className="mt-5 w-full max-w-sm flex-1 flex flex-col gap-4">
         <h2
           className="text-center text-2xl font-bold text-white"
           style={{ fontFamily: "var(--font-outfit-var)" }}
@@ -303,7 +291,6 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
           Welcome Back
         </h2>
 
-        {/* Auth card */}
         <div className="glass-bdcr7 w-full rounded-3xl p-4 space-y-3">
           <button
             type="button"
@@ -340,34 +327,92 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
             Login with OTP
           </button>
         </div>
+      </div>
 
-        {/* Fingerprint UI */}
-        <div className="flex flex-col items-center gap-3">
-          {bioError && (
-            <p className="max-w-[250px] text-center text-[11px] leading-5 text-rose-300/90">{bioError}</p>
-          )}
-          <div
-            className="fingerprint-ring relative flex h-[100px] w-[100px] items-center justify-center rounded-full border-2"
-            style={{ borderColor: "rgba(251,189,35,0.3)" }}
-          >
-            <div className="fingerprint-scan-line" />
-            <button
-              type="button"
-              onClick={onBiometric}
-              disabled={bioLoading}
-              aria-label="Tap to scan fingerprint"
-              className="biometric-hero-btn flex items-center justify-center rounded-full"
-              style={{ width: "clamp(62px,16vw,76px)", height: "clamp(62px,16vw,76px)" }}
+      {/* Biometric — bottom-center thumb zone */}
+      <div className="mt-4 flex w-full max-w-sm flex-col items-center gap-2 pb-2">
+        {bioError && bioState !== "failed" && (
+          <p className="max-w-[250px] text-center text-[11px] leading-5 text-rose-300/90">{bioError}</p>
+        )}
+
+        <AnimatePresence mode="wait">
+          {bioState === "success" ? (
+            <motion.div
+              key="bio-success"
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              className="flex flex-col items-center gap-1"
             >
-              {bioLoading
-                ? <Loader2 className="h-6 w-6 animate-spin text-amber-200/80" />
-                : <Fingerprint style={{ width: "44%", height: "44%" }} className="text-amber-200/88" />
-              }
-            </button>
-          </div>
-          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>Tap to scan fingerprint</p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.28)" }}>Demo UI — Biometric not active</p>
-        </div>
+              <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+              <p className="text-[11px] text-emerald-300">Biometric verified!</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="bio-button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <div
+                className="fingerprint-ring relative flex items-center justify-center rounded-full border-2 transition-colors"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderColor:
+                    bioState === "scanning"
+                      ? "rgba(251,189,35,0.6)"
+                      : bioState === "failed"
+                      ? "rgba(248,113,113,0.5)"
+                      : "rgba(251,189,35,0.25)",
+                }}
+              >
+                {bioState === "scanning" && <div className="fingerprint-scan-line" />}
+                <button
+                  type="button"
+                  onClick={onBiometric}
+                  disabled={bioLoading}
+                  aria-label="Tap to scan fingerprint"
+                  className="biometric-hero-btn flex items-center justify-center rounded-full"
+                  style={{ width: 62, height: 62 }}
+                >
+                  {bioState === "scanning" ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-amber-200/80" />
+                  ) : (
+                    <Fingerprint
+                      style={{ width: "44%", height: "44%" }}
+                      className={bioState === "failed" ? "text-rose-300/80" : "text-amber-200/88"}
+                    />
+                  )}
+                </button>
+              </div>
+
+              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.52)" }}>
+                {bioState === "scanning"
+                  ? "Scanning..."
+                  : bioState === "failed"
+                  ? "Biometric failed"
+                  : "Tap to scan fingerprint"}
+              </p>
+
+              {bioState === "failed" ? (
+                <button
+                  type="button"
+                  onClick={onSignin}
+                  className="text-[11px] font-medium transition-colors hover:underline"
+                  style={{ color: "rgba(251,189,35,0.85)" }}
+                >
+                  Use password instead
+                </button>
+              ) : (
+                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                  Demo UI — Biometric not active
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Footer */}
@@ -972,16 +1017,17 @@ export default function AuthSPA() {
   const persistedToken = useAuthStore((s) => s.token);
   const persistedUserId = useAuthStore((s) => s.userId);
 
-  const [view, setView] = useState<View>("splash");
+  const [view, setView] = useState<View>("landing");
   const [showOverlay, setShowOverlay] = useState(false);
   const [authDone, setAuthDone] = useState(false);
 
-  // Splash → Landing after 3s
+  // Splash guard: already authenticated → go to dashboard
   useEffect(() => {
-    if (view !== "splash") return;
-    const t = setTimeout(() => setView("landing"), 3000);
-    return () => clearTimeout(t);
-  }, [view]);
+    if (!persistedToken) return;
+    supabase?.auth.getSession().then(({ data }) => {
+      if (data.session) router.replace("/dashboard");
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restore theme
   useEffect(() => {
@@ -1133,16 +1179,19 @@ export default function AuthSPA() {
   // ─── BIOMETRIC ───────────────────────────────────────────
   const [bioLoading, setBioLoading] = useState(false);
   const [bioError, setBioError] = useState("");
+  const [bioState, setBioState] = useState<BiometricState>("idle");
 
   const handleBiometric = useCallback(async () => {
     setBioLoading(true);
     setBioError("");
+    setBioState("scanning");
     try {
       const existingSession = await supabase?.auth.getSession();
       const session = existingSession?.data.session;
       const hasSession = Boolean(persistedToken || session);
       if (!hasSession) {
         setBioError("Sign in with email once first to enable biometric.");
+        setBioState("failed");
         setBioLoading(false);
         return;
       }
@@ -1151,15 +1200,18 @@ export default function AuthSPA() {
       const userEmail = session?.user?.email || "bdcr7.user@local";
       if (!token || !userId) {
         setBioError("Session expired. Sign in with email/password first.");
+        setBioState("failed");
         setBioLoading(false);
         return;
       }
       await ensureBiometricCredential(token, userId, userEmail);
       await verifyBiometricAssertion(token);
+      setBioState("success");
       setShowOverlay(true);
       setAuthDone(true);
     } catch (err) {
       setBioError((err as Error).message || "Biometric failed.");
+      setBioState("failed");
     } finally {
       setBioLoading(false);
     }
@@ -1203,12 +1255,13 @@ export default function AuthSPA() {
             {view === "landing" && (
               <LandingView
                 key="landing"
-                onSignin={() => setView("signin")}
-                onSignup={() => setView("signup")}
-                onOtp={() => setView("otp")}
+                onSignin={() => { setBioState("idle"); setView("signin"); }}
+                onSignup={() => { setBioState("idle"); setView("signup"); }}
+                onOtp={() => { setBioState("idle"); setView("otp"); }}
                 onBiometric={handleBiometric}
                 bioLoading={bioLoading}
                 bioError={bioError}
+                bioState={bioState}
               />
             )}
 

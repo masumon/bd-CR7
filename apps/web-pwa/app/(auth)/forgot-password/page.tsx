@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, ChevronLeft, Loader2, CheckCircle, AlertCircle, Shield } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { PoweredByFooter } from "@/components/auth/PoweredByFooter";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -38,8 +39,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <main
-      className="auth-bg-bdcr7 login-shell flex h-[100dvh] items-center justify-center overflow-hidden px-5"
+      className="auth-bg-bdcr7 login-shell flex h-[100dvh] flex-col items-center justify-between overflow-hidden px-5"
+      style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}
     >
+      <div className="flex flex-1 w-full items-center justify-center">
       <motion.div
         initial={{ opacity: 0, y: 28, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -133,6 +136,8 @@ export default function ForgotPasswordPage() {
           </button>
         </div>
       </motion.div>
+      </div>
+      <PoweredByFooter />
     </main>
   );
 }
