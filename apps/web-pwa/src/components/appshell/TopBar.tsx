@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Languages, Menu, Moon, Sun, ChevronDown } from "lucide-react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,11 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
         <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label="Open menu">
           <Menu className="h-4 w-4" />
         </Button>
+
+        {/* Logo mark */}
+        <div className="hidden lg:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-sm">
+          <Image src="/icons/icon.svg" alt="S" width={32} height={32} className="h-8 w-8 object-contain" />
+        </div>
 
         {/* Project selector / branding */}
         <button

@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Camera } from "lucide-react";
@@ -11,11 +10,6 @@ import { Dialog } from "@/components/ui/dialog";
 import { FileUploadEngine } from "@/components/ui/FileUploadEngine";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
-
-const FloatingChat = dynamic(
-  () => import("@/features/sumonix_ai_ui/FloatingChat").then((m) => m.FloatingChat),
-  { ssr: false }
-);
 
 /** Derive ERP module name from current path */
 function moduleFromPath(pathname: string): string {
@@ -152,8 +146,6 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       <Dialog open={openNotifications} onClose={() => setOpenNotifications(false)} title={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
         {notificationContent}
       </Dialog>
-
-      <FloatingChat />
 
       {/* ── Global Floating Upload Button ───────────────────────────────── */}
       <button
