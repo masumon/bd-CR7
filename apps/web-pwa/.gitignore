@@ -1,0 +1,47 @@
+# Node
+node_modules/
+.pnpm-store/
+.next/
+.turbo/
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Lock
+package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS/editor
+.DS_Store
+.vscode/
+.vercel/
+
+# Next cache
+.next/cache
+.next/static
+
+# Turbo
+.turbo/
+**/.turbo/
+
+# PWA
+apps/web-pwa/public/sw.js
+apps/web-pwa/public/workbox-*.js
+apps/web-pwa/public/fallback-*.js
