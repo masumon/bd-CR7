@@ -122,12 +122,12 @@ export default function LoginPage() {
           Welcome back
         </p>
         <div className="inline-flex flex-col items-center gap-2">
-          <div className="h-16 w-16 rounded-3xl border border-primary/15 bg-white/90 p-2 shadow-[0_4px_20px_rgba(15,108,90,0.15)] dark:bg-slate-900/80">
+          <div className="h-20 w-20 rounded-full overflow-hidden shadow-[0_4px_24px_rgba(201,168,76,0.28)]">
             <Image
               src="/icons/icon.svg"
               alt="BD CR7 Logo"
-              width={48}
-              height={48}
+              width={80}
+              height={80}
               className="h-full w-full object-contain"
               priority
             />

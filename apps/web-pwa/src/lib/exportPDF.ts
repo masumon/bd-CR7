@@ -28,10 +28,16 @@ export interface ExportPDFOptions {
 
 /* ── BD CR7 logo as inline SVG data-URI ── */
 const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="48" height="48">
-  <rect width="512" height="512" rx="120" fill="#0f6c5a"/>
-  <path fill="#f6f5ef" d="M128 150h136c76 0 120 40 120 103 0 39-19 71-52 89l55 107h-65l-46-92h-83v92h-65V150zm65 56v95h69c37 0 58-17 58-48 0-30-21-47-58-47h-69z"/>
-  <circle cx="385" cy="137" r="28" fill="#c97f3a"/>
-  <path fill="#c97f3a" d="M115 393c45 0 76-17 98-44l38 38c-34 38-79 58-136 58V393z"/>
+  <circle cx="256" cy="256" r="256" fill="#1A2744"/>
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#C9A84C" stroke-width="5"/>
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#C9A84C" stroke-width="1.2" opacity="0.4"/>
+  <text x="256" y="118" text-anchor="middle" font-family="Arial,sans-serif" font-size="58" font-weight="700" fill="#C9A84C" letter-spacing="12">BD</text>
+  <path d="M 94,270 C 100,257 114,240 133,226 C 152,212 172,203 198,202 C 220,201 240,196 250,190 C 256,183 262,170 267,167 C 272,170 280,183 290,190 C 304,197 328,196 358,193 C 380,191 403,200 418,217 C 429,231 430,252 425,270 C 421,281 411,289 394,292 C 362,299 281,303 214,301 C 165,300 131,294 111,284 C 103,279 97,276 94,270 Z" fill="none" stroke="#C9A84C" stroke-width="6.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M 104,268 C 178,288 315,295 420,272" fill="none" stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M 198,203 C 188,232 184,262 187,284" fill="none" stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M 250,253 Q 328,238 405,256" fill="none" stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M 238,268 Q 316,254 405,269" fill="none" stroke="#C9A84C" stroke-width="2.8" stroke-linecap="round"/>
+  <text x="256" y="420" text-anchor="middle" font-family="Arial Black,Impact,Arial,sans-serif" font-size="116" font-weight="900" fill="#C9A84C" letter-spacing="-2">CR7</text>
 </svg>`;
 
 function pad2(n: number) { return n.toString().padStart(2, "0"); }
