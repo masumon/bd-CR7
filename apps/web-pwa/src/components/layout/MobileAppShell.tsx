@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Camera } from "lucide-react";
 
 import { AppShell } from "@/components/appshell/AppShell";
@@ -33,6 +33,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const userId = useAuthStore((state) => state.userId);
   const role = useAuthStore((state) => state.role);
   const pathname = usePathname();
+  const router = useRouter();
 
   const [dark, setDark] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn">("en");
@@ -127,6 +128,11 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
 
   if (!hydrated || loading) {
     return <div className="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  if (!userId) {
+    router.replace("/login");
+    return null;
   }
 
   return (

@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 type BiometricCredentialRow = {
   id: string;
@@ -41,16 +41,25 @@ export function isWebAuthnSupported(): boolean {
   return typeof window !== "undefined" && !!window.PublicKeyCredential && !!navigator.credentials;
 }
 
-export async function listBiometricCredentials(token: string): Promise<BiometricCredentialRow[]> {
-  return apiRequest<BiometricCredentialRow[]>("/api/ai-intelligence/biometric/credentials", { method: "GET" }, token);
+export async function listBiometricCredentials(): Promise<BiometricCredentialRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("biometric_credentials")
+    .select("id, credential_id, device_name, is_active, sign_count, transports")
+    .eq("is_active", true);
+  if (error) throw new Error(error.message || "Failed to list biometric credentials");
+  return (data ?? []) as BiometricCredentialRow[];
 }
 
 export async function ensureBiometricCredential(token: string, userId: string, userEmail: string): Promise<void> {
   if (!isWebAuthnSupported()) {
     throw new Error("WebAuthn is not supported on this browser/device.");
   }
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
 
-  const existing = await listBiometricCredentials(token);
+  const existing = await listBiometricCredentials();
   if (existing.some((item) => item.is_active)) {
     return;
   }
@@ -91,19 +100,17 @@ export async function ensureBiometricCredential(token: string, userId: string, u
   };
   const transports = typeof attestationResponse.getTransports === "function" ? attestationResponse.getTransports() : [];
 
-  await apiRequest(
-    "/api/ai-intelligence/biometric/credentials",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        credential_id: credentialId,
-        device_name: "Primary Device",
-        transports,
-        sign_count: 0,
-      }),
-    },
-    token
-  );
+  const { error: insertError } = await supabase
+    .from("biometric_credentials")
+    .insert({
+      credential_id: credentialId,
+      device_name: "Primary Device",
+      transports,
+      sign_count: 0,
+    });
+  if (insertError) {
+    throw new Error(insertError.message || "Failed to save biometric credential.");
+  }
 }
 
 export async function verifyBiometricAssertion(token: string): Promise<void> {
@@ -111,7 +118,7 @@ export async function verifyBiometricAssertion(token: string): Promise<void> {
     throw new Error("WebAuthn is not supported on this browser/device.");
   }
 
-  const credentials = await listBiometricCredentials(token);
+  const credentials = await listBiometricCredentials();
   const activeCredentials = credentials.filter((item) => item.is_active);
   if (!activeCredentials.length) {
     throw new Error("No biometric credential is enrolled for this account. Sign in once and enroll biometric first.");
