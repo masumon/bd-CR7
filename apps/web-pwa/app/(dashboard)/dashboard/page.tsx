@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  DollarSign, Users, Package, BarChart2, TrendingUp, X,
+  DollarSign, Users, Package, BarChart2, TrendingUp,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
@@ -69,12 +68,6 @@ function DonutChart({
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-/** Pixels from the right/bottom edge for the floating AI button default position */
-const AI_BTN_OFFSET_RIGHT = 64;
-const AI_BTN_OFFSET_BOTTOM = 148;
-/** Minimum pixel movement before a touch/mouse event counts as a drag (not a click) */
-const DRAG_THRESHOLD_PX = 4;
-
 /** Map internal role IDs to friendly Bangla display names */
 const ROLE_DISPLAY: Record<string, string> = {
   admin: "অ্যাডমিন",
@@ -83,116 +76,6 @@ const ROLE_DISPLAY: Record<string, string> = {
   worker: "কর্মী",
   accountant: "হিসাবরক্ষক",
 };
-
-// ─── Floating AI Button ──────────────────────────────────────────────────────
-function FloatingAIButton() {
-  const router = useRouter();
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
-  const [open, setOpen] = useState(false);
-  const dragging = useRef(false);
-  const hasMoved = useRef(false);
-  const start = useRef({ mx: 0, my: 0, px: 0, py: 0 });
-
-  useEffect(() => {
-    setPos({ x: window.innerWidth - AI_BTN_OFFSET_RIGHT, y: window.innerHeight - AI_BTN_OFFSET_BOTTOM });
-  }, []);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      if (!dragging.current || !pos) return;
-      const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
-      const dx = cx - start.current.mx;
-      const dy = cy - start.current.my;
-      if (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX) hasMoved.current = true;
-      setPos({ x: start.current.px + dx, y: start.current.py + dy });
-    };
-    const onUp = () => { dragging.current = false; };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    window.addEventListener("touchmove", onMove, { passive: true });
-    window.addEventListener("touchend", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("touchend", onUp);
-    };
-  }, [pos]);
-
-  const onDown = (e: React.MouseEvent | React.TouchEvent) => {
-    hasMoved.current = false;
-    const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
-    start.current = { mx: cx, my: cy, px: pos?.x ?? 0, py: pos?.y ?? 0 };
-    dragging.current = true;
-  };
-
-  const onClick = () => {
-    if (!hasMoved.current) setOpen(true);
-  };
-
-  if (!pos) return null;
-
-  return (
-    <>
-      <button
-        aria-label="SUMONIX AI"
-        onMouseDown={onDown}
-        onTouchStart={onDown}
-        onClick={onClick}
-        style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 50, cursor: dragging.current ? "grabbing" : "grab" }}
-        className="w-12 h-12 rounded-full bg-erp-accent flex items-center justify-center select-none shadow-float"
-      >
-        <span className="text-white font-bold text-lg leading-none">S</span>
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-end"
-          style={{ background: "rgba(0,0,0,0.55)" }}
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="w-full max-w-lg mx-auto erp-card rounded-t-3xl p-5 pb-8 animate-fade-in-up"
-            style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Handle */}
-            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-erp-accent flex items-center justify-center text-white font-bold text-sm">S</span>
-                <div>
-                  <div className="text-erp-text-primary font-semibold text-sm leading-tight">SUMONIX AI</div>
-                  <div className="text-erp-text-secondary text-xs">Construction Intelligence</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.08)" }}
-                aria-label="Close"
-              >
-                <X className="w-4 h-4 text-erp-text-primary" />
-              </button>
-            </div>
-            <p className="text-erp-text-secondary text-sm mb-4">আপনার প্রজেক্ট সম্পর্কে জিজ্ঞেস করুন...</p>
-            <div className="rounded-2xl p-3 mb-4 text-erp-text-secondary text-xs leading-relaxed" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              💡 &quot;আজকের কাজের অগ্রগতি কত?&quot; &nbsp;·&nbsp; &quot;বাজেট কত বাকি?&quot; &nbsp;·&nbsp; &quot;এই সপ্তাহের খরচ?&quot;
-            </div>
-            <button
-              onClick={() => { setOpen(false); router.push("/dashboard/ai"); }}
-              className="w-full h-11 rounded-2xl bg-erp-accent text-white font-semibold text-sm"
-            >
-              AI খুলুন (Open Full AI)
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatTaka(n: number) {
@@ -370,8 +253,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── FLOATING AI BUTTON ───────────────────────────────────────────── */}
-      <FloatingAIButton />
+      {/* ── FLOATING AI: handled globally by MobileAppShell ─────────────── */}
     </div>
   );
 }
