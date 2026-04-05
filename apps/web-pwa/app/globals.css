@@ -504,3 +504,375 @@ html.reduce-motion *::after {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ═══════════════════════════════════════
+   BD CR7 AUTH DESIGN SYSTEM
+   ═══════════════════════════════════════ */
+
+/* Font variables */
+:root {
+  --font-outfit-var: var(--font-outfit, 'Outfit', sans-serif);
+  --font-hind-var: var(--font-hind, 'Hind Siliguri', sans-serif);
+  --bdcr7-gold: #fbbd23;
+  --bdcr7-gold-hover: #d99c1b;
+  --bdcr7-bg-1: #0a1118;
+  --bdcr7-bg-2: #09171b;
+  --bdcr7-bg-3: #08201d;
+}
+
+/* ── BD CR7 Auth Background ── */
+@keyframes bdcr7GlowPulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; }
+}
+
+.auth-bg-bdcr7 {
+  background: linear-gradient(160deg, var(--bdcr7-bg-1) 0%, var(--bdcr7-bg-2) 52%, var(--bdcr7-bg-3) 100%);
+  position: relative;
+}
+
+.auth-bg-bdcr7::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 12% 15%, rgba(251,189,35,0.13) 0%, transparent 38%),
+    radial-gradient(ellipse at 88% 80%, rgba(8,32,29,0.9) 0%, transparent 42%),
+    radial-gradient(ellipse at 60% 50%, rgba(9,23,27,0.6) 0%, transparent 55%);
+  animation: bdcr7GlowPulse 18s ease-in-out infinite;
+  z-index: 0;
+}
+
+/* ── Glass Card BD CR7 ── */
+.glass-bdcr7 {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ── BD CR7 Input Wrap ── */
+.bdcr7-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(251,189,35,0.2);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+}
+
+.bdcr7-input-wrap:focus-within {
+  border-color: rgba(251,189,35,0.6);
+  box-shadow: 0 0 0 3px rgba(251,189,35,0.15);
+  background: rgba(255,255,255,0.06);
+}
+
+.bdcr7-input-wrap[data-error="true"] {
+  border-color: rgba(244,63,94,0.7);
+  box-shadow: 0 0 0 3px rgba(244,63,94,0.12);
+}
+
+.bdcr7-input-wrap[data-success="true"] {
+  border-color: rgba(34,197,94,0.7);
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.12);
+}
+
+.bdcr7-input-label {
+  position: absolute;
+  left: 2.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.45);
+  pointer-events: none;
+  font-family: var(--font-hind-var);
+  transition: all 0.18s ease;
+}
+
+.bdcr7-input-wrap:focus-within .bdcr7-input-label,
+.bdcr7-input-wrap[data-filled="true"] .bdcr7-input-label {
+  top: 0;
+  left: 2.25rem;
+  transform: translateY(-50%);
+  background: var(--bdcr7-bg-2);
+  color: var(--bdcr7-gold);
+  padding: 0 0.3rem;
+  border-radius: 6px;
+  font-size: 0.64rem;
+}
+
+.bdcr7-input {
+  flex: 1;
+  height: 52px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.92);
+  font-size: 0.9rem;
+  font-family: var(--font-outfit-var);
+  padding: 1rem 0.25rem 0.4rem 0;
+  min-width: 0;
+}
+
+.bdcr7-input::placeholder { color: transparent; }
+
+/* ── BD CR7 Gold Button ── */
+.btn-bdcr7-gold {
+  background: linear-gradient(135deg, var(--bdcr7-gold) 0%, #e9a81a 100%);
+  color: #0a1118;
+  font-family: var(--font-outfit-var);
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: none;
+  box-shadow: 0 4px 16px rgba(251,189,35,0.35);
+  transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.btn-bdcr7-gold:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--bdcr7-gold-hover) 0%, #c4891a 100%);
+  box-shadow: 0 6px 24px rgba(251,189,35,0.5);
+  filter: brightness(1.05);
+}
+
+.btn-bdcr7-gold:active:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(251,189,35,0.3);
+}
+
+.btn-bdcr7-gold:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── BD CR7 Outline Button ── */
+.btn-bdcr7-outline {
+  background: transparent;
+  color: var(--bdcr7-gold);
+  font-family: var(--font-outfit-var);
+  font-weight: 600;
+  border: 1.5px solid rgba(251,189,35,0.45);
+  transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.btn-bdcr7-outline:hover:not(:disabled) {
+  background: rgba(251,189,35,0.08);
+  border-color: rgba(251,189,35,0.7);
+  box-shadow: 0 0 0 3px rgba(251,189,35,0.1);
+}
+
+.btn-bdcr7-outline:active:not(:disabled) { transform: scale(0.96); }
+
+/* ── OTP Input Boxes ── */
+.otp-box {
+  width: clamp(40px, 12vw, 48px);
+  height: clamp(50px, 14vw, 56px);
+  border-radius: 12px;
+  border: 1.5px solid rgba(251,189,35,0.25);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255,255,255,0.95);
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  font-family: var(--font-outfit-var);
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  caret-color: var(--bdcr7-gold);
+  min-height: unset;
+}
+
+.otp-box:focus {
+  border-color: var(--bdcr7-gold);
+  box-shadow: 0 0 0 3px rgba(251,189,35,0.2);
+  background: rgba(251,189,35,0.06);
+}
+
+.otp-box.otp-filled {
+  border-color: rgba(251,189,35,0.55);
+  background: rgba(251,189,35,0.07);
+}
+
+/* ── Fingerprint Scan Animation ── */
+@keyframes fingerprintScan {
+  0%   { top: 18%; opacity: 0.9; }
+  50%  { top: 72%; opacity: 0.5; }
+  100% { top: 18%; opacity: 0.9; }
+}
+
+.fingerprint-scan-line {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(251,189,35,0.8), transparent);
+  animation: fingerprintScan 2s ease-in-out infinite;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+@keyframes fingerprintGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(251,189,35,0.2), inset 0 0 10px rgba(251,189,35,0.04); }
+  50%       { box-shadow: 0 0 40px rgba(251,189,35,0.35), inset 0 0 18px rgba(251,189,35,0.08); }
+}
+
+.fingerprint-ring {
+  animation: fingerprintGlow 2.5s ease-in-out infinite;
+}
+
+/* ── Social Provider Buttons ── */
+.social-btn-bdcr7 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  color: rgba(255,255,255,0.8);
+  min-height: unset;
+}
+
+.social-btn-bdcr7:hover:not(:disabled) {
+  border-color: rgba(251,189,35,0.4);
+  background: rgba(251,189,35,0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.social-btn-bdcr7:active:not(:disabled) { transform: scale(0.93); }
+.social-btn-bdcr7:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Theme Toggle ── */
+.theme-toggle-bdcr7 {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  right: 1rem;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255,255,255,0.65);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-height: unset;
+}
+
+.theme-toggle-bdcr7:hover {
+  border-color: rgba(251,189,35,0.4);
+  color: rgba(255,255,255,0.9);
+}
+
+/* ── Auth back button ── */
+.back-btn-bdcr7 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7);
+  transition: all 0.2s ease;
+  min-height: unset;
+  flex-shrink: 0;
+}
+
+.back-btn-bdcr7:hover { border-color: rgba(251,189,35,0.35); color: rgba(255,255,255,0.9); }
+.back-btn-bdcr7:active { transform: scale(0.94); }
+
+/* ── Error / Success banner ── */
+.bdcr7-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-radius: 14px;
+  border: 1px solid rgba(244,63,94,0.35);
+  background: rgba(244,63,94,0.1);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.8rem;
+  color: rgb(252,165,165);
+  line-height: 1.4;
+}
+
+.bdcr7-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-radius: 14px;
+  border: 1px solid rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.1);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.8rem;
+  color: rgb(134,239,172);
+  line-height: 1.4;
+}
+
+/* ── Strength bar ── */
+.strength-bar {
+  height: 3px;
+  border-radius: 99px;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+/* ── Shake animation for errors ── */
+@keyframes bdcr7Shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.bdcr7-shake {
+  animation: bdcr7Shake 0.38s ease-out;
+}
+
+/* ── Success check ── */
+@keyframes bdcr7CheckIn {
+  from { transform: scale(0.5) rotate(-45deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.bdcr7-check-in {
+  animation: bdcr7CheckIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Secure badge ── */
+.secure-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  color: rgba(34,197,94,0.7);
+  letter-spacing: 0.04em;
+}
+
+/* ── Powered by text gold gradient ── */
+.gold-text-gradient {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

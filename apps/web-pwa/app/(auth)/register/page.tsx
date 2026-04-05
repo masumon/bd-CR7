@@ -3,22 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
-  ArrowLeft,
+  ChevronLeft,
   Eye,
   EyeOff,
-  Loader,
+  Loader2,
   Check,
   AlertCircle,
   Mail,
   Lock,
   User,
-  Smartphone,
+  Phone,
   CheckCircle2,
+  Shield,
 } from "lucide-react";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
-import { DEVELOPER_CONFIG } from "@/lib/developers";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -109,39 +109,55 @@ export default function RegisterPage() {
     }
   };
 
+  const passwordsMatch = Boolean(confirmPassword) && password === confirmPassword;
+
   return (
-    <main className="register-shell auth-bg-dark auth-page flex flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col">
-        <header className="mb-2 flex items-center gap-3">
+    <main className="register-shell auth-bg-bdcr7 flex flex-col overflow-y-auto">
+      <div
+        className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5"
+        style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
+      >
+        <header className="mb-4 flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-500/35 bg-slate-900/55 text-slate-200 active:scale-95"
-            title="Go back"
+            className="back-btn-bdcr7"
+            aria-label="Go back"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-display text-2xl font-bold text-white">Create Account</h1>
+          <div>
+            <h1
+              className="text-xl font-bold text-white"
+              style={{ fontFamily: "var(--font-outfit-var)" }}
+            >
+              Create Account
+            </h1>
+            <div className="secure-badge mt-0.5">
+              <Shield className="h-3 w-3" />
+              Secure Registration
+            </div>
+          </div>
         </header>
 
         {error && (
-          <div className="mb-2 flex items-start gap-2 rounded-2xl border border-rose-400/45 bg-rose-900/20 px-3 py-2 text-sm text-rose-200">
+          <div className="bdcr7-error mb-3">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-2 flex items-center gap-2 rounded-2xl border border-emerald-400/45 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
-            <Check className="h-4 w-4" />
+          <div className="bdcr7-success mb-3">
+            <Check className="h-4 w-4 shrink-0" />
             <span>Account created successfully! Redirecting...</span>
           </div>
         )}
 
-        <section className="auth-card rounded-3xl px-3.5 py-3.5">
+        <section className="glass-bdcr7 rounded-3xl px-4 py-4">
           <form onSubmit={handleSubmit} className="space-y-2.5">
-            <div className="auth-input-wrap px-3" data-filled={Boolean(fullName)} data-error={Boolean(error) && !fullName.trim()}>
-              <User className="h-4 w-4 shrink-0 text-slate-300" />
-              <label className="auth-floating-label">Full Name / পূর্ণ নাম</label>
+            <div className="bdcr7-input-wrap" data-filled={Boolean(fullName)} data-error={Boolean(error) && !fullName.trim()}>
+              <User className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Full Name / পূর্ণ নাম</label>
               <input
                 id="fullName"
                 type="text"
@@ -149,13 +165,15 @@ export default function RegisterPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={loading}
-                className="auth-input"
+                className="bdcr7-input"
+                required
+                aria-label="Full name"
               />
             </div>
 
-            <div className="auth-input-wrap px-3" data-filled={Boolean(email)} data-error={Boolean(error) && !email.includes("@")}>
-              <Mail className="h-4 w-4 shrink-0 text-slate-300" />
-              <label className="auth-floating-label">Email / ইমেইল</label>
+            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={Boolean(email) && !email.includes("@")}>
+              <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Email / ইমেইল</label>
               <input
                 id="email"
                 type="email"
@@ -163,13 +181,15 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="auth-input"
+                className="bdcr7-input"
+                required
+                aria-label="Email address"
               />
             </div>
 
-            <div className="auth-input-wrap px-3" data-filled={Boolean(mobileNumber)}>
-              <Smartphone className="h-4 w-4 shrink-0 text-slate-300" />
-              <label className="auth-floating-label">Phone / মোবাইল</label>
+            <div className="bdcr7-input-wrap" data-filled={Boolean(mobileNumber)}>
+              <Phone className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Phone / মোবাইল</label>
               <input
                 id="mobileNumber"
                 type="tel"
@@ -177,13 +197,19 @@ export default function RegisterPage() {
                 value={mobileNumber}
                 onChange={(e) => setMobileNumber(formatPhoneNumber(e.target.value))}
                 disabled={loading}
-                className="auth-input"
+                className="bdcr7-input"
+                aria-label="Phone number"
               />
             </div>
 
-            <div className="auth-input-wrap px-3" data-filled={Boolean(password)} data-error={Boolean(password) && password.length < 8} data-success={password.length >= 8}>
-              <Lock className="h-4 w-4 shrink-0 text-slate-300" />
-              <label className="auth-floating-label">Password / পাসওয়ার্ড</label>
+            <div
+              className="bdcr7-input-wrap"
+              data-filled={Boolean(password)}
+              data-error={Boolean(password) && password.length < 8}
+              data-success={password.length >= 8}
+            >
+              <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Password / পাসওয়ার্ড</label>
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -191,12 +217,15 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="auth-input pr-9"
+                className="bdcr7-input pr-8"
+                required
+                aria-label="Password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-slate-300 transition-colors hover:text-white disabled:opacity-70"
+                style={{ minHeight: "unset" }}
+                className="shrink-0 text-white/40 hover:text-white/80 transition-colors disabled:opacity-50"
                 disabled={loading}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -206,13 +235,13 @@ export default function RegisterPage() {
             {password && <PasswordStrengthMeter password={password} showRequirements={true} />}
 
             <div
-              className="auth-input-wrap px-3"
+              className="bdcr7-input-wrap"
               data-filled={Boolean(confirmPassword)}
               data-error={Boolean(confirmPassword) && password !== confirmPassword}
-              data-success={Boolean(confirmPassword) && password === confirmPassword}
+              data-success={passwordsMatch}
             >
-              <Lock className="h-4 w-4 shrink-0 text-slate-300" />
-              <label className="auth-floating-label">Confirm Password</label>
+              <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Confirm Password</label>
               <input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
@@ -220,12 +249,15 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
-                className="auth-input pr-9"
+                className="bdcr7-input pr-8"
+                required
+                aria-label="Confirm password"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-slate-300 transition-colors hover:text-white disabled:opacity-70"
+                style={{ minHeight: "unset" }}
+                className="shrink-0 text-white/40 hover:text-white/80 transition-colors disabled:opacity-50"
                 disabled={loading}
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -234,20 +266,21 @@ export default function RegisterPage() {
 
             {confirmPassword && (
               <div
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium ${
-                  password === confirmPassword
-                    ? "border border-emerald-400/40 bg-emerald-900/20 text-emerald-200"
-                    : "border border-rose-400/40 bg-rose-900/20 text-rose-200"
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-medium ${
+                  passwordsMatch
+                    ? "border border-emerald-400/30 bg-emerald-900/15 text-emerald-300"
+                    : "border border-rose-400/30 bg-rose-900/15 text-rose-300"
                 }`}
               >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                {password === confirmPassword ? "Passwords match" : "Passwords do not match"}
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                {passwordsMatch ? "Passwords match ✓" : "Passwords do not match"}
               </div>
             )}
 
             <label
               htmlFor="terms"
-              className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-500/30 bg-slate-950/35 px-3 py-2"
+              className="flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2"
+              style={{ borderColor: "rgba(251,189,35,0.15)", background: "rgba(255,255,255,0.03)" }}
             >
               <input
                 id="terms"
@@ -255,32 +288,41 @@ export default function RegisterPage() {
                 checked={agreeToTerms}
                 onChange={(e) => setAgreeToTerms(e.target.checked)}
                 disabled={loading}
-                className="mt-0.5 h-5 w-5 rounded accent-amber-300"
+                className="mt-0.5 h-5 w-5 rounded accent-amber-400"
+                style={{ minHeight: "unset" }}
               />
-              <span className="text-xs leading-5 text-slate-200/95">I agree to the Terms of Service and Privacy Policy *</span>
+              <span className="text-xs leading-5" style={{ color: "rgba(255,255,255,0.75)" }}>
+                I agree to the Terms of Service and Privacy Policy *
+              </span>
             </label>
 
             <div className="auth-sticky-cta">
               <button
                 type="submit"
                 disabled={loading || !isFormValid}
-                className="btn-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-60"
+                className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
               >
-                {loading ? <Loader className="h-4 w-4 animate-spin" /> : "Register / নিবন্ধন করুন"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {loading ? "Registering..." : "Register Account"}
               </button>
             </div>
           </form>
 
-          <div className="my-2.5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-slate-600/40" />
-            <span className="text-xs text-slate-300">Or</span>
-            <span className="h-px flex-1 bg-slate-600/40" />
+          <div className="my-3 flex items-center gap-3">
+            <span className="h-px flex-1" style={{ background: "rgba(255,255,255,0.1)" }} />
+            <span className="text-xs" style={{ color: "rgba(255,255,255,0.38)" }}>Or</span>
+            <span className="h-px flex-1" style={{ background: "rgba(255,255,255,0.1)" }} />
           </div>
 
           <button
             onClick={handleGoogleSignUp}
             disabled={loading}
-            className="flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-slate-500/50 bg-slate-900/45 text-sm font-semibold text-slate-100 transition-all hover:bg-slate-800/65 active:scale-[0.99] disabled:opacity-60"
+            className="flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-[0.99] disabled:opacity-60"
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.05)",
+              color: "rgba(255,255,255,0.85)",
+            }}
           >
             <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -290,16 +332,18 @@ export default function RegisterPage() {
             </svg>
             Continue with Google
           </button>
-
-          <div className="mt-3 border-t border-slate-600/35 pt-2.5 text-center">
-            <p className="text-sm font-bold text-white">{DEVELOPER_CONFIG.name}</p>
-            <p className="mt-1 text-xs text-slate-300">{DEVELOPER_CONFIG.role}</p>
-          </div>
         </section>
 
-        <p className="mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-xs text-slate-300">
+        <p
+          className="mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-xs"
+          style={{ color: "rgba(255,255,255,0.5)" }}
+        >
           Already have an account?{" "}
-          <button onClick={() => router.push("/auth/login")} className="font-semibold text-amber-200 hover:text-amber-100 transition">
+          <button
+            onClick={() => router.push("/login")}
+            style={{ color: "rgba(251,189,35,0.9)" }}
+            className="font-semibold hover:underline transition"
+          >
             Sign in
           </button>
         </p>
