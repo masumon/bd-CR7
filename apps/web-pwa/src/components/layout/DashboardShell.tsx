@@ -28,7 +28,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { FloatingChat } from "@/features/sumonix_ai_ui/FloatingChat";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -545,8 +544,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           Synced successfully
         </div>
       ) : null}
-
-      <FloatingChat />
 
       <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} title={text.workspace}>
         <div className="space-y-4">

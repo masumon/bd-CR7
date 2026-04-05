@@ -1,6 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="120" fill="#0f6c5a"/>
-  <path fill="#f6f5ef" d="M128 150h136c76 0 120 40 120 103 0 39-19 71-52 89l55 107h-65l-46-92h-83v92h-65V150zm65 56v95h69c37 0 58-17 58-48 0-30-21-47-58-47h-69z"/>
-  <circle cx="385" cy="137" r="28" fill="#c97f3a"/>
-  <path fill="#c97f3a" d="M115 393c45 0 76-17 98-44l38 38c-34 38-79 58-136 58V393z"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d5c4a"/>
+      <stop offset="100%" stop-color="#0f6c5a"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <!-- Subtle top shine -->
+  <rect width="512" height="256" rx="120" fill="url(#shine)"/>
+  <!-- Gold accent -->
+  <circle cx="390" cy="118" r="46" fill="#c97f3a"/>
+  <circle cx="390" cy="118" r="32" fill="#d9922b"/>
+  <!-- Bold "S" -->
+  <text
+    x="256"
+    y="360"
+    text-anchor="middle"
+    font-family="'Arial Black', 'Helvetica Neue', Impact, sans-serif"
+    font-size="320"
+    font-weight="900"
+    fill="white"
+    filter="url(#shadow)"
+  >S</text>
 </svg>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
@@ -34,6 +35,12 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
         )}
       >
         <nav className="h-full overflow-y-auto py-2">
+          {/* Logo mark — visible on desktop icon-only sidebar */}
+          <div className="hidden lg:flex items-center justify-center py-2 mb-1">
+            <div className="h-9 w-9 overflow-hidden rounded-xl shadow-sm">
+              <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={36} height={36} className="h-9 w-9 object-contain" />
+            </div>
+          </div>
           {items.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             const Icon = item.icon;

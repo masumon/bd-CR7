@@ -1,5 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
-  <rect width="180" height="180" rx="42" fill="#0f6c5a"/>
-  <path fill="#f6f5ef" d="M45 48h48c28 0 45 15 45 39 0 15-8 27-20 34l20 39h-24l-17-34H69v34H45V48zm24 20v36h23c14 0 22-6 22-18s-8-18-22-18H69z"/>
-  <circle cx="136" cy="43" r="10" fill="#c97f3a"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d5c4a"/>
+      <stop offset="100%" stop-color="#0f6c5a"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="180" height="180" rx="42" fill="url(#bg)"/>
+  <!-- Gold accent -->
+  <circle cx="138" cy="42" r="16" fill="#c97f3a"/>
+  <!-- Bold "S" -->
+  <text
+    x="90"
+    y="128"
+    text-anchor="middle"
+    font-family="'Arial Black', 'Helvetica Neue', Impact, sans-serif"
+    font-size="112"
+    font-weight="900"
+    fill="white"
+    filter="url(#shadow)"
+  >S</text>
 </svg>
