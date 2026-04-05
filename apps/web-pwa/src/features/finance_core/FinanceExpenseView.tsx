@@ -15,6 +15,7 @@ import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 import { FundManagerFeature } from "./fund_manager/FundManagerFeature";
 import { ExpenseEngineFeature } from "./expense_engine/ExpenseEngineFeature";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 
 interface ExpenseRow {
   id: string;
@@ -358,6 +359,12 @@ export function FinanceExpenseView() {
           <ExpenseEngineFeature onSaved={loadExpenses} />
         </div>
       </Dialog>
+
+      <ProjectFilesPanel
+        module="finance"
+        category="invoice"
+        label="Invoice Proofs & Finance Documents"
+      />
 
       {editTarget && (
         <Dialog open title="Edit Expense" onClose={() => setEditTarget(null)}>

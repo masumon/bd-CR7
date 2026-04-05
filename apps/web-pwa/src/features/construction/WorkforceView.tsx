@@ -11,6 +11,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { WorkerLogsFeature } from "@/features/construction/worker_logs/WorkerLogsFeature";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { exportCSV } from "@/lib/exportCSV";
 import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
@@ -122,7 +123,7 @@ export function WorkforceView() {
     await loadWorkers();
   };
 
-  const tabs = ["Log Entry", "Attendance", "Payments"];
+  const tabs = ["Log Entry", "Attendance", "Payments", "Files"];
 
   return (
     <div className="glass rounded-2xl space-y-4">
@@ -325,6 +326,14 @@ export function WorkforceView() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {activeTab === "Files" && (
+        <ProjectFilesPanel
+          module="workforce"
+          category="work-proof"
+          label="Work Proof & Attendance Files"
+        />
       )}
 
       {editTarget && (

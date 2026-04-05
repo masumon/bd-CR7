@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
 import { ProgressCamFeature } from "@/features/construction/progress_cam/ProgressCamFeature";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
@@ -61,7 +62,7 @@ export function EvidenceView() {
     await loadRecords();
   };
 
-  const tabs = ["Upload", "Gallery", "GPS Map"];
+  const tabs = ["Upload", "Gallery", "GPS Map", "All Files"];
 
   return (
     <div className="space-y-4">
@@ -193,6 +194,14 @@ export function EvidenceView() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {activeTab === "All Files" && (
+        <ProjectFilesPanel
+          module="evidence"
+          category="site"
+          label="All Evidence Files (Centralized)"
+        />
       )}
 
       {deleteTarget && (

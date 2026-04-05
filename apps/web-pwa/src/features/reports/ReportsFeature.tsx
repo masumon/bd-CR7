@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
 
@@ -502,6 +503,12 @@ export function ReportsFeature() {
           )}
         </CardContent>
       </Card>
+
+      <ProjectFilesPanel
+        module="reports"
+        category="general"
+        label="Report Attachments & Supporting Files"
+      />
     </div>
   );
 }

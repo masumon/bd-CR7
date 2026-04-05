@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { MaterialTrackFeature } from "@/features/construction/material_track/MaterialTrackFeature";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { exportCSV } from "@/lib/exportCSV";
 import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
@@ -132,7 +133,7 @@ export function MaterialsView() {
     await loadMaterials();
   };
 
-  const tabs = ["Log Entry", "Stock Log", "Low Stock"];
+  const tabs = ["Log Entry", "Stock Log", "Low Stock", "Files"];
 
   return (
     <div className="space-y-4">
@@ -332,6 +333,14 @@ export function MaterialsView() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {activeTab === "Files" && (
+        <ProjectFilesPanel
+          module="materials"
+          category="delivery"
+          label="Delivery Proofs & Material Files"
+        />
       )}
 
       {editTarget && (
