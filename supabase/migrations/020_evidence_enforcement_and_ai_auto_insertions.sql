@@ -107,7 +107,7 @@ SELECT
   (SELECT COUNT(*) FROM ai_auto_insertions aai
      JOIN project_files pf2 ON aai.file_id = pf2.id
      WHERE pf2.project_id = p.id AND aai.auto_applied = TRUE)  AS ai_insertions_applied,
-  (SELECT COUNT(*) FROM expenses e WHERE e.metadata->>'project_id' = p.id::text) AS expense_count
+  (SELECT COUNT(*) FROM expenses) AS expense_count
 FROM projects p;
 
 -- Grant SELECT on view to authenticated
