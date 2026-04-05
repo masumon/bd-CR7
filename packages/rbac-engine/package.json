@@ -1,7 +1,9 @@
 {
   "name": "@bdcr7/rbac-engine",
   "version": "1.0.0",
+  "description": "ACTIVE — Dual-approval and role permission helpers. Imported by ExpenseEngineFeature and ProjectsFeature.",
   "private": true,
+  "bdcr7:active": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {

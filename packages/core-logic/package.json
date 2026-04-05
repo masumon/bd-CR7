@@ -1,7 +1,9 @@
 {
   "name": "@bdcr7/core-logic",
   "version": "1.0.0",
+  "description": "STUB — CSV/data utility helpers. Not yet imported by any app. Safe to extend or remove.",
   "private": true,
+  "bdcr7:stub": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {

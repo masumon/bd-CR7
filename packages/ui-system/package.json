@@ -1,7 +1,9 @@
 {
   "name": "@bdcr7/ui-system",
   "version": "1.0.0",
+  "description": "STUB — Shared UI primitives (AppCard, DeveloperBadge). Not yet imported by any app. Safe to extend or remove.",
   "private": true,
+  "bdcr7:stub": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {

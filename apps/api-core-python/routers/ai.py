@@ -9,6 +9,7 @@ from core.supabase import supabase_service
 from schemas.ai import ChatMessage, MemoryCreate
 from services.ai_engine import process_message
 from services.risk import dashboard_metrics, financial_anomalies, operational_alerts
+from services.system_monitor import run_system_scan
 
 router = APIRouter()
 
@@ -97,6 +98,16 @@ def _dashboard_reply(metrics: dict) -> str:
         f"{latest_note}\n\n"
         "Ask for anomalies, finance summary, project status, or next-step guidance."
     )
+
+
+@router.get("/alerts")
+async def get_system_alerts(user: UserContext = Depends(require_roles("super_admin", "admin"))):
+    """
+    System Awareness Engine — full cross-module health scan.
+    Returns structured alerts sorted by severity (critical first).
+    Restricted to super_admin and admin roles.
+    """
+    return run_system_scan()
 
 
 @router.get("/anomalies")

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Poppins, Noto_Sans_Bengali } from "next/font/google";
 import ServiceWorkerRegistration from "../src/components/ServiceWorkerRegistration";
+import { ToastContainer } from "@/components/ui/toast";
 import "./globals.css";
 
 const bodyFont = Inter({
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="screen-shell">
         <ServiceWorkerRegistration />
         {children}
+        <ToastContainer />
       </body>
     </html>
   );

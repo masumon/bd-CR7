@@ -1,7 +1,9 @@
 {
   "name": "@bdcr7/media-engine",
   "version": "1.0.0",
+  "description": "ACTIVE — Cloudinary upload helper. Imported by FileUploadEngine and ProgressCamFeature.",
   "private": true,
+  "bdcr7:active": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
