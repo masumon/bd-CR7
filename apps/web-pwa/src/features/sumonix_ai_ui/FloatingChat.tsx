@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import { Loader2, Mic, Minus, Send, Sparkles, X } from "lucide-react";
 
@@ -10,6 +10,9 @@ import { useAuthStore } from "@/store/authStore";
 
 // Inline "S" SVG logo for the FAB — keeps the SUMONIX brand mark
 function SumonixFabIcon({ size = 28 }: { size?: number }) {
+  const uid = useId().replace(/:/g, "");
+  const gradId = `fc-bg-${uid}`;
+  const filterId = `fc-shadow-${uid}`;
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -19,15 +22,15 @@ function SumonixFabIcon({ size = 28 }: { size?: number }) {
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id="fc-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0.06" />
         </linearGradient>
-        <filter id="fc-shadow">
+        <filter id={filterId}>
           <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#000" floodOpacity="0.4" />
         </filter>
       </defs>
-      <rect width="100" height="100" rx="24" fill="url(#fc-bg)" />
+      <rect width="100" height="100" rx="24" fill={`url(#${gradId})`} />
       <circle cx="76" cy="24" r="10" fill="#f59e0b" opacity="0.9" />
       <text
         x="50"
@@ -37,7 +40,7 @@ function SumonixFabIcon({ size = 28 }: { size?: number }) {
         fontSize="68"
         fontWeight="900"
         fill="white"
-        filter="url(#fc-shadow)"
+        filter={`url(#${filterId})`}
       >
         S
       </text>
