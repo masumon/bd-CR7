@@ -1,5 +1,2 @@
-
-> @bdcr7/core-logic@1.0.0 build D:\BD CR7 Project\packages\core-logic
-> echo core-logic build ok
-
-core-logic build ok
+ ERROR  Command was killed with SIGINT (User interruption with CTRL-C): pnpm add pnpm@10.17.1 --loglevel=error --allow-build=@pnpm/exe --no-dangerously-allow-all-builds --config.node-linker=hoisted --config.bin=bin --config.registry=https://registry.npmjs.org/
+For help, run: pnpm help run
