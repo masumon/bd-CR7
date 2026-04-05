@@ -132,6 +132,8 @@ export function FloatingChat() {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [longPressMenu, setLongPressMenu] = useState(false);
   const token = useAuthStore((s) => s.token);
+  const role  = useAuthStore((s) => s.role);
+  const [criticalAlerts, setCriticalAlerts] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,6 +191,19 @@ export function FloatingChat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Fetch critical system alerts once on mount for admin/super_admin
+  useEffect(() => {
+    const isAdmin = role === "admin" || role === "super_admin";
+    if (!isAdmin || !token) return;
+    apiRequest<{ critical_count?: number }>(
+      "/api/ai/alerts",
+      { method: "GET" },
+      token,
+    )
+      .then((res) => setCriticalAlerts(res.critical_count ?? 0))
+      .catch(() => {}); // never block UI on alert fetch failure
+  }, [token, role]);
 
   const speak = (raw: string) => {
     if (!voice || typeof window === "undefined" || !window.speechSynthesis) {
@@ -422,6 +437,12 @@ export function FloatingChat() {
         )}
         {/* inner glow */}
         <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_40%_35%,rgba(255,255,255,0.18),transparent_65%)]" />
+        {/* critical alerts badge — visible only for admin when there are critical issues */}
+        {criticalAlerts > 0 && !open && (
+          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white shadow-md">
+            {criticalAlerts > 9 ? "9+" : criticalAlerts}
+          </span>
+        )}
       </motion.button>
 
           <AnimatePresence>

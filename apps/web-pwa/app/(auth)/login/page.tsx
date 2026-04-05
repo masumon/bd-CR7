@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, FormEvent, useCallback } from "react";
 import { motion } from "framer-motion";
@@ -178,12 +179,12 @@ export default function LoginPage() {
                 <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
                   Password / পাসওয়ার্ড
                 </label>
-                <a
+                <Link
                   href="/forgot-password"
                   className="text-[11px] text-primary/80 hover:text-primary underline-offset-2 hover:underline transition-colors"
                 >
                   Forgot password? / পাসওয়ার্ড ভুলে গেছেন?
-                </a>
+                </Link>
               </div>
               <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
                 <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -219,12 +220,12 @@ export default function LoginPage() {
 
           <p className="text-center text-xs text-muted-foreground">
             No account? / অ্যাকাউন্ট নেই?{" "}
-            <a
+            <Link
               href="/register"
               className="font-medium text-primary hover:underline underline-offset-2"
             >
               Create one / তৈরি করুন
-            </a>
+            </Link>
           </p>
         </div>
       </div>
