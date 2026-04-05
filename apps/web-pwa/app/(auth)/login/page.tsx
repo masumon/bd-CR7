@@ -1021,13 +1021,16 @@ export default function AuthSPA() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [authDone, setAuthDone] = useState(false);
 
-  // Splash guard: already authenticated → go to dashboard
+  // Splash guard: run once on mount — if a persisted token exists, verify with
+  // Supabase and redirect to dashboard. Dependencies intentionally omitted so
+  // this only fires on initial render, not on every token change.
+  const persistedTokenRef = useRef(persistedToken);
   useEffect(() => {
-    if (!persistedToken) return;
+    if (!persistedTokenRef.current) return;
     supabase?.auth.getSession().then(({ data }) => {
       if (data.session) router.replace("/dashboard");
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restore theme
   useEffect(() => {
@@ -1252,18 +1255,21 @@ export default function AuthSPA() {
           <AnimatePresence mode="wait">
             {view === "splash" && <SplashView key="splash" />}
 
-            {view === "landing" && (
-              <LandingView
-                key="landing"
-                onSignin={() => { setBioState("idle"); setView("signin"); }}
-                onSignup={() => { setBioState("idle"); setView("signup"); }}
-                onOtp={() => { setBioState("idle"); setView("otp"); }}
-                onBiometric={handleBiometric}
-                bioLoading={bioLoading}
-                bioError={bioError}
-                bioState={bioState}
-              />
-            )}
+            {view === "landing" && (() => {
+              const goTo = (v: Exclude<View, "landing">) => { setBioState("idle"); setView(v); };
+              return (
+                <LandingView
+                  key="landing"
+                  onSignin={() => goTo("signin")}
+                  onSignup={() => goTo("signup")}
+                  onOtp={() => goTo("otp")}
+                  onBiometric={handleBiometric}
+                  bioLoading={bioLoading}
+                  bioError={bioError}
+                  bioState={bioState}
+                />
+              );
+            })()}
 
             {view === "signin" && (
               <SigninView
