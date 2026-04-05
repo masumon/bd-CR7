@@ -270,71 +270,86 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
       {...fadeUp}
       transition={{ duration: 0.4, ease: easeAuth }}
       className="flex h-[100dvh] w-full flex-col items-center overflow-hidden px-5"
-      style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}
+      style={{ paddingTop: "max(2.5rem, env(safe-area-inset-top))" }}
     >
       {/* Logo */}
-      <header className="flex flex-col items-center gap-1.5">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/20 bg-slate-900/60 p-2 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-          <Image src="/icons/icon.svg" alt="BD CR7" width={40} height={40} className="h-full w-full object-contain" />
+      <header className="flex flex-col items-center gap-3">
+        <div
+          className="flex items-center justify-center rounded-full bg-[#0e1f3b] shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+          style={{
+            width: 140,
+            height: 140,
+            border: "2.5px solid rgba(251,189,35,0.55)",
+          }}
+        >
+          <Image src="/icons/icon.svg" alt="BD CR7" width={110} height={110} className="object-contain" style={{ width: 110, height: 110 }} />
         </div>
-        <p className="text-xs font-semibold tracking-widest text-amber-300/80" style={{ fontFamily: "var(--font-outfit-var)" }}>
+        <p
+          className="text-2xl font-bold tracking-widest"
+          style={{ fontFamily: "var(--font-outfit-var)", color: "var(--bdcr7-gold)" }}
+        >
           BD CR7
         </p>
       </header>
 
-      {/* Auth card */}
-      <div className="mt-5 w-full max-w-sm flex-1 flex flex-col gap-4">
-        <h2
-          className="text-center text-2xl font-bold text-white"
-          style={{ fontFamily: "var(--font-outfit-var)" }}
+      {/* Welcome heading */}
+      <h2
+        className="mt-6 text-center text-4xl font-extrabold text-white"
+        style={{ fontFamily: "var(--font-outfit-var)", letterSpacing: "-0.01em" }}
+      >
+        Welcome Back
+      </h2>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Buttons */}
+      <div className="w-full max-w-sm space-y-3">
+        {/* Sign Up — outline */}
+        <button
+          type="button"
+          onClick={onSignup}
+          className="btn-bdcr7-outline flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold"
+          aria-label="Sign Up"
         >
-          Welcome Back
-        </h2>
+          <User className="h-5 w-5" />
+          Sign Up / <span style={{ fontFamily: "var(--font-hind-var)" }}>নতুন একাউন্ট</span>
+        </button>
 
-        <div className="glass-bdcr7 w-full rounded-3xl p-4 space-y-3">
-          <button
-            type="button"
-            onClick={onSignup}
-            className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
-            aria-label="Sign Up"
-          >
-            <User className="h-4 w-4" />
-            Sign Up / <span style={{ fontFamily: "var(--font-hind-var)" }}>নতুন একাউন্ট</span>
-          </button>
-
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-white/[0.1]" />
-            <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>or</span>
-            <span className="h-px flex-1 bg-white/[0.1]" />
-          </div>
-
-          <button
-            type="button"
-            onClick={onOtp}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:bg-white/[0.07] hover:border-amber-300/25 active:scale-[0.97]"
-            aria-label="Login with OTP"
-          >
-            <MessageSquare className="h-4 w-4 text-amber-300/70" />
-            Login with OTP
-          </button>
-
-          <button
-            type="button"
-            onClick={onSignin}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] transition-colors hover:text-amber-300"
-            style={{ color: "rgba(255,255,255,0.45)" }}
-            aria-label="Sign In with email and password"
-          >
-            <Lock className="h-3.5 w-3.5" />
-            Sign In with email & password
-          </button>
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-white/[0.1]" />
+          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>or</span>
+          <span className="h-px flex-1 bg-white/[0.1]" />
         </div>
 
-        {/* Push biometric to thumb zone */}
-        <div className="flex-1" />
+        {/* Login with OTP */}
+        <button
+          type="button"
+          onClick={onOtp}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:bg-white/[0.07] hover:border-amber-300/25 active:scale-[0.97]"
+          style={{ height: "52px" }}
+          aria-label="Login with OTP"
+        >
+          <MessageSquare className="h-5 w-5 text-amber-300/70" />
+          Login with OTP
+        </button>
+
+        {/* Sign In — gold filled (primary CTA) */}
+        <button
+          type="button"
+          onClick={onSignin}
+          className="btn-bdcr7-gold flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base"
+          aria-label="Sign In"
+        >
+          <Lock className="h-5 w-5" />
+          Sign In / <span style={{ fontFamily: "var(--font-hind-var)" }}>লগইন</span>
+        </button>
       </div>
 
-      {/* Biometric — bottom thumb zone (approx 75–85% height), above footer */}
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Biometric — bottom thumb zone, above footer */}
       <div className="flex w-full max-w-sm flex-col items-center gap-2 pb-3">
         {bioError && bioState !== "failed" && (
           <p className="max-w-[250px] text-center text-[11px] leading-5 text-rose-300/90">{bioError}</p>
@@ -349,7 +364,7 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
               exit={{ scale: 0.7, opacity: 0 }}
               className="flex flex-col items-center gap-1"
             >
-              <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+              <CheckCircle2 className="h-12 w-12 text-emerald-400" />
               <p className="text-[11px] text-emerald-300">Biometric verified!</p>
             </motion.div>
           ) : (
@@ -363,14 +378,14 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
               <div
                 className="fingerprint-ring relative flex items-center justify-center rounded-full border-2 transition-colors"
                 style={{
-                  width: 80,
-                  height: 80,
+                  width: 100,
+                  height: 100,
                   borderColor:
                     bioState === "scanning"
-                      ? "rgba(251,189,35,0.6)"
+                      ? "rgba(251,189,35,0.7)"
                       : bioState === "failed"
                       ? "rgba(248,113,113,0.5)"
-                      : "rgba(251,189,35,0.25)",
+                      : "rgba(251,189,35,0.4)",
                 }}
               >
                 {bioState === "scanning" && <div className="fingerprint-scan-line" />}
@@ -380,14 +395,14 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
                   disabled={bioLoading}
                   aria-label="Tap to scan fingerprint"
                   className="biometric-hero-btn flex items-center justify-center rounded-full"
-                  style={{ width: 62, height: 62 }}
+                  style={{ width: 78, height: 78 }}
                 >
                   {bioState === "scanning" ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-amber-200/80" />
+                    <Loader2 className="h-7 w-7 animate-spin text-amber-200/80" />
                   ) : (
                     <Fingerprint
-                      style={{ width: "44%", height: "44%" }}
-                      className={bioState === "failed" ? "text-rose-300/80" : "text-amber-200/88"}
+                      style={{ width: "46%", height: "46%" }}
+                      className={bioState === "failed" ? "text-rose-300/80" : "text-amber-200/90"}
                     />
                   )}
                 </button>
@@ -421,7 +436,6 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
     </motion.main>
   );
 }
-
 /* ═══════════════════════════════════════
    VIEW 3 — SIGN IN
    ═══════════════════════════════════════ */
