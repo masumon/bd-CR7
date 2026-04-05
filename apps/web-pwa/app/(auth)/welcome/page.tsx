@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 
 const SPLASH_DURATION_MS = 2400;
 
@@ -11,8 +12,17 @@ export default function WelcomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace("/login");
+    const timer = setTimeout(async () => {
+      try {
+        const result = supabase ? await supabase.auth.getSession() : null;
+        if (result?.data.session) {
+          router.replace("/dashboard");
+        } else {
+          router.replace("/login");
+        }
+      } catch {
+        router.replace("/login");
+      }
     }, SPLASH_DURATION_MS);
     return () => clearTimeout(timer);
   }, [router]);

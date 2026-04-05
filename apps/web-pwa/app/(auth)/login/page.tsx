@@ -120,7 +120,7 @@ export default function LoginPage() {
       onDone={() => router.push("/dashboard")}
     />
     <main className="login-shell auth-bg-dark auth-page flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden pb-28">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-between">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-start gap-3">
         <header className="pb-2 pt-2 text-center">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/80">Welcome back</p>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-300/25 bg-slate-950/60 p-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.32)]">
@@ -233,7 +233,7 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <footer className="dev-credit-footer">
+        <footer className="mt-auto dev-credit-footer">
           <div className="mx-auto w-full max-w-sm px-4">
             <div className="h-px w-full bg-white/[0.12]" />
             <div className="pt-3 text-center">
