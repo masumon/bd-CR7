@@ -12,6 +12,8 @@ const config: Config = {
         body: ["var(--font-body)", "Inter", "sans-serif"],
         display: ["var(--font-display)", "Poppins", "sans-serif"],
         bengali: ["var(--font-bengali)", "Noto Sans Bengali", "sans-serif"],
+        outfit: ["var(--font-outfit)", "Outfit", "sans-serif"],
+        hind: ["var(--font-hind)", "Hind Siliguri", "sans-serif"],
       },
       colors: {
         background: "hsl(var(--background))",

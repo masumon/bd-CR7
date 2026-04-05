@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 
-const SPLASH_DURATION_MS = 2400;
+const SPLASH_DURATION_MS = 2800;
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -28,30 +28,45 @@ export default function WelcomePage() {
   }, [router]);
 
   return (
-    <main className="auth-page auth-bg-dark flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden">
+    <main
+      className="auth-bg-bdcr7 flex h-[100dvh] min-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden relative"
+    >
+      {/* Animated bg overlay (from CSS class) */}
       <motion.section
-        initial={{ opacity: 0, scale: 0.95, y: 14 }}
+        initial={{ opacity: 0, scale: 0.94, y: 18 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-1 flex-col items-center justify-center text-center"
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 flex flex-1 flex-col items-center justify-center text-center px-5"
       >
         <motion.div
-          animate={{ scale: [1, 1.05, 1], opacity: [0.96, 1, 0.96] }}
-          transition={{ repeat: Infinity, duration: 2.1, ease: "easeInOut" }}
-          className="mb-5 rounded-3xl border border-amber-300/20 bg-slate-900/70 p-4 shadow-[0_0_42px_rgba(250,204,21,0.16)]"
+          animate={{ scale: [1, 1.06, 1], opacity: [0.94, 1, 0.94] }}
+          transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+          className="mb-6 rounded-3xl border p-5"
+          style={{
+            borderColor: "rgba(251,189,35,0.2)",
+            background: "rgba(10,17,24,0.65)",
+            boxShadow: "0 0 48px rgba(251,189,35,0.18)",
+          }}
         >
-          <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={84} height={84} priority />
+          <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={88} height={88} priority />
         </motion.div>
 
-        <h1 className="font-display text-3xl font-bold tracking-tight text-white">Welcome / স্বাগতম</h1>
+        <h1
+          className="text-3xl font-bold tracking-tight text-white"
+          style={{ fontFamily: "var(--font-outfit-var)" }}
+        >
+          Welcome /{" "}
+          <span style={{ fontFamily: "var(--font-hind-var)" }}>স্বাগতম</span>
+        </h1>
 
-        <div className="mt-5 flex items-center justify-center gap-2">
+        <div className="mt-6 flex items-center justify-center gap-2.5">
           {[0, 1, 2].map((dot) => (
             <motion.span
               key={dot}
-              className="h-2.5 w-2.5 rounded-full bg-amber-300"
-              animate={{ scale: [1, 1.42, 1], opacity: [0.35, 1, 0.35] }}
-              transition={{ repeat: Infinity, duration: 0.95, delay: dot * 0.14, ease: "easeInOut" }}
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: "#fbbd23" }}
+              animate={{ scale: [1, 1.45, 1], opacity: [0.3, 1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 0.95, delay: dot * 0.16, ease: "easeInOut" }}
             />
           ))}
         </div>
@@ -60,24 +75,33 @@ export default function WelcomePage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.35, duration: 0.4 }}
-        className="pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center"
+        transition={{ delay: 0.4, duration: 0.45 }}
+        className="relative z-10 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center"
       >
-        <p className="text-[10px] uppercase tracking-[0.22em] text-white/38">Powered by</p>
         <p
-          className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em]"
-          style={{
-            background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
+          className="text-[10px] uppercase tracking-[0.22em]"
+          style={{ color: "rgba(255,255,255,0.32)" }}
+        >
+          Powered by
+        </p>
+        <p
+          className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em] gold-text-gradient"
         >
           SUMONIX AI
         </p>
         <div className="mt-2.5">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-white/38">Developed by</p>
-          <p className="mt-0.5 text-xs font-medium text-white/82">Mumain Ahmed</p>
+          <p
+            className="text-[10px] uppercase tracking-[0.18em]"
+            style={{ color: "rgba(255,255,255,0.32)" }}
+          >
+            Developed by
+          </p>
+          <p
+            className="mt-0.5 text-xs font-bold text-white"
+            style={{ fontFamily: "var(--font-outfit-var)" }}
+          >
+            Mumain Ahmed
+          </p>
         </div>
       </motion.div>
     </main>

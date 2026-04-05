@@ -1,296 +1,1291 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, FormEvent, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  FormEvent,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye,
   EyeOff,
   Loader2,
   Mail,
   Lock,
+  Phone,
+  User,
   Fingerprint,
+  ChevronLeft,
   Globe,
-  ChevronDown,
+  CheckCircle2,
+  AlertCircle,
+  Sun,
+  Moon,
+  Shield,
+  RefreshCcw,
+  MessageSquare,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
 import { DEVELOPER_CONFIG } from "@/lib/developers";
 import { ensureBiometricCredential, verifyBiometricAssertion } from "@/lib/webauthn";
 import { LoginLoadingOverlay } from "@/components/auth/LoginLoadingOverlay";
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const login = useAuthStore((s) => s.login);
-  const persistedToken = useAuthStore((s) => s.token);
-  const persistedUserId = useAuthStore((s) => s.userId);
+type View = "splash" | "landing" | "signin" | "signup" | "otp";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [biometricLoading, setBiometricLoading] = useState(false);
-  const [biometricMode, setBiometricMode] = useState<"fingerprint" | "face">("fingerprint");
-  const [error, setError] = useState("");
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [authTransitionDone, setAuthTransitionDone] = useState(false);
-  const [showEmailForm, setShowEmailForm] = useState(false);
+const easeAuth = [0.4, 0, 0.2, 1] as const;
+const slideRight = {
+  initial: { opacity: 0, x: 36 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -36 },
+};
+const slideLeft = {
+  initial: { opacity: 0, x: -36 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 36 },
+};
+const fadeUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -14 },
+};
 
-  // Restore theme preference
+/* ── Theme toggle ── */
+function ThemeToggle() {
+  const [isDark, setIsDark] = useState(true);
   useEffect(() => {
-    const stored = window.localStorage.getItem("bdcr7-theme");
-    const prefersDark =
-      stored === "dark" ||
-      (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.classList.toggle("dark", prefersDark);
+    const stored = localStorage.getItem("bdcr7-theme");
+    setIsDark(stored ? stored === "dark" : document.documentElement.classList.contains("dark"));
   }, []);
-
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setAuthTransitionDone(false);
-    setLoading(true);
-    try {
-      await login(email, password);
-      setShowWelcome(true);
-      setAuthTransitionDone(true);
-    } catch (err) {
-      setError((err as Error).message);
-      setShowWelcome(false);
-    } finally {
-      setLoading(false);
-    }
+  const toggle = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("bdcr7-theme", next ? "dark" : "light");
   };
-
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setError("Enter your email first, then tap Forgot password.");
-      return;
-    }
-    if (!supabase) return;
-    setLoading(true);
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
-    });
-    setLoading(false);
-    setError(
-      resetErr ? resetErr.message : "Password reset email sent. Check your inbox."
-    );
-  };
-
-  const handleBiometric = useCallback(async (mode: "fingerprint" | "face") => {
-    setBiometricMode(mode);
-    setBiometricLoading(true);
-    setError("");
-    try {
-      const existingSession = await supabase?.auth.getSession();
-      const session = existingSession?.data.session;
-      const hasRememberedSession = Boolean(persistedToken || session);
-
-      if (!hasRememberedSession) {
-        setError("Biometric unlock needs a remembered session first. Sign in with email and password once, then try biometric unlock.");
-        setShowEmailForm(true);
-        return;
-      }
-
-      const token = persistedToken || session?.access_token;
-      const userId = persistedUserId || session?.user?.id;
-      const userEmail = session?.user?.email || email || "bdcr7.user@local";
-
-      if (!token || !userId) {
-        setError("Session metadata is unavailable. Sign in with email/password first.");
-        setShowEmailForm(true);
-        return;
-      }
-
-      await ensureBiometricCredential(token, userId, userEmail);
-      await verifyBiometricAssertion(token);
-
-      setShowWelcome(true);
-    } catch (err) {
-      const message = (err as Error).message || "Biometric quick unlock failed.";
-      setError(message);
-    } finally {
-      setBiometricLoading(false);
-    }
-  }, [email, persistedToken, persistedUserId]);
-
   return (
-    <>
-      <LoginLoadingOverlay
-        visible={loading || showWelcome}
-        complete={authTransitionDone}
-        onDone={() => router.push("/dashboard")}
-      />
+    <button type="button" onClick={toggle} aria-label="Toggle theme" className="theme-toggle-bdcr7">
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
+  );
+}
 
-      <main className="login-shell auth-bg-dark h-[100dvh] overflow-hidden flex flex-col items-center px-5">
-
-        {/* ── Logo (top) ── */}
-        <header className="w-full pt-[max(2rem,env(safe-area-inset-top))] text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-300/20 bg-slate-950/60 p-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.32)]">
-            <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={52} height={52} className="h-full w-full object-contain" priority />
-          </div>
-          <h1 className="mt-2 font-display text-lg font-bold tracking-tight text-white">BD CR7</h1>
-        </header>
-
-        {/* flex spacer — slightly larger to push button below center */}
-        <div className="flex-1" />
-
-        {/* ── Biometric hero (~55% from top) ── */}
-        <div className="flex flex-col items-center gap-3">
-          {/* Error message */}
-          {error && (
-            <div className={`max-w-[270px] rounded-2xl border px-3 py-2 text-center text-[11px] leading-5 ${
-              error.includes("sent") || error.includes("successfully")
-                ? "border-emerald-400/40 bg-emerald-900/20 text-emerald-200"
-                : "border-rose-400/40 bg-rose-900/20 text-rose-200"
-            }`}>
-              {error}
-            </div>
-          )}
-
-          {/* 96px touch target wrapping the clamp-sized button */}
-          <div
-            className="flex items-center justify-center"
-            style={{ width: 96, height: 96 }}
+/* ── Developer footer ── */
+function DevFooter() {
+  return (
+    <footer className="w-full pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="h-px w-full bg-white/[0.1]" />
+      <div className="pt-2.5 text-center">
+        <p
+          className="text-[10px] uppercase tracking-[0.2em]"
+          style={{ color: "rgba(255,255,255,0.35)" }}
+        >
+          Powered by
+        </p>
+        <p className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em] gold-text-gradient">
+          SUMONIX AI
+        </p>
+        <p
+          className="mt-1.5 text-sm font-bold tracking-wide text-white"
+          style={{ fontFamily: "var(--font-outfit-var)" }}
+        >
+          {DEVELOPER_CONFIG.name}
+        </p>
+        <p className="mt-0.5 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+          AI Solution Architect
+        </p>
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <a
+            href={DEVELOPER_CONFIG.facebook}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Facebook"
+            className="auth-social-icon auth-social-icon--facebook"
           >
-            <button
-              type="button"
-              onClick={() => handleBiometric("fingerprint")}
-              disabled={biometricLoading}
-              aria-label="Sign in with biometric"
-              className="biometric-hero-btn flex items-center justify-center rounded-full"
-              style={{
-                width: "clamp(64px, 18vw, 84px)",
-                height: "clamp(64px, 18vw, 84px)",
-              }}
-            >
-              {biometricLoading && biometricMode === "fingerprint" ? (
-                <Loader2 className="h-7 w-7 animate-spin text-amber-200/80" />
-              ) : (
-                <Fingerprint
-                  className="text-amber-200/88"
-                  style={{ width: "44%", height: "44%" }}
-                />
-              )}
-            </button>
-          </div>
+            <img src="/icons/brands/facebook.svg" alt="Facebook" width={20} height={20} />
+          </a>
+          <a
+            href={DEVELOPER_CONFIG.whatsapp}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="WhatsApp"
+            className="auth-social-icon auth-social-icon--whatsapp"
+          >
+            <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={20} height={20} />
+          </a>
+          <a
+            href={`mailto:${DEVELOPER_CONFIG.email}`}
+            aria-label="Email"
+            className="auth-social-icon auth-social-icon--email"
+          >
+            <Mail className="h-[20px] w-[20px]" />
+          </a>
+          <a
+            href={DEVELOPER_CONFIG.website}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Website"
+            className="auth-social-icon auth-social-icon--web"
+          >
+            <Globe className="h-[20px] w-[20px]" />
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+}
 
-          {/* Subtle email-form toggle */}
+/* ── Social row ── */
+function SocialRow({ onGoogle, loading }: { onGoogle: () => void; loading: boolean }) {
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-white/[0.1]" />
+        <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>
+          Or continue with
+        </span>
+        <span className="h-px flex-1 bg-white/[0.1]" />
+      </div>
+      <div className="flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={onGoogle}
+          disabled={loading}
+          title="Continue with Google"
+          className="social-btn-bdcr7"
+          aria-label="Continue with Google"
+        >
+          <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+        </button>
+        <button
+          type="button"
+          disabled
+          title="Facebook (Coming Soon)"
+          className="social-btn-bdcr7"
+          aria-label="Facebook — Coming Soon"
+        >
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="#1877F2">
+            <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.03 4.388 11.026 10.125 11.927v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.27h3.328l-.532 3.49h-2.796v8.437C19.612 23.1 24 18.103 24 12.073z"/>
+          </svg>
+        </button>
+        <button
+          type="button"
+          disabled
+          title="Microsoft (Coming Soon)"
+          className="social-btn-bdcr7"
+          aria-label="Microsoft — Coming Soon"
+        >
+          <svg className="h-[16px] w-[16px]" viewBox="0 0 21 21" fill="none">
+            <rect x="0" y="0" width="10" height="10" fill="#F25022"/>
+            <rect x="11" y="0" width="10" height="10" fill="#7FBA00"/>
+            <rect x="0" y="11" width="10" height="10" fill="#00A4EF"/>
+            <rect x="11" y="11" width="10" height="10" fill="#FFB900"/>
+          </svg>
+        </button>
+        <button
+          type="button"
+          disabled
+          title="Apple (Coming Soon)"
+          className="social-btn-bdcr7"
+          aria-label="Apple — Coming Soon"
+        >
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   VIEW 1 — SPLASH
+   ═══════════════════════════════════════ */
+function SplashView() {
+  return (
+    <motion.main
+      key="splash"
+      {...fadeUp}
+      transition={{ duration: 0.45, ease: easeAuth }}
+      className="flex h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-5"
+    >
+      <motion.div
+        animate={{ scale: [1, 1.06, 1], opacity: [0.95, 1, 0.95] }}
+        transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+        className="mb-6 rounded-3xl border border-amber-300/20 bg-slate-900/60 p-5 shadow-[0_0_48px_rgba(251,189,35,0.18)]"
+      >
+        <Image src="/icons/icon.svg" alt="BD CR7" width={88} height={88} priority />
+      </motion.div>
+
+      <h1
+        className="text-3xl font-bold tracking-tight text-white"
+        style={{ fontFamily: "var(--font-outfit-var)" }}
+      >
+        Welcome / <span style={{ fontFamily: "var(--font-hind-var)" }}>স্বাগতম</span>
+      </h1>
+
+      <div className="mt-6 flex items-center justify-center gap-2.5">
+        {[0, 1, 2].map((dot) => (
+          <motion.span
+            key={dot}
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: "var(--bdcr7-gold)" }}
+            animate={{ scale: [1, 1.45, 1], opacity: [0.3, 1, 0.3] }}
+            transition={{ repeat: Infinity, duration: 0.95, delay: dot * 0.16, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
+        <p className="text-[10px] uppercase tracking-[0.22em]" style={{ color: "rgba(255,255,255,0.32)" }}>
+          Powered by
+        </p>
+        <p className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em] gold-text-gradient">
+          SUMONIX AI
+        </p>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.32)" }}>
+          Developed by
+        </p>
+        <p className="mt-0.5 text-xs font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
+          Mumain Ahmed
+        </p>
+      </div>
+    </motion.main>
+  );
+}
+
+/* ═══════════════════════════════════════
+   VIEW 2 — LANDING
+   ═══════════════════════════════════════ */
+interface LandingViewProps {
+  onSignin: () => void;
+  onSignup: () => void;
+  onOtp: () => void;
+  onBiometric: () => void;
+  bioLoading: boolean;
+  bioError: string;
+}
+function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioError }: LandingViewProps) {
+  return (
+    <motion.main
+      key="landing"
+      {...fadeUp}
+      transition={{ duration: 0.4, ease: easeAuth }}
+      className="flex h-[100dvh] w-full flex-col items-center justify-between overflow-hidden px-5"
+      style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}
+    >
+      {/* Logo */}
+      <header className="flex flex-col items-center gap-1.5">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/20 bg-slate-900/60 p-2 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
+          <Image src="/icons/icon.svg" alt="BD CR7" width={40} height={40} className="h-full w-full object-contain" />
+        </div>
+        <p className="text-xs font-semibold tracking-widest text-amber-300/80" style={{ fontFamily: "var(--font-outfit-var)" }}>
+          BD CR7
+        </p>
+      </header>
+
+      {/* Center content */}
+      <div className="flex w-full max-w-sm flex-col items-center gap-5">
+        <h2
+          className="text-center text-2xl font-bold text-white"
+          style={{ fontFamily: "var(--font-outfit-var)" }}
+        >
+          Welcome Back
+        </h2>
+
+        {/* Auth card */}
+        <div className="glass-bdcr7 w-full rounded-3xl p-4 space-y-3">
           <button
             type="button"
-            onClick={() => setShowEmailForm((v) => !v)}
-            className="flex items-center gap-1 text-[11px] text-white/38 transition-colors hover:text-white/60"
+            onClick={onSignin}
+            className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
+            aria-label="Sign In"
           >
-            {showEmailForm ? "Use biometric" : "Sign in with email"}
-            <ChevronDown
-              className={`h-3 w-3 transition-transform duration-200 ${showEmailForm ? "rotate-180" : ""}`}
-            />
+            <Lock className="h-4 w-4" />
+            Sign In / <span style={{ fontFamily: "var(--font-hind-var)" }}>লগইন</span>
+          </button>
+          <button
+            type="button"
+            onClick={onSignup}
+            className="btn-bdcr7-outline flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
+            aria-label="Sign Up"
+          >
+            <User className="h-4 w-4" />
+            Sign Up / <span style={{ fontFamily: "var(--font-hind-var)" }}>নতুন একাউন্ট</span>
+          </button>
+
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-white/[0.1]" />
+            <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>or</span>
+            <span className="h-px flex-1 bg-white/[0.1]" />
+          </div>
+
+          <button
+            type="button"
+            onClick={onOtp}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:bg-white/[0.07] hover:border-amber-300/25 active:scale-[0.97]"
+            aria-label="Login with OTP"
+          >
+            <MessageSquare className="h-4 w-4 text-amber-300/70" />
+            Login with OTP
           </button>
         </div>
 
-        {/* flex spacer — smaller to sit at ~55% */}
-        <div className="flex-[0.8]" />
+        {/* Fingerprint UI */}
+        <div className="flex flex-col items-center gap-3">
+          {bioError && (
+            <p className="max-w-[250px] text-center text-[11px] leading-5 text-rose-300/90">{bioError}</p>
+          )}
+          <div
+            className="fingerprint-ring relative flex h-[100px] w-[100px] items-center justify-center rounded-full border-2"
+            style={{ borderColor: "rgba(251,189,35,0.3)" }}
+          >
+            <div className="fingerprint-scan-line" />
+            <button
+              type="button"
+              onClick={onBiometric}
+              disabled={bioLoading}
+              aria-label="Tap to scan fingerprint"
+              className="biometric-hero-btn flex items-center justify-center rounded-full"
+              style={{ width: "clamp(62px,16vw,76px)", height: "clamp(62px,16vw,76px)" }}
+            >
+              {bioLoading
+                ? <Loader2 className="h-6 w-6 animate-spin text-amber-200/80" />
+                : <Fingerprint style={{ width: "44%", height: "44%" }} className="text-amber-200/88" />
+              }
+            </button>
+          </div>
+          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>Tap to scan fingerprint</p>
+          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.28)" }}>Demo UI — Biometric not active</p>
+        </div>
+      </div>
 
-        {/* ── Developer credit (bottom) ── */}
-        <footer className="w-full pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="h-px w-full bg-white/[0.11]" />
-          <div className="pt-2.5 text-center">
-            <p className="text-sm font-bold tracking-wide text-white">{DEVELOPER_CONFIG.name}</p>
-            <p className="mt-0.5 text-[11px] text-white/52">AI Solution Architect</p>
-            <div className="mt-2 flex items-center justify-center gap-3">
-              <a href={DEVELOPER_CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="auth-social-icon auth-social-icon--facebook">
-                <img src="/icons/brands/facebook.svg" alt="Facebook" width={22} height={22} />
-              </a>
-              <a href={DEVELOPER_CONFIG.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="auth-social-icon auth-social-icon--whatsapp">
-                <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={22} height={22} />
-              </a>
-              <a href={`mailto:${DEVELOPER_CONFIG.email}`} aria-label="Email" className="auth-social-icon auth-social-icon--email">
-                <Mail className="h-[22px] w-[22px]" />
-              </a>
-              <a href={DEVELOPER_CONFIG.website} target="_blank" rel="noreferrer" aria-label="Website" className="auth-social-icon auth-social-icon--web">
-                <Globe className="h-[22px] w-[22px]" />
-              </a>
+      {/* Footer */}
+      <DevFooter />
+    </motion.main>
+  );
+}
+
+/* ═══════════════════════════════════════
+   VIEW 3 — SIGN IN
+   ═══════════════════════════════════════ */
+interface SigninViewProps {
+  onBack: () => void;
+  onOtp: () => void;
+  onGoogle: () => void;
+  loading: boolean;
+  onSubmit: (e: FormEvent) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  showPass: boolean;
+  setShowPass: (v: boolean) => void;
+  remember: boolean;
+  setRemember: (v: boolean) => void;
+  capsLock: boolean;
+  setCapsLock: (v: boolean) => void;
+  error: string;
+}
+function SigninView({
+  onBack, onOtp, onGoogle, loading, onSubmit,
+  email, setEmail, password, setPassword,
+  showPass, setShowPass, remember, setRemember,
+  capsLock, setCapsLock, error,
+}: SigninViewProps) {
+  return (
+    <motion.main
+      key="signin"
+      {...slideRight}
+      transition={{ duration: 0.35, ease: easeAuth }}
+      className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden"
+      style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
+    >
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5">
+        {/* Header */}
+        <header className="mb-4 flex items-center gap-3">
+          <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
+              Sign In
+            </h1>
+            <div className="secure-badge mt-0.5">
+              <Shield className="h-3 w-3" />
+              Secure Login
             </div>
           </div>
-        </footer>
-      </main>
+        </header>
 
-      {/* ── Email / password form (visually hidden when not shown; in DOM for functionality) ── */}
-      <div
-        aria-hidden={!showEmailForm}
-        className={`fixed inset-x-0 z-50 px-5 transition-all duration-300 ${
-          showEmailForm
-            ? "bottom-[max(6rem,calc(6rem+env(safe-area-inset-bottom)))] opacity-100 pointer-events-auto translate-y-0"
-            : "bottom-0 opacity-0 pointer-events-none translate-y-3"
-        }`}
-      >
-        <div className="auth-card mx-auto w-full max-w-sm rounded-3xl px-4 py-4">
-          <form onSubmit={handleLogin} className="space-y-2.5">
-            <div className="auth-input-wrap px-3" data-filled={Boolean(email)} data-error={Boolean(error) && !email}>
-              <Mail className="h-4 w-4 shrink-0 text-slate-300" />
-              <label className="auth-floating-label">Email / ইমেইল</label>
+        {error && (
+          <div className="bdcr7-error mb-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="glass-bdcr7 rounded-3xl p-4">
+          <form onSubmit={onSubmit} className="space-y-3">
+            {/* Email */}
+            <div className="bdcr7-input-wrap" data-filled={Boolean(email)}>
+              <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Email / ইমেইল</label>
               <input
                 type="email"
                 autoComplete="email"
                 placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="auth-input"
+                className="bdcr7-input"
                 required
+                aria-label="Email address"
               />
             </div>
 
-            <div className="auth-input-wrap px-3" data-filled={Boolean(password)} data-error={Boolean(error) && !password}>
-              <Lock className="h-4 w-4 shrink-0 text-slate-300" />
-              <label className="auth-floating-label">Password / পাসওয়ার্ড</label>
+            {/* Password */}
+            <div
+              className="bdcr7-input-wrap"
+              data-filled={Boolean(password)}
+              data-error={Boolean(error) && !password}
+            >
+              <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Password / পাসওয়ার্ড</label>
               <input
                 type={showPass ? "text" : "password"}
                 autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="auth-input pr-9"
+                onKeyDown={(e) => setCapsLock(e.getModifierState("CapsLock"))}
+                className="bdcr7-input pr-8"
                 required
+                aria-label="Password"
               />
               <button
                 type="button"
-                onClick={() => setShowPass((v) => !v)}
+                onClick={() => setShowPass(!showPass)}
                 aria-label={showPass ? "Hide password" : "Show password"}
-                className="text-slate-300 transition-colors hover:text-white"
+                className="shrink-0 text-white/40 hover:text-white/80 transition-colors"
+                style={{ minHeight: "unset" }}
               >
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
 
-            <div className="flex justify-end">
-              <Link
+            {capsLock && (
+              <p className="text-[11px]" style={{ color: "rgba(251,189,35,0.8)" }}>
+                ⚠ Caps Lock is on
+              </p>
+            )}
+
+            {/* Options row */}
+            <div className="flex items-center justify-between">
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] text-white/60">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="h-4 w-4 rounded accent-amber-400"
+                  style={{ minHeight: "unset" }}
+                />
+                Remember me
+              </label>
+              <a
                 href="/forgot-password"
-                className="text-[11px] font-medium text-amber-200/90 underline-offset-2 transition-colors hover:text-amber-100 hover:underline"
+                className="text-[11px] font-medium transition-colors hover:underline"
+                style={{ color: "rgba(251,189,35,0.85)" }}
               >
-                Forgot password? / পাসওয়ার্ড ভুলে গেছেন?
-              </Link>
+                Forgot password?
+              </a>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn-gold flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-60"
+              className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "Signing in..." : "Sign in / সাইন ইন"}
+              {loading ? "Signing in..." : "Log In to Account"}
             </button>
           </form>
 
-          <p className="mt-2 text-center text-[11px] text-slate-300/90">
-            No account? / অ্যাকাউন্ট নেই?{" "}
-            <Link href="/register" className="font-semibold text-amber-200 hover:text-amber-100">
-              Create one / তৈরি করুন
-            </Link>
-          </p>
+          <SocialRow onGoogle={onGoogle} loading={loading} />
+
+          <button
+            type="button"
+            onClick={onOtp}
+            className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] transition-colors hover:text-amber-300"
+            style={{ color: "rgba(255,255,255,0.45)" }}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            Sign in with OTP instead
+          </button>
+        </div>
+
+        <p className="mt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+          No account?{" "}
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ color: "rgba(251,189,35,0.9)" }}
+            className="font-semibold hover:underline"
+          >
+            Create one
+          </button>
+        </p>
+      </div>
+    </motion.main>
+  );
+}
+
+/* ═══════════════════════════════════════
+   VIEW 4 — OTP LOGIN
+   ═══════════════════════════════════════ */
+interface OtpViewProps {
+  onBack: () => void;
+  contact: string;
+  setContact: (v: string) => void;
+  step: 1 | 2;
+  digits: string[];
+  onDigitInput: (i: number, v: string) => void;
+  onDigitKeyDown: (i: number, e: React.KeyboardEvent<HTMLInputElement>) => void;
+  digitRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
+  onSend: () => void;
+  onVerify: () => void;
+  onResend: () => void;
+  resendTimer: number;
+  loading: boolean;
+  error: string;
+  success: boolean;
+}
+function OtpView({
+  onBack, contact, setContact, step, digits,
+  onDigitInput, onDigitKeyDown, digitRefs,
+  onSend, onVerify, onResend, resendTimer, loading, error, success,
+}: OtpViewProps) {
+  return (
+    <motion.main
+      key="otp"
+      {...slideRight}
+      transition={{ duration: 0.35, ease: easeAuth }}
+      className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden"
+      style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
+    >
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5">
+        <header className="mb-4 flex items-center gap-3">
+          <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
+            OTP Login
+          </h1>
+        </header>
+
+        <div className="glass-bdcr7 rounded-3xl p-5 space-y-4">
+          {error && (
+            <div className="bdcr7-error">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+          {success && (
+            <div className="bdcr7-success">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 bdcr7-check-in" />
+              <span>OTP verified! Signing you in...</span>
+            </div>
+          )}
+
+          {/* STEP 1 */}
+          <AnimatePresence mode="wait">
+            {step === 1 && (
+              <motion.div key="otp-step1" {...fadeUp} transition={{ duration: 0.28 }} className="space-y-3">
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-outfit-var)" }}>
+                  Enter your phone number to receive an OTP
+                </p>
+                <div className="bdcr7-input-wrap" data-filled={Boolean(contact)}>
+                  <Phone className="h-4 w-4 shrink-0 text-amber-300/60" />
+                  <label className="bdcr7-input-label">Phone / ফোন নম্বর</label>
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="+880 1XXXX XXXXX"
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    className="bdcr7-input"
+                    aria-label="Phone number"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={onSend}
+                  disabled={loading || !contact.trim()}
+                  className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
+                  {loading ? "Sending OTP..." : "Send OTP"}
+                </button>
+              </motion.div>
+            )}
+
+            {/* STEP 2 */}
+            {step === 2 && (
+              <motion.div key="otp-step2" {...fadeUp} transition={{ duration: 0.28 }} className="space-y-4">
+                <div className="text-center">
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+                    Enter the 6-digit code sent to
+                  </p>
+                  <p className="mt-0.5 text-sm font-semibold text-amber-300">{contact}</p>
+                </div>
+
+                {/* OTP boxes */}
+                <div className="flex items-center justify-center gap-2">
+                  {digits.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { digitRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={d}
+                      onChange={(e) => onDigitInput(i, e.target.value)}
+                      onKeyDown={(e) => onDigitKeyDown(i, e)}
+                      onFocus={(e) => e.target.select()}
+                      className={`otp-box ${d ? "otp-filled" : ""}`}
+                      aria-label={`OTP digit ${i + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onVerify}
+                  disabled={loading || digits.join("").length < 6}
+                  className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {loading ? "Verifying..." : "Verify OTP"}
+                </button>
+
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onResend}
+                    disabled={resendTimer > 0 || loading}
+                    className="flex items-center gap-1.5 text-[12px] transition-colors disabled:opacity-40"
+                    style={{ color: resendTimer > 0 ? "rgba(255,255,255,0.35)" : "rgba(251,189,35,0.85)" }}
+                  >
+                    <RefreshCcw className="h-3.5 w-3.5" />
+                    {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend OTP"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <p className="mt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+          Having trouble?{" "}
+          <a href="/forgot-password" style={{ color: "rgba(251,189,35,0.8)" }} className="font-medium hover:underline">
+            Try another method
+          </a>
+        </p>
+      </div>
+    </motion.main>
+  );
+}
+
+/* ═══════════════════════════════════════
+   VIEW 5 — SIGN UP
+   ═══════════════════════════════════════ */
+interface SignupViewProps {
+  onBack: () => void;
+  onGoogle: () => void;
+  loading: boolean;
+  onSubmit: (e: FormEvent) => void;
+  fullName: string;
+  setFullName: (v: string) => void;
+  userId: string;
+  setUserId: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  phone: string;
+  setPhone: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  confirmPass: string;
+  setConfirmPass: (v: string) => void;
+  showPass: boolean;
+  setShowPass: (v: boolean) => void;
+  showConfirm: boolean;
+  setShowConfirm: (v: boolean) => void;
+  error: string;
+  success: boolean;
+}
+function SignupView({
+  onBack, onGoogle, loading, onSubmit,
+  fullName, setFullName, userId, setUserId,
+  email, setEmail, phone, setPhone,
+  password, setPassword, confirmPass, setConfirmPass,
+  showPass, setShowPass, showConfirm, setShowConfirm,
+  error, success,
+}: SignupViewProps) {
+  const [emailBlurred, setEmailBlurred] = useState(false);
+  const passwordsMatch = Boolean(confirmPass) && password === confirmPass;
+  const passwordError = Boolean(password) && password.length < 8;
+
+  const formatPhone = (v: string) => {
+    const d = v.replace(/\D/g, "");
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+    return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 10)}`;
+  };
+
+  return (
+    <motion.main
+      key="signup"
+      {...slideLeft}
+      transition={{ duration: 0.35, ease: easeAuth }}
+      className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden"
+      style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
+    >
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5">
+        <header className="mb-4 flex items-center gap-3">
+          <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
+            Create Account
+          </h1>
+        </header>
+
+        {error && (
+          <div className="bdcr7-error mb-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+        {success && (
+          <div className="bdcr7-success mb-3">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 bdcr7-check-in" />
+            <span>Account created! Redirecting...</span>
+          </div>
+        )}
+
+        <div className="glass-bdcr7 rounded-3xl p-4">
+          <form onSubmit={onSubmit} className="space-y-2.5">
+            {/* 2-column grid for name + userId */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="bdcr7-input-wrap" data-filled={Boolean(fullName)}>
+                <User className="h-4 w-4 shrink-0 text-amber-300/60" />
+                <label className="bdcr7-input-label bdcr7-input-label-sm">
+                  Full Name / <span style={{ fontFamily: "var(--font-hind-var)" }}>নাম</span>
+                </label>
+                <input
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Your name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={loading}
+                  className="bdcr7-input"
+                  required
+                  aria-label="Full name"
+                />
+              </div>
+              <div className="bdcr7-input-wrap" data-filled={Boolean(userId)}>
+                <User className="h-4 w-4 shrink-0 text-amber-300/60" />
+                <label className="bdcr7-input-label bdcr7-input-label-sm">User ID</label>
+                <input
+                  type="text"
+                  autoComplete="username"
+                  placeholder="user123"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  disabled={loading}
+                  className="bdcr7-input"
+                  aria-label="User ID"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={emailBlurred && Boolean(email) && !email.includes("@")}>
+              <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Email / ইমেইল</label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailBlurred(true)}
+                disabled={loading}
+                className="bdcr7-input"
+                required
+                aria-label="Email address"
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="bdcr7-input-wrap" data-filled={Boolean(phone)}>
+              <Phone className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Phone / মোবাইল</label>
+              <input
+                type="tel"
+                autoComplete="tel"
+                placeholder="+880 1XXX XXXXX"
+                value={phone}
+                onChange={(e) => setPhone(formatPhone(e.target.value))}
+                disabled={loading}
+                className="bdcr7-input"
+                aria-label="Phone number"
+              />
+            </div>
+
+            {/* Password */}
+            <div
+              className="bdcr7-input-wrap"
+              data-filled={Boolean(password)}
+              data-error={passwordError}
+              data-success={Boolean(password) && password.length >= 8}
+            >
+              <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Password / পাসওয়ার্ড</label>
+              <input
+                type={showPass ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="bdcr7-input pr-8"
+                required
+                aria-label="Password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                disabled={loading}
+                style={{ minHeight: "unset" }}
+                className="shrink-0 text-white/40 hover:text-white/80 transition-colors"
+              >
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            {password && <PasswordStrengthMeter password={password} showRequirements />}
+
+            {/* Confirm password */}
+            <div
+              className="bdcr7-input-wrap"
+              data-filled={Boolean(confirmPass)}
+              data-error={Boolean(confirmPass) && !passwordsMatch}
+              data-success={passwordsMatch}
+            >
+              <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
+              <label className="bdcr7-input-label">Confirm Password</label>
+              <input
+                type={showConfirm ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={confirmPass}
+                onChange={(e) => setConfirmPass(e.target.value)}
+                disabled={loading}
+                className="bdcr7-input pr-8"
+                required
+                aria-label="Confirm password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                disabled={loading}
+                style={{ minHeight: "unset" }}
+                className="shrink-0 text-white/40 hover:text-white/80 transition-colors"
+              >
+                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            {confirmPass && (
+              <div
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-medium ${
+                  passwordsMatch
+                    ? "border border-emerald-400/30 bg-emerald-900/15 text-emerald-300"
+                    : "border border-rose-400/30 bg-rose-900/15 text-rose-300"
+                }`}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                {passwordsMatch ? "Passwords match ✓" : "Passwords do not match"}
+              </div>
+            )}
+
+            <div className="auth-sticky-cta">
+              <button
+                type="submit"
+                disabled={loading || !fullName.trim() || !email.includes("@") || password.length < 8 || !passwordsMatch}
+                className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {loading ? "Registering..." : "Register Account"}
+              </button>
+            </div>
+          </form>
+
+          <SocialRow onGoogle={onGoogle} loading={loading} />
+        </div>
+
+        <p className="mt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={onBack}
+            style={{ color: "rgba(251,189,35,0.9)" }}
+            className="font-semibold hover:underline"
+          >
+            Sign in
+          </button>
+        </p>
+      </div>
+    </motion.main>
+  );
+}
+
+/* ═══════════════════════════════════════
+   ROOT — AUTH SPA
+   ═══════════════════════════════════════ */
+export default function AuthSPA() {
+  const router = useRouter();
+  const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
+  const persistedToken = useAuthStore((s) => s.token);
+  const persistedUserId = useAuthStore((s) => s.userId);
+
+  const [view, setView] = useState<View>("splash");
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [authDone, setAuthDone] = useState(false);
+
+  // Splash → Landing after 3s
+  useEffect(() => {
+    if (view !== "splash") return;
+    const t = setTimeout(() => setView("landing"), 3000);
+    return () => clearTimeout(t);
+  }, [view]);
+
+  // Restore theme
+  useEffect(() => {
+    const stored = localStorage.getItem("bdcr7-theme");
+    document.documentElement.classList.toggle("dark", stored !== "light");
+  }, []);
+
+  // ─── SIGNIN state ────────────────────────────────────────
+  const [siEmail, setSiEmail] = useState("");
+  const [siPassword, setSiPassword] = useState("");
+  const [siShowPass, setSiShowPass] = useState(false);
+  const [siRemember, setSiRemember] = useState(false);
+  const [siCapsLock, setSiCapsLock] = useState(false);
+  const [siLoading, setSiLoading] = useState(false);
+  const [siError, setSiError] = useState("");
+
+  const handleSignIn = async (e: FormEvent) => {
+    e.preventDefault();
+    setSiError("");
+    setSiLoading(true);
+    setShowOverlay(true);
+    try {
+      await login(siEmail, siPassword);
+      setAuthDone(true);
+    } catch (err) {
+      setSiError((err as Error).message);
+      setShowOverlay(false);
+      setAuthDone(false);
+    } finally {
+      setSiLoading(false);
+    }
+  };
+
+  // ─── SIGNUP state ────────────────────────────────────────
+  const [suFullName, setSuFullName] = useState("");
+  const [suUserId, setSuUserId] = useState("");
+  const [suEmail, setSuEmail] = useState("");
+  const [suPhone, setSuPhone] = useState("");
+  const [suPassword, setSuPassword] = useState("");
+  const [suConfirmPass, setSuConfirmPass] = useState("");
+  const [suShowPass, setSuShowPass] = useState(false);
+  const [suShowConfirm, setSuShowConfirm] = useState(false);
+  const [suLoading, setSuLoading] = useState(false);
+  const [suError, setSuError] = useState("");
+  const [suSuccess, setSuSuccess] = useState(false);
+
+  const handleSignUp = async (e: FormEvent) => {
+    e.preventDefault();
+    setSuError("");
+    setSuLoading(true);
+    setShowOverlay(true);
+    try {
+      await register(suEmail, suPassword, suFullName, "viewer");
+      setSuSuccess(true);
+      setAuthDone(true);
+    } catch (err) {
+      setSuError((err as Error).message);
+      setShowOverlay(false);
+      setAuthDone(false);
+    } finally {
+      setSuLoading(false);
+    }
+  };
+
+  // ─── OTP state ───────────────────────────────────────────
+  const [otpContact, setOtpContact] = useState("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(""));
+  const [otpStep, setOtpStep] = useState<1 | 2>(1);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState(false);
+  const [otpResendTimer, setOtpResendTimer] = useState(0);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (otpResendTimer <= 0) return;
+    const t = setTimeout(() => setOtpResendTimer((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [otpResendTimer]);
+
+  const handleSendOtp = async () => {
+    if (!otpContact.trim()) { setOtpError("Enter your phone number"); return; }
+    if (!supabase) { setOtpError("Service unavailable"); return; }
+    setOtpLoading(true);
+    setOtpError("");
+    const { error } = await supabase.auth.signInWithOtp({ phone: otpContact.trim() });
+    setOtpLoading(false);
+    if (error) {
+      setOtpError(error.message);
+    } else {
+      setOtpStep(2);
+      setOtpResendTimer(60);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const token = otpDigits.join("");
+    if (token.length < 6) { setOtpError("Enter all 6 digits"); return; }
+    if (!supabase) { setOtpError("Service unavailable"); return; }
+    setOtpLoading(true);
+    setOtpError("");
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: otpContact.trim(),
+      token,
+      type: "sms",
+    });
+    if (error || !data.session || !data.user) {
+      setOtpLoading(false);
+      setOtpError(error?.message || "OTP verification failed. Please try again.");
+      return;
+    }
+    const { role: currentRole } = useAuthStore.getState();
+    useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
+    setOtpSuccess(true);
+    setShowOverlay(true);
+    setAuthDone(true);
+    setOtpLoading(false);
+  };
+
+  const handleOtpInput = (index: number, value: string) => {
+    if (value.length > 1) {
+      const digits = value.replace(/\D/g, "").slice(0, 6);
+      const newOtp = [...otpDigits];
+      digits.split("").forEach((d, i) => { if (index + i < 6) newOtp[index + i] = d; });
+      setOtpDigits(newOtp);
+      otpRefs.current[Math.min(index + digits.length - 1, 5)]?.focus();
+      return;
+    }
+    const newOtp = [...otpDigits];
+    newOtp[index] = value.replace(/\D/g, "").slice(-1);
+    setOtpDigits(newOtp);
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setOtpStep(1);
+    setOtpDigits(Array(6).fill(""));
+    setOtpError("");
+    await handleSendOtp();
+  };
+
+  // ─── BIOMETRIC ───────────────────────────────────────────
+  const [bioLoading, setBioLoading] = useState(false);
+  const [bioError, setBioError] = useState("");
+
+  const handleBiometric = useCallback(async () => {
+    setBioLoading(true);
+    setBioError("");
+    try {
+      const existingSession = await supabase?.auth.getSession();
+      const session = existingSession?.data.session;
+      const hasSession = Boolean(persistedToken || session);
+      if (!hasSession) {
+        setBioError("Sign in with email once first to enable biometric.");
+        setBioLoading(false);
+        return;
+      }
+      const token = persistedToken || session?.access_token;
+      const userId = persistedUserId || session?.user?.id;
+      const userEmail = session?.user?.email || "bdcr7.user@local";
+      if (!token || !userId) {
+        setBioError("Session expired. Sign in with email/password first.");
+        setBioLoading(false);
+        return;
+      }
+      await ensureBiometricCredential(token, userId, userEmail);
+      await verifyBiometricAssertion(token);
+      setShowOverlay(true);
+      setAuthDone(true);
+    } catch (err) {
+      setBioError((err as Error).message || "Biometric failed.");
+    } finally {
+      setBioLoading(false);
+    }
+  }, [persistedToken, persistedUserId]);
+
+  // ─── GOOGLE login ─────────────────────────────────────────
+  const handleGoogleLogin = async () => {
+    if (!supabase) return;
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+  };
+
+  const handleGoogleSignUp = async () => {
+    if (!supabase) return;
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+  };
+
+  return (
+    <>
+      <LoginLoadingOverlay
+        visible={showOverlay}
+        complete={authDone}
+        onDone={() => router.push("/dashboard")}
+      />
+
+      <ThemeToggle />
+
+      <div className="auth-bg-bdcr7 login-shell relative">
+        {/* animated bg layer */}
+        <div className="pointer-events-none absolute inset-0 z-0" />
+
+        <div className="relative z-10 h-full w-full">
+          <AnimatePresence mode="wait">
+            {view === "splash" && <SplashView key="splash" />}
+
+            {view === "landing" && (
+              <LandingView
+                key="landing"
+                onSignin={() => setView("signin")}
+                onSignup={() => setView("signup")}
+                onOtp={() => setView("otp")}
+                onBiometric={handleBiometric}
+                bioLoading={bioLoading}
+                bioError={bioError}
+              />
+            )}
+
+            {view === "signin" && (
+              <SigninView
+                key="signin"
+                onBack={() => setView("landing")}
+                onOtp={() => setView("otp")}
+                onGoogle={handleGoogleLogin}
+                loading={siLoading}
+                onSubmit={handleSignIn}
+                email={siEmail}
+                setEmail={setSiEmail}
+                password={siPassword}
+                setPassword={setSiPassword}
+                showPass={siShowPass}
+                setShowPass={setSiShowPass}
+                remember={siRemember}
+                setRemember={setSiRemember}
+                capsLock={siCapsLock}
+                setCapsLock={setSiCapsLock}
+                error={siError}
+              />
+            )}
+
+            {view === "signup" && (
+              <SignupView
+                key="signup"
+                onBack={() => setView("landing")}
+                onGoogle={handleGoogleSignUp}
+                loading={suLoading}
+                onSubmit={handleSignUp}
+                fullName={suFullName}
+                setFullName={setSuFullName}
+                userId={suUserId}
+                setUserId={setSuUserId}
+                email={suEmail}
+                setEmail={setSuEmail}
+                phone={suPhone}
+                setPhone={setSuPhone}
+                password={suPassword}
+                setPassword={setSuPassword}
+                confirmPass={suConfirmPass}
+                setConfirmPass={setSuConfirmPass}
+                showPass={suShowPass}
+                setShowPass={setSuShowPass}
+                showConfirm={suShowConfirm}
+                setShowConfirm={setSuShowConfirm}
+                error={suError}
+                success={suSuccess}
+              />
+            )}
+
+            {view === "otp" && (
+              <OtpView
+                key="otp"
+                onBack={() => { setOtpStep(1); setOtpDigits(Array(6).fill("")); setOtpError(""); setView("landing"); }}
+                contact={otpContact}
+                setContact={setOtpContact}
+                step={otpStep}
+                digits={otpDigits}
+                onDigitInput={handleOtpInput}
+                onDigitKeyDown={handleOtpKeyDown}
+                digitRefs={otpRefs}
+                onSend={handleSendOtp}
+                onVerify={handleVerifyOtp}
+                onResend={handleResendOtp}
+                resendTimer={otpResendTimer}
+                loading={otpLoading}
+                error={otpError}
+                success={otpSuccess}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </>
   );
 }
+
