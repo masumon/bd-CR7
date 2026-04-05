@@ -294,17 +294,8 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
         <div className="glass-bdcr7 w-full rounded-3xl p-4 space-y-3">
           <button
             type="button"
-            onClick={onSignin}
-            className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
-            aria-label="Sign In"
-          >
-            <Lock className="h-4 w-4" />
-            Sign In / <span style={{ fontFamily: "var(--font-hind-var)" }}>লগইন</span>
-          </button>
-          <button
-            type="button"
             onClick={onSignup}
-            className="btn-bdcr7-outline flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
+            className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl"
             aria-label="Sign Up"
           >
             <User className="h-4 w-4" />
@@ -326,11 +317,25 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
             <MessageSquare className="h-4 w-4 text-amber-300/70" />
             Login with OTP
           </button>
+
+          <button
+            type="button"
+            onClick={onSignin}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] transition-colors hover:text-amber-300"
+            style={{ color: "rgba(255,255,255,0.45)" }}
+            aria-label="Sign In with email and password"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            Sign In with email &amp; password
+          </button>
         </div>
+
+        {/* Push biometric to thumb zone */}
+        <div className="flex-1" />
       </div>
 
-      {/* Biometric — bottom-center thumb zone */}
-      <div className="mt-4 flex w-full max-w-sm flex-col items-center gap-2 pb-2">
+      {/* Biometric — bottom thumb zone (approx 75–85% height), above footer */}
+      <div className="flex w-full max-w-sm flex-col items-center gap-2 pb-3">
         {bioError && bioState !== "failed" && (
           <p className="max-w-[250px] text-center text-[11px] leading-5 text-rose-300/90">{bioError}</p>
         )}
@@ -396,7 +401,7 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
                   : "Tap to scan fingerprint"}
               </p>
 
-              {bioState === "failed" ? (
+              {bioState === "failed" && (
                 <button
                   type="button"
                   onClick={onSignin}
@@ -405,10 +410,6 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
                 >
                   Use password instead
                 </button>
-              ) : (
-                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
-                  Demo UI — Biometric not active
-                </p>
               )}
             </motion.div>
           )}
@@ -454,9 +455,8 @@ function SigninView({
       {...slideRight}
       transition={{ duration: 0.35, ease: easeAuth }}
       className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden"
-      style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
     >
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         {/* Header */}
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
@@ -472,6 +472,9 @@ function SigninView({
             </div>
           </div>
         </header>
+
+        {/* Spacer — pushes form to middle-bottom zone */}
+        <div className="flex-1 min-h-[1.5rem]" />
 
         {error && (
           <div className="bdcr7-error mb-3">
@@ -578,7 +581,7 @@ function SigninView({
           </button>
         </div>
 
-        <p className="mt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+        <p className="mt-3 pb-2 text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
           No account?{" "}
           <button
             type="button"
@@ -590,6 +593,7 @@ function SigninView({
           </button>
         </p>
       </div>
+      <DevFooter />
     </motion.main>
   );
 }
@@ -625,9 +629,8 @@ function OtpView({
       {...slideRight}
       transition={{ duration: 0.35, ease: easeAuth }}
       className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden"
-      style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
     >
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
             <ChevronLeft className="h-5 w-5" />
@@ -636,6 +639,9 @@ function OtpView({
             OTP Login
           </h1>
         </header>
+
+        {/* Spacer — pushes form to middle-bottom zone */}
+        <div className="flex-1 min-h-[1.5rem]" />
 
         <div className="glass-bdcr7 rounded-3xl p-5 space-y-4">
           {error && (
@@ -740,13 +746,14 @@ function OtpView({
           </AnimatePresence>
         </div>
 
-        <p className="mt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+        <p className="mt-3 pb-2 text-center text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
           Having trouble?{" "}
           <a href="/forgot-password" style={{ color: "rgba(251,189,35,0.8)" }} className="font-medium hover:underline">
             Try another method
           </a>
         </p>
       </div>
+      <DevFooter />
     </motion.main>
   );
 }
@@ -803,9 +810,8 @@ function SignupView({
       {...slideLeft}
       transition={{ duration: 0.35, ease: easeAuth }}
       className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden"
-      style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
     >
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
             <ChevronLeft className="h-5 w-5" />
@@ -814,6 +820,9 @@ function SignupView({
             Create Account
           </h1>
         </header>
+
+        {/* Spacer — pushes form to middle-bottom zone */}
+        <div className="flex-[0.4] min-h-[0.5rem]" />
 
         {error && (
           <div className="bdcr7-error mb-3">
@@ -991,7 +1000,7 @@ function SignupView({
           <SocialRow onGoogle={onGoogle} loading={loading} />
         </div>
 
-        <p className="mt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+        <p className="mt-3 pb-2 text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
           Already have an account?{" "}
           <button
             type="button"
@@ -1003,6 +1012,7 @@ function SignupView({
           </button>
         </p>
       </div>
+      <DevFooter />
     </motion.main>
   );
 }
