@@ -12,6 +12,7 @@ import {
   Lock,
   Fingerprint,
   Globe,
+  ChevronDown,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
@@ -34,6 +35,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [showWelcome, setShowWelcome] = useState(false);
   const [authTransitionDone, setAuthTransitionDone] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   // Restore theme preference
   useEffect(() => {
@@ -88,6 +90,7 @@ export default function LoginPage() {
 
       if (!hasRememberedSession) {
         setError("Biometric unlock needs a remembered session first. Sign in with email and password once, then try biometric unlock.");
+        setShowEmailForm(true);
         return;
       }
 
@@ -97,6 +100,7 @@ export default function LoginPage() {
 
       if (!token || !userId) {
         setError("Session metadata is unavailable. Sign in with email/password first.");
+        setShowEmailForm(true);
         return;
       }
 
@@ -114,34 +118,115 @@ export default function LoginPage() {
 
   return (
     <>
-    <LoginLoadingOverlay
-      visible={loading || showWelcome}
-      complete={authTransitionDone}
-      onDone={() => router.push("/dashboard")}
-    />
-    <main className="login-shell auth-bg-dark auth-page flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden pb-28">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-start gap-3">
-        <header className="pb-2 pt-2 text-center">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/80">Welcome back</p>
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-300/25 bg-slate-950/60 p-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.32)]">
-            <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={62} height={62} className="h-full w-full object-contain" priority />
+      <LoginLoadingOverlay
+        visible={loading || showWelcome}
+        complete={authTransitionDone}
+        onDone={() => router.push("/dashboard")}
+      />
+
+      <main className="login-shell auth-bg-dark h-[100dvh] overflow-hidden flex flex-col items-center px-5">
+
+        {/* ── Logo (top) ── */}
+        <header className="w-full pt-[max(2rem,env(safe-area-inset-top))] text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-300/20 bg-slate-950/60 p-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.32)]">
+            <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={52} height={52} className="h-full w-full object-contain" priority />
           </div>
-          <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-white">BD CR7</h1>
+          <h1 className="mt-2 font-display text-lg font-bold tracking-tight text-white">BD CR7</h1>
         </header>
 
-        <section className="auth-card rounded-3xl px-3.5 py-3">
+        {/* flex spacer — slightly larger to push button below center */}
+        <div className="flex-1" />
+
+        {/* ── Biometric hero (~55% from top) ── */}
+        <div className="flex flex-col items-center gap-3">
+          {/* Error message */}
           {error && (
-            <div
-              className={`mb-2 rounded-2xl border px-3 py-2 text-sm ${
-                error.includes("sent") || error.includes("successfully")
-                  ? "border-emerald-400/45 bg-emerald-900/20 text-emerald-200"
-                  : "border-rose-400/45 bg-rose-900/20 text-rose-200"
-              }`}
-            >
+            <div className={`max-w-[270px] rounded-2xl border px-3 py-2 text-center text-[11px] leading-5 ${
+              error.includes("sent") || error.includes("successfully")
+                ? "border-emerald-400/40 bg-emerald-900/20 text-emerald-200"
+                : "border-rose-400/40 bg-rose-900/20 text-rose-200"
+            }`}>
               {error}
             </div>
           )}
 
+          {/* 96px touch target wrapping the clamp-sized button */}
+          <div
+            className="flex items-center justify-center"
+            style={{ width: 96, height: 96 }}
+          >
+            <button
+              type="button"
+              onClick={() => handleBiometric("fingerprint")}
+              disabled={biometricLoading}
+              aria-label="Sign in with biometric"
+              className="biometric-hero-btn flex items-center justify-center rounded-full"
+              style={{
+                width: "clamp(64px, 18vw, 84px)",
+                height: "clamp(64px, 18vw, 84px)",
+              }}
+            >
+              {biometricLoading && biometricMode === "fingerprint" ? (
+                <Loader2 className="h-7 w-7 animate-spin text-amber-200/80" />
+              ) : (
+                <Fingerprint
+                  className="text-amber-200/88"
+                  style={{ width: "44%", height: "44%" }}
+                />
+              )}
+            </button>
+          </div>
+
+          {/* Subtle email-form toggle */}
+          <button
+            type="button"
+            onClick={() => setShowEmailForm((v) => !v)}
+            className="flex items-center gap-1 text-[11px] text-white/38 transition-colors hover:text-white/60"
+          >
+            {showEmailForm ? "Use biometric" : "Sign in with email"}
+            <ChevronDown
+              className={`h-3 w-3 transition-transform duration-200 ${showEmailForm ? "rotate-180" : ""}`}
+            />
+          </button>
+        </div>
+
+        {/* flex spacer — smaller to sit at ~55% */}
+        <div className="flex-[0.8]" />
+
+        {/* ── Developer credit (bottom) ── */}
+        <footer className="w-full pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="h-px w-full bg-white/[0.11]" />
+          <div className="pt-2.5 text-center">
+            <p className="text-sm font-bold tracking-wide text-white">{DEVELOPER_CONFIG.name}</p>
+            <p className="mt-0.5 text-[11px] text-white/52">AI Solution Architect</p>
+            <div className="mt-2 flex items-center justify-center gap-3">
+              <a href={DEVELOPER_CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="auth-social-icon auth-social-icon--facebook">
+                <img src="/icons/brands/facebook.svg" alt="Facebook" width={22} height={22} />
+              </a>
+              <a href={DEVELOPER_CONFIG.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="auth-social-icon auth-social-icon--whatsapp">
+                <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={22} height={22} />
+              </a>
+              <a href={`mailto:${DEVELOPER_CONFIG.email}`} aria-label="Email" className="auth-social-icon auth-social-icon--email">
+                <Mail className="h-[22px] w-[22px]" />
+              </a>
+              <a href={DEVELOPER_CONFIG.website} target="_blank" rel="noreferrer" aria-label="Website" className="auth-social-icon auth-social-icon--web">
+                <Globe className="h-[22px] w-[22px]" />
+              </a>
+            </div>
+          </div>
+        </footer>
+      </main>
+
+      {/* ── Email / password form (visually hidden when not shown; in DOM for functionality) ── */}
+      <div
+        aria-hidden={!showEmailForm}
+        className={`fixed inset-x-0 z-50 px-5 transition-all duration-300 ${
+          showEmailForm
+            ? "bottom-[max(6rem,calc(6rem+env(safe-area-inset-bottom)))] opacity-100 pointer-events-auto translate-y-0"
+            : "bottom-0 opacity-0 pointer-events-none translate-y-3"
+        }`}
+      >
+        <div className="auth-card mx-auto w-full max-w-sm rounded-3xl px-4 py-4">
           <form onSubmit={handleLogin} className="space-y-2.5">
             <div className="auth-input-wrap px-3" data-filled={Boolean(email)} data-error={Boolean(error) && !email}>
               <Mail className="h-4 w-4 shrink-0 text-slate-300" />
@@ -188,76 +273,24 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <div className="auth-sticky-cta">
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-gold flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-60"
-              >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Signing in..." : "Sign in / সাইন ইন"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-gold flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-60"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading ? "Signing in..." : "Sign in / সাইন ইন"}
+            </button>
           </form>
 
-          <p className="mt-1 text-center text-[11px] text-slate-300/95">
+          <p className="mt-2 text-center text-[11px] text-slate-300/90">
             No account? / অ্যাকাউন্ট নেই?{" "}
             <Link href="/register" className="font-semibold text-amber-200 hover:text-amber-100">
               Create one / তৈরি করুন
             </Link>
           </p>
-
-          <div className="mt-3 rounded-2xl border border-slate-500/30 bg-slate-950/45 px-3 py-2.5">
-            <div className="mb-2 flex items-center justify-center gap-2">
-              <span className="text-[11px] font-semibold tracking-[0.12em] text-slate-200 uppercase">Quick Unlock</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleBiometric("fingerprint")}
-              disabled={biometricLoading}
-              aria-label="Unlock with biometric"
-              className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-300/35 bg-amber-300/10 text-amber-100 transition-all hover:bg-amber-300/16 active:scale-[0.98] disabled:opacity-60 animate-pulse"
-            >
-              {biometricLoading && biometricMode === "fingerprint" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Fingerprint className="h-5 w-5" />
-              )}
-            </button>
-            <p className="mt-1.5 text-center text-[11px] leading-4 text-slate-300/85">
-              Biometric unlock
-            </p>
-            <p className="mt-1 text-[10px] leading-4 text-slate-300/80">
-              Quick unlock requires a remembered session and platform biometric verification via WebAuthn.
-            </p>
-          </div>
-        </section>
-
-        <footer className="mt-auto dev-credit-footer">
-          <div className="mx-auto w-full max-w-sm px-4">
-            <div className="h-px w-full bg-white/[0.12]" />
-            <div className="pt-3 text-center">
-              <p className="text-sm font-bold tracking-wide text-white">{DEVELOPER_CONFIG.name}</p>
-              <p className="mt-0.5 text-[11px] text-white/65">AI Solution Architect</p>
-              <div className="mt-2 flex items-center justify-center gap-3">
-                <a href={DEVELOPER_CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="auth-social-icon auth-social-icon--facebook">
-                  <img src="/icons/brands/facebook.svg" alt="Facebook" width={22} height={22} />
-                </a>
-                <a href={DEVELOPER_CONFIG.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="auth-social-icon auth-social-icon--whatsapp">
-                  <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={22} height={22} />
-                </a>
-                <a href={`mailto:${DEVELOPER_CONFIG.email}`} aria-label="Email" className="auth-social-icon auth-social-icon--email">
-                  <Mail className="h-[22px] w-[22px]" />
-                </a>
-                <a href={DEVELOPER_CONFIG.website} target="_blank" rel="noreferrer" aria-label="Website" className="auth-social-icon auth-social-icon--web">
-                  <Globe className="h-[22px] w-[22px]" />
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
+        </div>
       </div>
-    </main>
     </>
   );
 }

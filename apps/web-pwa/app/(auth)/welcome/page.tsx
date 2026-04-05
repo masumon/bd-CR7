@@ -57,14 +57,29 @@ export default function WelcomePage() {
         </div>
       </motion.section>
 
-      <motion.p
+      <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.74 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.35, duration: 0.4 }}
-        className="pb-[max(0.75rem,env(safe-area-inset-bottom))] text-xs tracking-[0.18em] text-slate-300 uppercase"
+        className="pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center"
       >
-        Powered by SUMONIX AI
-      </motion.p>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-white/38">Powered by</p>
+        <p
+          className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em]"
+          style={{
+            background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          SUMONIX AI
+        </p>
+        <div className="mt-2.5">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-white/38">Developed by</p>
+          <p className="mt-0.5 text-xs font-medium text-white/82">Mumain Ahmed</p>
+        </div>
+      </motion.div>
     </main>
   );
 }

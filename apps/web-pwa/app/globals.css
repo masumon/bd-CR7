@@ -401,6 +401,51 @@ html.reduce-motion *::after {
 .auth-social-icon--email    { color: rgba(255, 255, 255, 0.92); }
 .auth-social-icon--web      { color: rgba(255, 255, 255, 0.82); }
 
+/* Biometric hero button */
+@keyframes biometricIdleGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(250,204,21,0.15), 0 8px 32px rgba(0,0,0,0.52); }
+  50%       { box-shadow: 0 0 38px rgba(250,204,21,0.34), 0 8px 36px rgba(0,0,0,0.55); }
+}
+
+@keyframes biometricRipple {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+.biometric-hero-btn {
+  background: linear-gradient(145deg, hsl(220 32% 8%) 0%, hsl(220 26% 13%) 50%, hsl(220 32% 8%) 100%);
+  border: 1.5px solid rgba(250, 204, 21, 0.32);
+  animation: biometricIdleGlow 3s ease-in-out infinite;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.biometric-hero-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(250, 204, 21, 0.22);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.biometric-hero-btn:active {
+  transform: scale(0.95);
+  animation: none;
+  box-shadow: 0 0 18px rgba(250,204,21,0.18), 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.biometric-hero-btn:active::after {
+  animation: biometricRipple 0.55s ease-out forwards;
+}
+
+.biometric-hero-btn:disabled {
+  animation: none;
+  opacity: 0.55;
+}
+
 /* Developer credit fixed footer */
 .dev-credit-footer {
   position: fixed;

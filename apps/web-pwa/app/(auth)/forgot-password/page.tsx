@@ -37,20 +37,18 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="login-shell flex flex-col auth-bg-dark safe-bottom overflow-y-auto items-center justify-center px-6">
+    <main className="login-shell auth-bg-dark flex h-[100dvh] items-center justify-center overflow-hidden px-5">
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-white/10 p-8 backdrop-blur-xl shadow-2xl dark:bg-slate-900/40"
+        className="auth-card w-full max-w-sm rounded-3xl px-5 py-6"
       >
-        <div className="mb-6 text-center">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+        <div className="mb-5 text-center">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-white">
             Forgot Password
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            পাসওয়ার্ড ভুলে গেছেন?
-          </p>
+          <p className="mt-1 text-xs text-white/52">পাসওয়ার্ড ভুলে গেছেন?</p>
         </div>
 
         {sent ? (
@@ -59,44 +57,40 @@ export default function ForgotPasswordPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center gap-4 py-4 text-center"
           >
-            <CheckCircle className="h-12 w-12 text-emerald-500" />
-            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+            <CheckCircle className="h-12 w-12 text-emerald-400" />
+            <p className="text-sm font-medium text-emerald-300">
               Reset email sent. Check your inbox.
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-white/50">
               রিসেট ইমেইল পাঠানো হয়েছে। ইনবক্স চেক করুন।
             </p>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {error && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-300">
+              <div className="rounded-2xl border border-rose-400/40 bg-rose-900/20 px-3 py-2.5 text-sm text-rose-200">
                 {error}
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                Email / ইমেইল
-              </label>
-              <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
-                <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-                  required
-                />
-              </div>
+            <div className="auth-input-wrap px-3" data-filled={Boolean(email)}>
+              <Mail className="h-4 w-4 shrink-0 text-slate-300" />
+              <label className="auth-floating-label">Email / ইমেইল</label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="auth-input"
+                required
+              />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn-gold flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold disabled:opacity-60"
+              className="btn-gold flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? "Sending..." : "Send Reset Email / রিসেট পাঠান"}
@@ -104,11 +98,11 @@ export default function ForgotPasswordPage() {
           </form>
         )}
 
-        <div className="mt-6 flex justify-center">
+        <div className="mt-5 flex justify-center">
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-xs text-white/42 transition-colors hover:text-white/70"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Login / লগইনে ফিরুন
