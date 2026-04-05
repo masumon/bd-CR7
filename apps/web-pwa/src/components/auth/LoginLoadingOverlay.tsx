@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -38,14 +39,22 @@ export function LoginLoadingOverlay({ visible, onDone }: LoginLoadingOverlayProp
             transition={{ delay: 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
             className="relative mb-6"
           >
+            {/* Gold radial glow behind logo */}
             <motion.div
-              animate={{ scale: [1, 1.18, 1], opacity: [0.5, 0.12, 0.5] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              animate={{ scale: [1, 1.22, 1], opacity: [0.5, 0.15, 0.5] }}
+              transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
               className="absolute inset-0 rounded-full"
-              style={{ background: "radial-gradient(circle, rgba(34,197,94,0.45) 0%, transparent 70%)", transform: "scale(1.8)" }}
+              style={{ background: "radial-gradient(circle, rgba(201,168,76,0.5) 0%, transparent 70%)", transform: "scale(1.85)" }}
             />
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-emerald-500/40 bg-emerald-950/60 shadow-[0_0_40px_rgba(34,197,94,0.25)]">
-              <span className="font-display text-2xl font-black text-emerald-400">CR7</span>
+            <div className="relative h-28 w-28 rounded-full overflow-hidden shadow-[0_0_48px_rgba(201,168,76,0.35)]">
+              <Image
+                src="/icons/icon.svg"
+                alt="BD CR7 Logo"
+                width={112}
+                height={112}
+                className="h-full w-full object-contain"
+                priority
+              />
             </div>
           </motion.div>
 
@@ -92,7 +101,8 @@ export function LoginLoadingOverlay({ visible, onDone }: LoginLoadingOverlayProp
                 key={i}
                 animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
                 transition={{ repeat: Infinity, duration: 0.9, delay: i * 0.18, ease: "easeInOut" }}
-                className="h-2 w-2 rounded-full bg-emerald-400"
+                className="h-2 w-2 rounded-full"
+                style={{ background: "#C9A84C" }}
               />
             ))}
           </motion.div>
