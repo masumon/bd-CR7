@@ -2,10 +2,13 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { Camera } from "lucide-react";
 
 import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { FileUploadEngine } from "@/components/ui/FileUploadEngine";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 
@@ -13,6 +16,13 @@ const FloatingChat = dynamic(
   () => import("@/features/sumonix_ai_ui/FloatingChat").then((m) => m.FloatingChat),
   { ssr: false }
 );
+
+/** Derive ERP module name from current path */
+function moduleFromPath(pathname: string): string {
+  const seg = pathname.split("/").filter(Boolean);
+  const idx = seg.indexOf("dashboard");
+  return idx >= 0 && seg[idx + 1] ? seg[idx + 1] : "general";
+}
 
 type DashboardNotification = {
   id: string;
@@ -27,12 +37,14 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const loading = useAuthStore((state) => state.loading);
   const userId = useAuthStore((state) => state.userId);
   const role = useAuthStore((state) => state.role);
+  const pathname = usePathname();
 
   const [dark, setDark] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn">("en");
   const [online, setOnline] = useState(true);
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [openNotifications, setOpenNotifications] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const unread = notifications.length;
 
@@ -142,6 +154,30 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       </Dialog>
 
       <FloatingChat />
+
+      {/* ── Global Floating Upload Button ───────────────────────────────── */}
+      <button
+        type="button"
+        aria-label="Upload file"
+        onClick={() => setUploadOpen(true)}
+        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+12px)] right-20 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/50 active:scale-95 transition-transform lg:bottom-6 lg:right-20"
+      >
+        <Camera className="h-5 w-5 text-white" />
+      </button>
+
+      <Dialog
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        title={language === "bn" ? "ফাইল আপলোড" : "Upload Evidence / File"}
+      >
+        <div className="pb-2">
+          <FileUploadEngine
+            module={moduleFromPath(pathname)}
+            category="general"
+            onUploaded={() => setUploadOpen(false)}
+          />
+        </div>
+      </Dialog>
     </>
   );
 }

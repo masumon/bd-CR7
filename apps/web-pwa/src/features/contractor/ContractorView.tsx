@@ -17,6 +17,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { Button } from "@/components/ui/button";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { exportCSV } from "@/lib/exportCSV";
 import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
@@ -432,7 +433,7 @@ export function ContractorView() {
     void load();
   }, [deleteTarget, supabase, load]);
 
-  const tabs = ["Add Contractor", "Contractors", "Add Contract", "Contracts", "Add Payment", "Payments"];
+  const tabs = ["Add Contractor", "Contractors", "Add Contract", "Contracts", "Add Payment", "Payments", "Files"];
 
   return (
     <div className="space-y-4">
@@ -749,6 +750,14 @@ export function ContractorView() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {activeTab === "Files" && (
+        <ProjectFilesPanel
+          module="contractor"
+          category="contract"
+          label="Contracts & Payment Proofs"
+        />
       )}
     </div>
   );
