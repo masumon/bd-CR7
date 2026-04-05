@@ -114,41 +114,23 @@ export default function LoginPage() {
   return (
     <>
     <LoginLoadingOverlay visible={showWelcome} onDone={() => router.push("/dashboard")} />
-    <main
-      className="login-shell flex flex-col auth-bg-dark safe-bottom overflow-y-auto"
-    >
-      {/* TOP SECTION: Greeting & Branding */}
-      <div className="flex-none px-6 pt-10 pb-2 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/70 mb-4">
-          Welcome back
-        </p>
-        <div className="inline-flex flex-col items-center gap-2">
-          <div className="h-20 w-20 rounded-full overflow-hidden shadow-[0_4px_24px_rgba(201,168,76,0.28)]">
-            <Image
-              src="/icons/icon.svg"
-              alt="BD CR7 Logo"
-              width={80}
-              height={80}
-              className="h-full w-full object-contain"
-              priority
-            />
+    <main className="login-shell auth-bg-dark auth-page flex flex-col overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col">
+        <header className="pb-4 pt-3 text-center">
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/80">Welcome back</p>
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-amber-300/25 bg-slate-950/60 p-3 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
+            <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={62} height={62} className="h-full w-full object-contain" priority />
           </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-            BD CR7
-          </h1>
-          <p className="text-xs text-muted-foreground">Smart · Secure · AI Powered</p>
-        </div>
-      </div>
+          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-white">BD CR7</h1>
+        </header>
 
-      {/* MIDDLE SECTION: Login Form */}
-      <div className="flex flex-1 items-center justify-center px-6 py-4">
-        <div className="w-full max-w-sm space-y-4">
+        <section className="auth-card rounded-3xl px-4 py-4">
           {error && (
             <div
-              className={`rounded-2xl border px-4 py-3 text-sm ${
+              className={`mb-3 rounded-2xl border px-3.5 py-2.5 text-sm ${
                 error.includes("sent") || error.includes("successfully")
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-300"
-                  : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-300"
+                  ? "border-emerald-400/45 bg-emerald-900/20 text-emerald-200"
+                  : "border-rose-400/45 bg-rose-900/20 text-rose-200"
               }`}
             >
               {error}
@@ -156,171 +138,116 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleLogin} className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                Email / ইমেইল
-              </label>
-              <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
-                <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-                  required
-                />
-              </div>
+            <div className="auth-input-wrap px-3" data-filled={Boolean(email)} data-error={Boolean(error) && !email}>
+              <Mail className="h-4 w-4 shrink-0 text-slate-300" />
+              <label className="auth-floating-label">Email / ইমেইল</label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="auth-input"
+                required
+              />
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Password / পাসওয়ার্ড
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-[11px] text-primary/80 hover:text-primary underline-offset-2 hover:underline transition-colors"
-                >
-                  Forgot password? / পাসওয়ার্ড ভুলে গেছেন?
-                </Link>
-              </div>
-              <div className="flex items-center gap-2 rounded-2xl border border-border bg-white/90 px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 dark:bg-slate-900/70 transition-all">
-                <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <input
-                  type={showPass ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass((v) => !v)}
-                  aria-label={showPass ? "Hide password" : "Show password"}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
+            <div className="auth-input-wrap px-3" data-filled={Boolean(password)} data-error={Boolean(error) && !password}>
+              <Lock className="h-4 w-4 shrink-0 text-slate-300" />
+              <label className="auth-floating-label">Password / পাসওয়ার্ড</label>
+              <input
+                type={showPass ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-input pr-9"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((v) => !v)}
+                aria-label={showPass ? "Hide password" : "Show password"}
+                className="text-slate-300 transition-colors hover:text-white"
+              >
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-gold flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold disabled:opacity-60"
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "Signing in..." : "Sign in / সাইন ইন"}
-            </button>
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-[11px] font-medium text-amber-200/90 underline-offset-2 transition-colors hover:text-amber-100 hover:underline"
+              >
+                Forgot password? / পাসওয়ার্ড ভুলে গেছেন?
+              </Link>
+            </div>
+
+            <div className="auth-sticky-cta">
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-60"
+              >
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {loading ? "Signing in..." : "Sign in / সাইন ইন"}
+              </button>
+            </div>
           </form>
 
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="mt-1 text-center text-xs text-slate-300/95">
             No account? / অ্যাকাউন্ট নেই?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-primary hover:underline underline-offset-2"
-            >
+            <Link href="/register" className="font-semibold text-amber-200 hover:text-amber-100">
               Create one / তৈরি করুন
             </Link>
           </p>
-        </div>
-      </div>
 
-      {/* LOWER SECTION: Biometrics */}
-      <div className="flex-none px-6 py-3 flex flex-col items-center gap-2">
-        <div className="flex items-center gap-3 w-full max-w-sm">
-          <span className="flex-1 h-px bg-border/60" />
-          <span className="text-[11px] text-muted-foreground tracking-wider uppercase">
-            or biometric / বায়োমেট্রিক
-          </span>
-          <span className="flex-1 h-px bg-border/60" />
-        </div>
-        <div className="w-full max-w-sm pt-1">
-          <button
-            type="button"
-            onClick={() => handleBiometric("fingerprint")}
-            disabled={biometricLoading}
-            className="group relative mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-primary/30 bg-primary/5 p-3 text-primary transition-all hover:bg-primary/10 disabled:opacity-60"
-          >
-            <motion.span
-              className="absolute inset-4 rounded-full border border-primary/35"
-              animate={{ scale: [1, 1.15, 1], opacity: [0.45, 0.1, 0.45] }}
-              transition={{ repeat: Infinity, duration: 2.1, ease: "easeInOut" }}
-            />
-            <motion.span
-              className="absolute inset-1.5 rounded-full border border-primary/20"
-              animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.08, 0.3] }}
-              transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
-            />
-            <span className="relative z-10 flex flex-col items-center justify-center gap-2">
+          <div className="mt-4 rounded-2xl border border-slate-500/30 bg-slate-950/45 px-3.5 py-3.5">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-[0.12em] text-slate-200 uppercase">Quick Unlock</span>
+              <Fingerprint className="h-4 w-4 text-amber-200" />
+            </div>
+            <button
+              type="button"
+              onClick={() => handleBiometric("fingerprint")}
+              disabled={biometricLoading}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/35 bg-amber-300/10 text-sm font-semibold text-amber-100 transition-all hover:bg-amber-300/16 active:scale-[0.98] disabled:opacity-60"
+            >
               {biometricLoading && biometricMode === "fingerprint" ? (
-                <Loader2 className="h-7 w-7 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Fingerprint className="h-8 w-8" />
+                <Fingerprint className="h-4 w-4" />
               )}
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">Unlock</span>
-            </span>
-          </button>
-          <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
-            Quick unlock requires a remembered session and platform biometric verification via WebAuthn.
-          </p>
-        </div>
-      </div>
-
-      {/* FOOTER SECTION: Developer Info & Socials */}
-      <footer className="flex-none px-6 pb-5 pt-3">
-        <div className="border-t border-border/40 pt-4 text-center space-y-1.5">
-          <p className="text-[11px] font-bold tracking-[0.22em] uppercase text-foreground/80">
-            {DEVELOPER_CONFIG.name}
-          </p>
-          <p className="text-[10px] leading-relaxed text-muted-foreground max-w-xs mx-auto">
-            {DEVELOPER_CONFIG.role}
-          </p>
-          <p className="text-[10px] font-medium tracking-wide text-muted-foreground/70">
-            {DEVELOPER_CONFIG.powerLine}
-          </p>
-          <div className="flex items-center justify-center gap-4 pt-1">
-            <a
-              href={DEVELOPER_CONFIG.facebook}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Facebook"
-              className="text-muted-foreground/60 hover:text-primary transition-colors"
-            >
-              <Facebook className="h-3.5 w-3.5" />
-            </a>
-            <a
-              href={DEVELOPER_CONFIG.whatsapp}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="WhatsApp"
-              className="text-muted-foreground/60 hover:text-primary transition-colors"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-            </a>
-            <a
-              href={`mailto:${DEVELOPER_CONFIG.email}`}
-              aria-label="Email"
-              className="text-muted-foreground/60 hover:text-primary transition-colors"
-            >
-              <Mail className="h-3.5 w-3.5" />
-            </a>
-            <a
-              href={DEVELOPER_CONFIG.website}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Website"
-              className="text-muted-foreground/60 hover:text-primary transition-colors"
-            >
-              <Globe className="h-3.5 w-3.5" />
-            </a>
+              Unlock with Biometric
+            </button>
+            <p className="mt-2 text-[11px] leading-5 text-slate-300/85">
+              Quick unlock requires a remembered session and platform biometric verification via WebAuthn.
+            </p>
           </div>
-        </div>
-      </footer>
+        </section>
+
+        <footer className="mt-auto pb-2 pt-4">
+          <div className="border-t border-slate-500/35 pt-3 text-center">
+            <p className="text-sm font-bold tracking-wide text-white">{DEVELOPER_CONFIG.name}</p>
+            <p className="mt-1 text-xs text-slate-300/95">{DEVELOPER_CONFIG.role}</p>
+            <p className="mt-1 text-[11px] text-slate-400">{DEVELOPER_CONFIG.powerLine}</p>
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <a href={DEVELOPER_CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="auth-social-icon">
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a href={DEVELOPER_CONFIG.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="auth-social-icon">
+                <MessageCircle className="h-5 w-5" />
+              </a>
+              <a href={`mailto:${DEVELOPER_CONFIG.email}`} aria-label="Email" className="auth-social-icon">
+                <Mail className="h-5 w-5" />
+              </a>
+              <a href={DEVELOPER_CONFIG.website} target="_blank" rel="noreferrer" aria-label="Website" className="auth-social-icon">
+                <Globe className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+        </footer>
+      </div>
     </main>
     </>
   );

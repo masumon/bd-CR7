@@ -1,5 +1,62 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { motion } from "framer-motion";
+
+const SPLASH_DURATION_MS = 2400;
 
 export default function WelcomePage() {
-  redirect("/login");
+  const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace("/login");
+    }, SPLASH_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [router]);
+
+  return (
+    <main className="auth-page auth-bg-dark flex min-h-[100dvh] flex-col items-center justify-between">
+      <div className="h-8" />
+
+      <motion.section
+        initial={{ opacity: 0, scale: 0.95, y: 14 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col items-center text-center"
+      >
+        <motion.div
+          animate={{ scale: [1, 1.05, 1], opacity: [0.96, 1, 0.96] }}
+          transition={{ repeat: Infinity, duration: 2.1, ease: "easeInOut" }}
+          className="mb-5 rounded-3xl border border-amber-300/20 bg-slate-900/70 p-4 shadow-[0_0_42px_rgba(250,204,21,0.16)]"
+        >
+          <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={84} height={84} priority />
+        </motion.div>
+
+        <h1 className="font-display text-3xl font-bold tracking-tight text-white">Welcome / স্বাগতম</h1>
+
+        <div className="mt-5 flex items-center justify-center gap-2">
+          {[0, 1, 2].map((dot) => (
+            <motion.span
+              key={dot}
+              className="h-2.5 w-2.5 rounded-full bg-amber-300"
+              animate={{ scale: [1, 1.42, 1], opacity: [0.35, 1, 0.35] }}
+              transition={{ repeat: Infinity, duration: 0.95, delay: dot * 0.14, ease: "easeInOut" }}
+            />
+          ))}
+        </div>
+      </motion.section>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.74 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
+        className="pb-2 text-xs tracking-[0.18em] text-slate-300 uppercase"
+      >
+        Powered by SUMONIX AI
+      </motion.p>
+    </main>
+  );
 }

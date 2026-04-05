@@ -5,25 +5,74 @@
    ▲ Next.js 15.5.14
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 3.3s
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Auto register service worker with: D:\BD CR7 Project\node_modules\.pnpm\next-pwa@5.6.0_@babel+core@_e45fdd2b8090367ff5c1d9fe6bcff153\node_modules\next-pwa\register.js
+> [PWA] Service worker: D:\BD CR7 Project\apps\web-pwa\public\sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+> [PWA] Fallback to precache routes when fetch failed from cache or network:
+> [PWA]   document (page): /offline
+ ✓ Compiled successfully in 16.6s
    Linting and checking validity of types ...
    Collecting page data ...
-   Generating static pages (0/5) ...
-   Generating static pages (1/5) 
-   Generating static pages (2/5) 
-   Generating static pages (3/5) 
- ✓ Generating static pages (5/5)
+   Generating static pages (0/14) ...
+   Generating static pages (3/14) 
+   Generating static pages (6/14) 
+   Generating static pages (10/14) 
+ ✓ Generating static pages (14/14)
    Finalizing page optimization ...
    Collecting build traces ...
 
 Route (app)                                 Size  First Load JS
-┌ ○ /                                      52 kB         154 kB
-└ ○ /_not-found                            993 B         103 kB
+┌ ○ /                                      150 B         103 kB
+├ ○ /_not-found                             1 kB         103 kB
+├ ○ /auth                                  150 B         103 kB
+├ ○ /auth/login                            150 B         103 kB
+├ ○ /auth/register                         150 B         103 kB
+├ ○ /auth/welcome                          150 B         103 kB
+├ ƒ /dashboard                           4.24 kB         152 kB
+├ ƒ /dashboard/ai                          136 B         157 kB
+├ ƒ /dashboard/ai/chat                     136 B         157 kB
+├ ƒ /dashboard/audit                       134 B         163 kB
+├ ƒ /dashboard/audit/log                   135 B         163 kB
+├ ƒ /dashboard/construction                145 B         206 kB
+├ ƒ /dashboard/construction/list           146 B         206 kB
+├ ƒ /dashboard/construction/projects     10.3 kB         197 kB
+├ ƒ /dashboard/contractor                  138 B         166 kB
+├ ƒ /dashboard/contractor/view             137 B         166 kB
+├ ƒ /dashboard/crm                       2.04 kB         104 kB
+├ ƒ /dashboard/crm/view                  9.85 kB         155 kB
+├ ƒ /dashboard/evidence                    136 B         159 kB
+├ ƒ /dashboard/evidence/list               135 B         159 kB
+├ ƒ /dashboard/finance                     144 B         209 kB
+├ ƒ /dashboard/finance/view                144 B         209 kB
+├ ƒ /dashboard/import                    1.99 kB         104 kB
+├ ƒ /dashboard/import/records            6.62 kB         190 kB
+├ ƒ /dashboard/inventory                 2.21 kB         105 kB
+├ ƒ /dashboard/inventory/view            10.4 kB         156 kB
+├ ƒ /dashboard/materials                   141 B         168 kB
+├ ƒ /dashboard/materials/view              141 B         168 kB
+├ ƒ /dashboard/pos                       2.13 kB         105 kB
+├ ƒ /dashboard/pos/sale                  8.25 kB         195 kB
+├ ƒ /dashboard/reports                     142 B         205 kB
+├ ƒ /dashboard/reports/view                142 B         205 kB
+├ ƒ /dashboard/settings                    137 B         173 kB
+├ ƒ /dashboard/settings/manage             136 B         173 kB
+├ ƒ /dashboard/workforce                   147 B         209 kB
+├ ƒ /dashboard/workforce/view              147 B         209 kB
+├ ○ /forgot-password                     2.15 kB         186 kB
+├ ○ /login                               6.95 kB         203 kB
+├ ○ /offline                               150 B         103 kB
+├ ○ /register                            7.45 kB         155 kB
+└ ○ /welcome                               150 B         103 kB
 + First Load JS shared by all             102 kB
-  ├ chunks/250-55a575f2450baa03.js       45.9 kB
-  ├ chunks/507cd84f-7356fe6854887d8a.js  54.2 kB
-  └ other shared chunks (total)          1.97 kB
+  ├ chunks/5a47ad31-bbe5bf263a40bfe0.js  54.2 kB
+  ├ chunks/6166-3f63bb1a7013585c.js      46.2 kB
+  └ other shared chunks (total)          2.01 kB
 
 
-○  (Static)  prerendered as static content
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
 
