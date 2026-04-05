@@ -11,9 +11,7 @@ import {
   Mail,
   Lock,
   Fingerprint,
-  Facebook,
   Globe,
-  MessageCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
@@ -121,7 +119,7 @@ export default function LoginPage() {
       complete={authTransitionDone}
       onDone={() => router.push("/dashboard")}
     />
-    <main className="login-shell auth-bg-dark auth-page flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden">
+    <main className="login-shell auth-bg-dark auth-page flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden pb-28">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-between">
         <header className="pb-2 pt-2 text-center">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/80">Welcome back</p>
@@ -235,24 +233,26 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <footer className="mt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
-          <div className="border-t border-slate-500/35 pt-3 text-center">
-            <p className="text-sm font-bold tracking-wide text-white">{DEVELOPER_CONFIG.name}</p>
-            <p className="mt-0.5 text-xs text-slate-300/95">{DEVELOPER_CONFIG.role}</p>
-            <p className="mt-0.5 text-[10px] text-slate-400">{DEVELOPER_CONFIG.powerLine}</p>
-            <div className="mt-2 flex items-center justify-center gap-2.5">
-              <a href={DEVELOPER_CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="auth-social-icon">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href={DEVELOPER_CONFIG.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="auth-social-icon">
-                <MessageCircle className="h-5 w-5" />
-              </a>
-              <a href={`mailto:${DEVELOPER_CONFIG.email}`} aria-label="Email" className="auth-social-icon">
-                <Mail className="h-5 w-5" />
-              </a>
-              <a href={DEVELOPER_CONFIG.website} target="_blank" rel="noreferrer" aria-label="Website" className="auth-social-icon">
-                <Globe className="h-5 w-5" />
-              </a>
+        <footer className="dev-credit-footer">
+          <div className="mx-auto w-full max-w-sm px-4">
+            <div className="h-px w-full bg-white/[0.12]" />
+            <div className="pt-3 text-center">
+              <p className="text-sm font-bold tracking-wide text-white">{DEVELOPER_CONFIG.name}</p>
+              <p className="mt-0.5 text-[11px] text-white/65">AI Solution Architect</p>
+              <div className="mt-2 flex items-center justify-center gap-3">
+                <a href={DEVELOPER_CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="auth-social-icon auth-social-icon--facebook">
+                  <img src="/icons/brands/facebook.svg" alt="Facebook" width={22} height={22} />
+                </a>
+                <a href={DEVELOPER_CONFIG.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="auth-social-icon auth-social-icon--whatsapp">
+                  <img src="/icons/brands/whatsapp.svg" alt="WhatsApp" width={22} height={22} />
+                </a>
+                <a href={`mailto:${DEVELOPER_CONFIG.email}`} aria-label="Email" className="auth-social-icon auth-social-icon--email">
+                  <Mail className="h-[22px] w-[22px]" />
+                </a>
+                <a href={DEVELOPER_CONFIG.website} target="_blank" rel="noreferrer" aria-label="Website" className="auth-social-icon auth-social-icon--web">
+                  <Globe className="h-[22px] w-[22px]" />
+                </a>
+              </div>
             </div>
           </div>
         </footer>
