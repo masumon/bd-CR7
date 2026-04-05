@@ -2,11 +2,48 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
-import { Bot, Loader2, Mic, Minus, Plus, Send, X } from "lucide-react";
+import { Loader2, Mic, Minus, Send, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+
+// Inline "S" SVG logo for the FAB — keeps the SUMONIX brand mark
+function SumonixFabIcon({ size = 28 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="fc-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.06" />
+        </linearGradient>
+        <filter id="fc-shadow">
+          <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#000" floodOpacity="0.4" />
+        </filter>
+      </defs>
+      <rect width="100" height="100" rx="24" fill="url(#fc-bg)" />
+      <circle cx="76" cy="24" r="10" fill="#f59e0b" opacity="0.9" />
+      <text
+        x="50"
+        y="73"
+        textAnchor="middle"
+        fontFamily="'Arial Black','Helvetica Neue',Impact,sans-serif"
+        fontSize="68"
+        fontWeight="900"
+        fill="white"
+        filter="url(#fc-shadow)"
+      >
+        S
+      </text>
+    </svg>
+  );
+}
 
 type Message = {
   id: string;
@@ -300,7 +337,9 @@ export function FloatingChat() {
                 onClick={() => { setLongPressMenu(false); setOpen(true); setMinimized(false); }}
                 className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
-                <Bot className="h-4 w-4 text-primary" />
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#16a34a,#15803d)]">
+                  <SumonixFabIcon size={13} />
+                </span>
                 Open AI Chat
               </button>
               <button
@@ -308,7 +347,7 @@ export function FloatingChat() {
                 onClick={() => { setLongPressMenu(false); setText("Quick Add: "); setOpen(true); setMinimized(false); }}
                 className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
-                <Plus className="h-4 w-4 text-emerald-500" />
+                <Sparkles className="h-4 w-4 text-emerald-500" />
                 Quick Add
               </button>
               <button
@@ -349,7 +388,7 @@ export function FloatingChat() {
         onPointerLeave={cancelLongPress}
         onClick={handleFabClick}
         aria-label={open ? "Close SUMONIX AI" : "Open SUMONIX AI"}
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 flex h-14 w-14 cursor-grab items-center justify-center rounded-full border border-white/20 bg-[linear-gradient(135deg,#16a34a,#15803d)] shadow-float animate-float active:cursor-grabbing lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 flex h-14 w-14 cursor-grab items-center justify-center rounded-full border border-white/25 bg-[linear-gradient(135deg,#16a34a_0%,#15803d_60%,#14532d_100%)] shadow-[0_4px_24px_rgba(22,163,74,0.45),0_1px_4px_rgba(0,0,0,0.3)] animate-float active:cursor-grabbing lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]"
       >
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
@@ -369,17 +408,17 @@ export function FloatingChat() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.6 }}
               transition={{ duration: 0.18 }}
-              className="font-display text-[22px] font-bold leading-none tracking-tight text-white"
-              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.35)" }}
             >
-              S
+              <SumonixFabIcon size={30} />
             </motion.span>
           )}
         </AnimatePresence>
         {/* pulse ring */}
         {!open && (
-          <span className="absolute inset-0 rounded-full border-2 border-erp-accent/30 animate-erp-pulse" />
+          <span className="absolute inset-0 rounded-full border-2 border-emerald-400/40 animate-erp-pulse" />
         )}
+        {/* inner glow */}
+        <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_40%_35%,rgba(255,255,255,0.18),transparent_65%)]" />
       </motion.button>
 
           <AnimatePresence>
@@ -389,16 +428,16 @@ export function FloatingChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.22 }}
-            className="fixed z-50 flex flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,249,247,0.96))] backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(15,24,21,0.98),rgba(10,19,17,0.97))] bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] right-2 left-2 max-h-[min(74svh,44rem)] rounded-[1.65rem] border border-white/20 shadow-2xl sm:left-auto sm:right-6 sm:w-[min(460px,calc(100vw-2rem))] lg:bottom-24"
+            className="fixed z-50 flex flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(248,249,247,0.97))] backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(15,24,21,0.99),rgba(10,19,17,0.98))] bottom-[calc(env(safe-area-inset-bottom)+8.75rem)] right-2 left-2 max-h-[min(74svh,44rem)] rounded-[1.75rem] border border-white/25 shadow-[0_8px_40px_rgba(0,0,0,0.25),0_1px_0_rgba(255,255,255,0.08)] sm:left-auto sm:right-6 sm:w-[min(460px,calc(100vw-2rem))] lg:bottom-24"
           >
-            <div className="safe-top flex items-center justify-between border-b border-border/70 bg-primary/8 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
-                  <Bot className="h-3.5 w-3.5 text-primary" />
+            <div className="safe-top flex items-center justify-between border-b border-border/60 bg-gradient-to-r from-emerald-950/60 via-emerald-900/40 to-transparent px-4 py-3 dark:from-emerald-950/80">
+              <div className="flex items-center gap-2.5">
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#16a34a,#15803d)] shadow-[0_2px_8px_rgba(22,163,74,0.45)]">
+                  <SumonixFabIcon size={22} />
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-foreground">SUMONIX AI</h4>
-                  <p className="text-[11px] leading-4 text-muted-foreground">Ready ERP Assistant / রেডি সহকারী</p>
+                  <p className="text-[11px] leading-4 text-emerald-600 dark:text-emerald-400">ERP Assistant · Ready</p>
                 </div>
               </div>
               <button
@@ -441,8 +480,8 @@ export function FloatingChat() {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "ai" && (
-                    <div className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <Bot className="h-3 w-3" />
+                    <div className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#16a34a,#15803d)]">
+                      <SumonixFabIcon size={15} />
                     </div>
                   )}
                   <div
@@ -525,9 +564,9 @@ export function FloatingChat() {
             exit={{ opacity: 0, scale: 0.8 }}
             type="button"
             onClick={() => setMinimized(false)}
-            className="fixed bottom-[calc(env(safe-area-inset-bottom)+7rem)] right-4 z-50 flex items-center gap-2 rounded-full border border-primary/30 bg-background/95 px-3 py-2 text-xs font-medium text-primary shadow-lg backdrop-blur-md lg:bottom-[calc(env(safe-area-inset-bottom)+2.5rem)]"
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+7rem)] right-4 z-50 flex items-center gap-2 rounded-full border border-emerald-500/30 bg-background/95 px-3 py-2 text-xs font-medium text-emerald-600 shadow-lg backdrop-blur-md dark:text-emerald-400 lg:bottom-[calc(env(safe-area-inset-bottom)+2.5rem)]"
           >
-            <Bot className="h-3.5 w-3.5" />
+            <SumonixFabIcon size={16} />
             SUMONIX AI
           </motion.button>
         )}

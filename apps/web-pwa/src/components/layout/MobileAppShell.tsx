@@ -8,6 +8,7 @@ import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FileUploadEngine } from "@/components/ui/FileUploadEngine";
+import { FloatingChat } from "@/features/sumonix_ai_ui/FloatingChat";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 
@@ -146,6 +147,9 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       <Dialog open={openNotifications} onClose={() => setOpenNotifications(false)} title={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
         {notificationContent}
       </Dialog>
+
+      {/* ── Global Floating AI (SUMONIX) ────────────────────────────────── */}
+      <FloatingChat />
 
       {/* ── Global Floating Upload Button ───────────────────────────────── */}
       <button
