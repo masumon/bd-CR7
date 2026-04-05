@@ -22,9 +22,18 @@ CREATE INDEX IF NOT EXISTS idx_eer_module    ON evidence_enforcement_rules (modu
 CREATE INDEX IF NOT EXISTS idx_eer_is_active ON evidence_enforcement_rules (is_active);
 
 ALTER TABLE evidence_enforcement_rules ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "eer_authenticated"
-  ON evidence_enforcement_rules FOR ALL TO authenticated
-  USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename  = 'evidence_enforcement_rules'
+      AND policyname = 'eer_authenticated'
+  ) THEN
+    CREATE POLICY "eer_authenticated"
+      ON evidence_enforcement_rules FOR ALL TO authenticated
+      USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 -- Seed default rules (idempotent — conflict does nothing)
 INSERT INTO evidence_enforcement_rules (module, rule_name, description, severity) VALUES
@@ -57,9 +66,18 @@ CREATE INDEX IF NOT EXISTS idx_aai_applied     ON ai_auto_insertions (auto_appli
 CREATE INDEX IF NOT EXISTS idx_aai_created_at  ON ai_auto_insertions (created_at DESC);
 
 ALTER TABLE ai_auto_insertions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "aai_authenticated"
-  ON ai_auto_insertions FOR ALL TO authenticated
-  USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename  = 'ai_auto_insertions'
+      AND policyname = 'aai_authenticated'
+  ) THEN
+    CREATE POLICY "aai_authenticated"
+      ON ai_auto_insertions FOR ALL TO authenticated
+      USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 -- ─── Lightweight audit trigger for ai_auto_insertions ────────────────────────
 CREATE OR REPLACE FUNCTION aai_audit_fn()
