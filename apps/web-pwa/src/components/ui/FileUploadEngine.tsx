@@ -18,6 +18,7 @@ import { useProjectFiles, type InsertProjectFile } from "@/hooks/useProjectFiles
 import { apiRequest } from "@/lib/api";
 
 const ACCEPTED = "image/*,video/*,audio/*,.pdf,.docx,.xlsx";
+const CAMERA_ACCEPTED = "image/*,video/*";
 
 interface FileUploadEngineProps {
   module: string;
@@ -48,6 +49,7 @@ export function FileUploadEngine({
   compact = false,
 }: FileUploadEngineProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const { insertFile } = useProjectFiles();
 
   const [file, setFile] = useState<File | null>(null);
@@ -89,8 +91,11 @@ export function FileUploadEngine({
         try {
           const json = JSON.parse(res.reply) as AiClassifyResult;
           setAiResult(json);
-        } catch {
-          // AI returned non-JSON; ignore classification
+        } catch (parseErr) {
+          // AI returned non-JSON; this is expected when the AI gives a narrative response
+          if (process.env.NODE_ENV === "development") {
+            console.debug("[FileUploadEngine] AI reply not JSON:", parseErr);
+          }
         }
       }
     } catch {
@@ -168,14 +173,7 @@ export function FileUploadEngine({
               type="button"
               variant="outline"
               className="text-xs h-8 px-3"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (inputRef.current) {
-                  inputRef.current.capture = "environment";
-                  inputRef.current.accept = "image/*,video/*";
-                  inputRef.current.click();
-                }
-              }}
+              onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
             >
               <Camera className="h-3 w-3 mr-1" /> Camera
             </Button>
@@ -203,6 +201,16 @@ export function FileUploadEngine({
         ref={inputRef}
         type="file"
         accept={ACCEPTED}
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
+      />
+
+      {/* Separate dedicated camera input with declarative capture attribute */}
+      <input
+        ref={cameraRef}
+        type="file"
+        accept={CAMERA_ACCEPTED}
+        capture="environment"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
       />

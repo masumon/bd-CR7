@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS project_files (
   ai_classified   BOOLEAN     NOT NULL DEFAULT FALSE,
   ai_module       TEXT        NULL,
   ai_category     TEXT        NULL,
-  ai_confidence   NUMERIC(5,4) NULL,
+  ai_confidence   NUMERIC(5,4) NULL CHECK (ai_confidence IS NULL OR (ai_confidence >= 0 AND ai_confidence <= 1)),
   uploaded_by     UUID        NULL REFERENCES users(id) ON DELETE SET NULL,
   ref_table       TEXT        NULL,
   ref_id          UUID        NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS ai_file_classifications (
   detected_type TEXT        NOT NULL,
   module        TEXT        NOT NULL,
   category      TEXT        NOT NULL,
-  confidence    NUMERIC(5,4) NULL,
+  confidence    NUMERIC(5,4) NULL CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
   extracted_data JSONB      NOT NULL DEFAULT '{}'::jsonb,
   auto_applied  BOOLEAN     NOT NULL DEFAULT FALSE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()

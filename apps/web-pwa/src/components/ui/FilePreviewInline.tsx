@@ -6,7 +6,7 @@
  * Supported: JPG PNG WEBP GIF / MP4 MOV WEBM / PDF / MP3 WAV OGG
  */
 
-import { FileText, Film, Music, Volume2 } from "lucide-react";
+import { FileText } from "lucide-react";
 
 export type FileType = "image" | "video" | "pdf" | "audio" | "document";
 
@@ -22,6 +22,19 @@ export function detectFileType(urlOrName: string): FileType {
   return "document";
 }
 
+/** Only allow safe URL schemes to prevent XSS via javascript: URLs */
+function safeUrl(url: string): string {
+  if (
+    url.startsWith("https://") ||
+    url.startsWith("http://") ||
+    url.startsWith("blob:") ||
+    url.startsWith("/")
+  ) {
+    return url;
+  }
+  return "#";
+}
+
 interface FilePreviewInlineProps {
   url: string;
   fileName?: string;
@@ -31,6 +44,7 @@ interface FilePreviewInlineProps {
 
 export function FilePreviewInline({ url, fileName, fileType, className = "" }: FilePreviewInlineProps) {
   const type = fileType ?? detectFileType(fileName ?? url);
+  const safeSrc = safeUrl(url);
 
   const base = `rounded-lg overflow-hidden bg-card border border-border/50 ${className}`;
 
@@ -39,7 +53,7 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
       <div className={base}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={url}
+          src={safeSrc}
           alt={fileName ?? "Preview"}
           className="w-full max-h-64 object-contain"
           loading="lazy"
@@ -52,7 +66,7 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
     return (
       <div className={base}>
         <video
-          src={url}
+          src={safeSrc}
           controls
           playsInline
           preload="metadata"
@@ -66,10 +80,11 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
     return (
       <div className={base}>
         <iframe
-          src={`${url}#toolbar=0&view=FitH`}
+          src={`${safeSrc}#toolbar=0&view=FitH`}
           title={fileName ?? "PDF Preview"}
           className="w-full h-64 border-0"
           loading="lazy"
+          sandbox="allow-same-origin allow-scripts"
         />
       </div>
     );
@@ -78,9 +93,8 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
   if (type === "audio") {
     return (
       <div className={`${base} flex flex-col items-center gap-2 p-4`}>
-        <Volume2 className="h-8 w-8 text-primary opacity-70" />
         <p className="text-xs text-muted-foreground truncate max-w-full">{fileName ?? "Audio File"}</p>
-        <audio src={url} controls preload="metadata" className="w-full" />
+        <audio src={safeSrc} controls preload="metadata" className="w-full" />
       </div>
     );
   }
@@ -88,17 +102,11 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
   // Generic document
   return (
     <div className={`${base} flex items-center gap-3 p-3`}>
-      {type === "video" ? (
-        <Film className="h-6 w-6 text-primary shrink-0" />
-      ) : type === "audio" ? (
-        <Music className="h-6 w-6 text-primary shrink-0" />
-      ) : (
-        <FileText className="h-6 w-6 text-primary shrink-0" />
-      )}
+      <FileText className="h-6 w-6 text-primary shrink-0" />
       <div className="min-w-0">
         <p className="text-xs font-medium truncate">{fileName ?? "File"}</p>
         <a
-          href={url}
+          href={safeSrc}
           target="_blank"
           rel="noopener noreferrer"
           className="text-[10px] text-primary hover:underline"
