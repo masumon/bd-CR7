@@ -94,7 +94,9 @@ export function FileUploadEngine({
         } catch (parseErr) {
           // AI returned non-JSON; this is expected when the AI gives a narrative response
           if (process.env.NODE_ENV === "development") {
-            console.debug("[FileUploadEngine] AI reply not JSON (reply text logged):", res.reply, parseErr);
+            // Limit log to first 80 chars to avoid exposing document content
+            const preview = typeof res.reply === "string" ? res.reply.slice(0, 80) : "(empty)";
+            console.debug("[FileUploadEngine] AI reply not JSON:", preview, parseErr instanceof Error ? parseErr.message : "parse error");
           }
         }
       }
