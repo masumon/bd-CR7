@@ -6,6 +6,7 @@ import { uploadToCloudinary } from "@bdcr7/media-engine";
 import { useAuthStore } from "@/store/authStore";
 import { supabase } from "@/lib/supabase";
 import { validateDualApproval } from "@bdcr7/rbac-engine";
+import { useToast } from "@/components/ui/toast";
 
 const USERS = ["Owner", "Supervisor", "Accountant", "Worker"];
 const CATEGORIES = ["Materials", "Labor", "Transport", "Utility", "Misc"];
@@ -22,6 +23,7 @@ type ExpenseStatus = "pending" | "approved";
 export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   const token = useAuthStore((s) => s.token);
   const userId = useAuthStore((s) => s.userId);
+  const toast = useToast();
 
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -32,7 +34,6 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   const [receipt, setReceipt] = useState<File | null>(null);
   const [status, setStatus] = useState<ExpenseStatus>("pending");
   const [approverId, setApproverId] = useState("");
-  const [message, setMessage] = useState("");
 
   const canApprove = useMemo(() => {
     if (!userId || !approverId) return false;
@@ -74,7 +75,10 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
         },
       });
       if (error) throw error;
-      setMessage(`Expense saved with status: ${finalStatus.toUpperCase()}`);
+      toast.success(
+        "Expense saved",
+        `Status: ${finalStatus.toUpperCase()} — ${category} / ${subcategory}`,
+      );
       setAmount("");
       setDescription("");
       setReceipt(null);
@@ -82,7 +86,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
       setSubcategory(SUBCATEGORIES[category][0]);
       onSaved?.();
     } catch (error) {
-      setMessage((error as Error).message);
+      toast.error("Failed to save expense", (error as Error).message);
     }
   };
 
@@ -151,7 +155,6 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
 
         <button className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 disabled:pointer-events-none disabled:opacity-60 md:col-span-2" type="submit" disabled={!token}>Save Expense</button>
       </form>
-      {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
     </section>
   );
 }

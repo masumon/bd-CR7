@@ -5,6 +5,7 @@ import { ArrowDownToLine, RefreshCw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { apiRequest } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 
 const ROLES = [
   "Brick Mason", "Iron Worker", "Steel Fabricator", "Welder",
@@ -47,6 +48,7 @@ function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
 
 export function WorkerLogsFeature() {
   const supabase = useMemo(() => createClient(), []);
+  const toast = useToast();
 
   // --- Form state ---
   const [workerName, setWorkerName]               = useState("");
@@ -58,7 +60,6 @@ export function WorkerLogsFeature() {
   const [workDescription, setWorkDescription]     = useState("");
   const [latitude, setLatitude]                   = useState("23.777176");
   const [longitude, setLongitude]                 = useState("90.399452");
-  const [message, setMessage]                     = useState("");
 
   // --- Log list state ---
   const [logs, setLogs]       = useState<AttendanceLog[]>([]);
@@ -122,7 +123,7 @@ export function WorkerLogsFeature() {
         longitude:        Number(longitude),
       });
       if (error) throw error;
-      setMessage("✅ Worker log saved.");
+      toast.success("Worker log saved", `${workerName} — ${attendanceStatus}`);
       setWorkerName(""); setPhone(""); setWorkDescription(""); setPaidAmount("0");
       fetchLogs(); // refresh list
       return;
@@ -135,10 +136,10 @@ export function WorkerLogsFeature() {
         method: "POST",
         body: JSON.stringify({ worker_id: workerName, latitude: Number(latitude), longitude: Number(longitude) }),
       });
-      setMessage(result.message || "Worker log synced (API fallback)");
+      toast.info("Worker log synced", result.message || "API fallback used");
       fetchLogs();
     } catch (err) {
-      setMessage((err as Error).message);
+      toast.error("Failed to save worker log", (err as Error).message);
     }
   };
 
@@ -186,7 +187,6 @@ export function WorkerLogsFeature() {
             Save Worker Log / শ্রমিক লগ সেভ করুন
           </button>
         </form>
-        {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
       </section>
 
       {/* Attendance Log Table */}
