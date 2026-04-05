@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 
-const SPLASH_DURATION_MS = 1200;
+const SPLASH_DURATION_MS = 600;
 
 export default function WelcomePage() {
   const router = useRouter();

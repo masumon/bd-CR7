@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Mail, Globe } from "lucide-react";
 import { DEVELOPER_CONFIG } from "@/lib/developers";
 
@@ -33,7 +34,7 @@ export function PoweredByFooter({ className = "" }: { className?: string }) {
             aria-label="Facebook"
             className="auth-social-icon auth-social-icon--facebook"
           >
-            <img
+            <Image
               src="/icons/brands/facebook.svg"
               alt="Facebook"
               width={16}
@@ -47,7 +48,7 @@ export function PoweredByFooter({ className = "" }: { className?: string }) {
             aria-label="WhatsApp"
             className="auth-social-icon auth-social-icon--whatsapp"
           >
-            <img
+            <Image
               src="/icons/brands/whatsapp.svg"
               alt="WhatsApp"
               width={16}
