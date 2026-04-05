@@ -38,6 +38,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [emailBlurred, setEmailBlurred] = useState(false);
 
   // Validation
   const isFormValid =
@@ -171,7 +172,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={Boolean(email) && !email.includes("@")}>
+            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={emailBlurred && Boolean(email) && !email.includes("@")}>
               <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Email / ইমেইল</label>
               <input
@@ -180,6 +181,7 @@ export default function RegisterPage() {
                 placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailBlurred(true)}
                 disabled={loading}
                 className="bdcr7-input"
                 required

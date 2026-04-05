@@ -597,6 +597,10 @@ html.reduce-motion *::after {
   transition: all 0.18s ease;
 }
 
+.bdcr7-input-label-sm {
+  left: 1.85rem;
+}
+
 .bdcr7-input-wrap:focus-within .bdcr7-input-label,
 .bdcr7-input-wrap[data-filled="true"] .bdcr7-input-label {
   top: 0;

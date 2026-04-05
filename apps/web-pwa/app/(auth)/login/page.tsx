@@ -537,7 +537,7 @@ function SigninView({
           No account?{" "}
           <button
             type="button"
-            onClick={() => { /* handled by parent */ onBack(); }}
+            onClick={onBack}
             style={{ color: "rgba(251,189,35,0.9)" }}
             className="font-semibold hover:underline"
           >
@@ -741,6 +741,7 @@ function SignupView({
   showPass, setShowPass, showConfirm, setShowConfirm,
   error, success,
 }: SignupViewProps) {
+  const [emailBlurred, setEmailBlurred] = useState(false);
   const passwordsMatch = Boolean(confirmPass) && password === confirmPass;
   const passwordError = Boolean(password) && password.length < 8;
 
@@ -788,7 +789,7 @@ function SignupView({
             <div className="grid grid-cols-2 gap-2.5">
               <div className="bdcr7-input-wrap" data-filled={Boolean(fullName)}>
                 <User className="h-4 w-4 shrink-0 text-amber-300/60" />
-                <label className="bdcr7-input-label" style={{ left: "1.85rem" }}>
+                <label className="bdcr7-input-label bdcr7-input-label-sm">
                   Full Name / <span style={{ fontFamily: "var(--font-hind-var)" }}>নাম</span>
                 </label>
                 <input
@@ -805,7 +806,7 @@ function SignupView({
               </div>
               <div className="bdcr7-input-wrap" data-filled={Boolean(userId)}>
                 <User className="h-4 w-4 shrink-0 text-amber-300/60" />
-                <label className="bdcr7-input-label" style={{ left: "1.85rem" }}>User ID</label>
+                <label className="bdcr7-input-label bdcr7-input-label-sm">User ID</label>
                 <input
                   type="text"
                   autoComplete="username"
@@ -820,7 +821,7 @@ function SignupView({
             </div>
 
             {/* Email */}
-            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={Boolean(email) && !email.includes("@")}>
+            <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={emailBlurred && Boolean(email) && !email.includes("@")}>
               <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Email / ইমেইল</label>
               <input
@@ -829,6 +830,7 @@ function SignupView({
                 placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailBlurred(true)}
                 disabled={loading}
                 className="bdcr7-input"
                 required
