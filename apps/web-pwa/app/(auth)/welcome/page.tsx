@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 
-const SPLASH_DURATION_MS = 2800;
+const SPLASH_DURATION_MS = 1200;
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -89,20 +89,6 @@ export default function WelcomePage() {
         >
           SUMONIX AI
         </p>
-        <div className="mt-2.5">
-          <p
-            className="text-[10px] uppercase tracking-[0.18em]"
-            style={{ color: "rgba(255,255,255,0.32)" }}
-          >
-            Developed by
-          </p>
-          <p
-            className="mt-0.5 text-xs font-bold text-white"
-            style={{ fontFamily: "var(--font-outfit-var)" }}
-          >
-            Mumain Ahmed
-          </p>
-        </div>
       </motion.div>
     </main>
   );

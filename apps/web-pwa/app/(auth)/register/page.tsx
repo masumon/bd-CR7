@@ -19,6 +19,7 @@ import {
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
+import { PoweredByFooter } from "@/components/auth/PoweredByFooter";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -350,6 +351,7 @@ export default function RegisterPage() {
           </button>
         </p>
       </div>
+      <PoweredByFooter className="mx-auto w-full max-w-sm px-5" />
     </main>
   );
 }
