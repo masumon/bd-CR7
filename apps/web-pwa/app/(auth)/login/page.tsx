@@ -326,7 +326,7 @@ function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading, bioEr
             aria-label="Sign In with email and password"
           >
             <Lock className="h-3.5 w-3.5" />
-            Sign In with email &amp; password
+            Sign In with email & password
           </button>
         </div>
 
