@@ -381,19 +381,36 @@ html.reduce-motion *::after {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--surface-strong) / 0.72);
-  color: hsl(var(--foreground));
-  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.85);
+  transition: transform 150ms ease, opacity 150ms ease;
 }
 
 .auth-social-icon:hover {
-  border-color: hsl(var(--primary));
-  background: hsl(var(--primary) / 0.14);
+  opacity: 0.8;
 }
 
 .auth-social-icon:active {
   transform: scale(0.95);
+}
+
+.auth-social-icon--facebook { color: #1877F2; }
+.auth-social-icon--whatsapp { color: #25D366; }
+.auth-social-icon--email    { color: rgba(255, 255, 255, 0.92); }
+.auth-social-icon--web      { color: rgba(255, 255, 255, 0.82); }
+
+/* Developer credit fixed footer */
+.dev-credit-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding-top: 0.5rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, rgba(0,0,0,0.55) 0%, transparent 100%);
 }
 
 /* Button variants */
