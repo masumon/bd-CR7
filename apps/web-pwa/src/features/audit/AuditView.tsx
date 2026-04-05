@@ -8,6 +8,7 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { createClient } from "@/lib/supabase/client";
 
 type AuditRow = {
@@ -89,7 +90,7 @@ export function AuditView() {
     });
   }, [auditLogs, search, actionFilter]);
 
-  const tabs = ["Activity Logs", "Financial Audit", "System Changes"];
+  const tabs = ["Activity Logs", "Financial Audit", "System Changes", "File Audit"];
 
   return (
     <div className="glass rounded-2xl space-y-4">
@@ -320,6 +321,14 @@ export function AuditView() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {activeTab === "File Audit" && (
+        <ProjectFilesPanel
+          module="audit"
+          category="general"
+          label="Audit Documents & Evidence Files"
+        />
       )}
     </div>
   );

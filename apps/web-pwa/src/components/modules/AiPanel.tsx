@@ -6,6 +6,7 @@ import { BrainCircuit, Loader2, Radar, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { FileUploadEngine } from "@/components/ui/FileUploadEngine";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
@@ -173,6 +174,21 @@ export function AiPanel() {
           </div>
 
           {message ? <div className="rounded-2xl border border-border/70 bg-background/75 px-4 py-3 text-sm text-muted-foreground">{message}</div> : null}
+
+          <div className="rounded-[1.4rem] border border-border/70 bg-background/75 p-4">
+            <SectionHeader
+              eyebrow="AI File Processing / ফাইল প্রক্রিয়াকরণ"
+              title="Upload any file for AI classification"
+            />
+            <p className="mb-3 text-xs text-muted-foreground">
+              Upload invoices, images, delivery slips, or audio. SUMONIX AI will auto-classify and extract data.
+            </p>
+            <FileUploadEngine
+              module="ai"
+              category="auto-classify"
+              subcategory="pending"
+            />
+          </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
             {anomalies.map((item) => (
