@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, FormEvent, useCallback } from "react";
-import { motion } from "framer-motion";
 import {
   Eye,
   EyeOff,
@@ -36,6 +35,7 @@ export default function LoginPage() {
   const [biometricMode, setBiometricMode] = useState<"fingerprint" | "face">("fingerprint");
   const [error, setError] = useState("");
   const [showWelcome, setShowWelcome] = useState(false);
+  const [authTransitionDone, setAuthTransitionDone] = useState(false);
 
   // Restore theme preference
   useEffect(() => {
@@ -49,12 +49,15 @@ export default function LoginPage() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setAuthTransitionDone(false);
     setLoading(true);
     try {
       await login(email, password);
       setShowWelcome(true);
+      setAuthTransitionDone(true);
     } catch (err) {
       setError((err as Error).message);
+      setShowWelcome(false);
     } finally {
       setLoading(false);
     }
@@ -113,21 +116,25 @@ export default function LoginPage() {
 
   return (
     <>
-    <LoginLoadingOverlay visible={showWelcome} onDone={() => router.push("/dashboard")} />
-    <main className="login-shell auth-bg-dark auth-page flex flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col">
-        <header className="pb-4 pt-3 text-center">
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/80">Welcome back</p>
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-amber-300/25 bg-slate-950/60 p-3 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
+    <LoginLoadingOverlay
+      visible={loading || showWelcome}
+      complete={authTransitionDone}
+      onDone={() => router.push("/dashboard")}
+    />
+    <main className="login-shell auth-bg-dark auth-page flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-between">
+        <header className="pb-2 pt-2 text-center">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/80">Welcome back</p>
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-300/25 bg-slate-950/60 p-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.32)]">
             <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={62} height={62} className="h-full w-full object-contain" priority />
           </div>
-          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-white">BD CR7</h1>
+          <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-white">BD CR7</h1>
         </header>
 
-        <section className="auth-card rounded-3xl px-4 py-4">
+        <section className="auth-card rounded-3xl px-3.5 py-3">
           {error && (
             <div
-              className={`mb-3 rounded-2xl border px-3.5 py-2.5 text-sm ${
+              className={`mb-2 rounded-2xl border px-3 py-2 text-sm ${
                 error.includes("sent") || error.includes("successfully")
                   ? "border-emerald-400/45 bg-emerald-900/20 text-emerald-200"
                   : "border-rose-400/45 bg-rose-900/20 text-rose-200"
@@ -137,7 +144,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-3">
+          <form onSubmit={handleLogin} className="space-y-2.5">
             <div className="auth-input-wrap px-3" data-filled={Boolean(email)} data-error={Boolean(error) && !email}>
               <Mail className="h-4 w-4 shrink-0 text-slate-300" />
               <label className="auth-floating-label">Email / ইমেইল</label>
@@ -187,7 +194,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-60"
+                className="btn-gold flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold disabled:opacity-60"
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {loading ? "Signing in..." : "Sign in / সাইন ইন"}
@@ -195,43 +202,45 @@ export default function LoginPage() {
             </div>
           </form>
 
-          <p className="mt-1 text-center text-xs text-slate-300/95">
+          <p className="mt-1 text-center text-[11px] text-slate-300/95">
             No account? / অ্যাকাউন্ট নেই?{" "}
             <Link href="/register" className="font-semibold text-amber-200 hover:text-amber-100">
               Create one / তৈরি করুন
             </Link>
           </p>
 
-          <div className="mt-4 rounded-2xl border border-slate-500/30 bg-slate-950/45 px-3.5 py-3.5">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-[0.12em] text-slate-200 uppercase">Quick Unlock</span>
-              <Fingerprint className="h-4 w-4 text-amber-200" />
+          <div className="mt-3 rounded-2xl border border-slate-500/30 bg-slate-950/45 px-3 py-2.5">
+            <div className="mb-2 flex items-center justify-center gap-2">
+              <span className="text-[11px] font-semibold tracking-[0.12em] text-slate-200 uppercase">Quick Unlock</span>
             </div>
             <button
               type="button"
               onClick={() => handleBiometric("fingerprint")}
               disabled={biometricLoading}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-amber-300/35 bg-amber-300/10 text-sm font-semibold text-amber-100 transition-all hover:bg-amber-300/16 active:scale-[0.98] disabled:opacity-60"
+              aria-label="Unlock with biometric"
+              className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-300/35 bg-amber-300/10 text-amber-100 transition-all hover:bg-amber-300/16 active:scale-[0.98] disabled:opacity-60 animate-pulse"
             >
               {biometricLoading && biometricMode === "fingerprint" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Fingerprint className="h-4 w-4" />
+                <Fingerprint className="h-5 w-5" />
               )}
-              Unlock with Biometric
             </button>
-            <p className="mt-2 text-[11px] leading-5 text-slate-300/85">
+            <p className="mt-1.5 text-center text-[11px] leading-4 text-slate-300/85">
+              Biometric unlock
+            </p>
+            <p className="mt-1 text-[10px] leading-4 text-slate-300/80">
               Quick unlock requires a remembered session and platform biometric verification via WebAuthn.
             </p>
           </div>
         </section>
 
-        <footer className="mt-auto pb-2 pt-4">
+        <footer className="mt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
           <div className="border-t border-slate-500/35 pt-3 text-center">
             <p className="text-sm font-bold tracking-wide text-white">{DEVELOPER_CONFIG.name}</p>
-            <p className="mt-1 text-xs text-slate-300/95">{DEVELOPER_CONFIG.role}</p>
-            <p className="mt-1 text-[11px] text-slate-400">{DEVELOPER_CONFIG.powerLine}</p>
-            <div className="mt-3 flex items-center justify-center gap-3">
+            <p className="mt-0.5 text-xs text-slate-300/95">{DEVELOPER_CONFIG.role}</p>
+            <p className="mt-0.5 text-[10px] text-slate-400">{DEVELOPER_CONFIG.powerLine}</p>
+            <div className="mt-2 flex items-center justify-center gap-2.5">
               <a href={DEVELOPER_CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="auth-social-icon">
                 <Facebook className="h-5 w-5" />
               </a>

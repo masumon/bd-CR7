@@ -18,14 +18,12 @@ export default function WelcomePage() {
   }, [router]);
 
   return (
-    <main className="auth-page auth-bg-dark flex min-h-[100dvh] flex-col items-center justify-between">
-      <div className="h-8" />
-
+    <main className="auth-page auth-bg-dark flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden">
       <motion.section
         initial={{ opacity: 0, scale: 0.95, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col items-center text-center"
+        className="flex flex-1 flex-col items-center justify-center text-center"
       >
         <motion.div
           animate={{ scale: [1, 1.05, 1], opacity: [0.96, 1, 0.96] }}
@@ -53,7 +51,7 @@ export default function WelcomePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.74 }}
         transition={{ delay: 0.35, duration: 0.4 }}
-        className="pb-2 text-xs tracking-[0.18em] text-slate-300 uppercase"
+        className="pb-[max(0.75rem,env(safe-area-inset-bottom))] text-xs tracking-[0.18em] text-slate-300 uppercase"
       >
         Powered by SUMONIX AI
       </motion.p>

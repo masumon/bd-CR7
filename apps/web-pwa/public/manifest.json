@@ -1,7 +1,7 @@
 {
   "name": "BD CR7 ERP Mobile",
   "short_name": "BDCR7 ERP",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f141d",

@@ -6,19 +6,20 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface LoginLoadingOverlayProps {
   visible: boolean;
+  complete?: boolean;
   onDone: () => void;
 }
 
 const WELCOME_OVERLAY_DURATION = 2000;
 
-export function LoginLoadingOverlay({ visible, onDone }: LoginLoadingOverlayProps) {
+export function LoginLoadingOverlay({ visible, complete = false, onDone }: LoginLoadingOverlayProps) {
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !complete) return;
     const timer = setTimeout(() => {
       onDone();
     }, WELCOME_OVERLAY_DURATION);
     return () => clearTimeout(timer);
-  }, [visible, onDone]);
+  }, [visible, complete, onDone]);
 
   return (
     <AnimatePresence>

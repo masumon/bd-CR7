@@ -110,9 +110,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="login-shell auth-bg-dark auth-page flex flex-col overflow-y-auto">
+    <main className="register-shell auth-bg-dark auth-page flex flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col">
-        <header className="mb-3 flex items-center gap-3">
+        <header className="mb-2 flex items-center gap-3">
           <button
             onClick={() => router.back()}
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-500/35 bg-slate-900/55 text-slate-200 active:scale-95"
@@ -124,21 +124,21 @@ export default function RegisterPage() {
         </header>
 
         {error && (
-          <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-400/45 bg-rose-900/20 px-3.5 py-2.5 text-sm text-rose-200">
+          <div className="mb-2 flex items-start gap-2 rounded-2xl border border-rose-400/45 bg-rose-900/20 px-3 py-2 text-sm text-rose-200">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-3 flex items-center gap-2 rounded-2xl border border-emerald-400/45 bg-emerald-900/20 px-3.5 py-2.5 text-sm text-emerald-200">
+          <div className="mb-2 flex items-center gap-2 rounded-2xl border border-emerald-400/45 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
             <Check className="h-4 w-4" />
             <span>Account created successfully! Redirecting...</span>
           </div>
         )}
 
-        <section className="auth-card rounded-3xl px-4 py-4">
-          <form onSubmit={handleSubmit} className="space-y-3">
+        <section className="auth-card rounded-3xl px-3.5 py-3.5">
+          <form onSubmit={handleSubmit} className="space-y-2.5">
             <div className="auth-input-wrap px-3" data-filled={Boolean(fullName)} data-error={Boolean(error) && !fullName.trim()}>
               <User className="h-4 w-4 shrink-0 text-slate-300" />
               <label className="auth-floating-label">Full Name / পূর্ণ নাম</label>
@@ -247,7 +247,7 @@ export default function RegisterPage() {
 
             <label
               htmlFor="terms"
-              className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-500/30 bg-slate-950/35 px-3 py-2.5"
+              className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-500/30 bg-slate-950/35 px-3 py-2"
             >
               <input
                 id="terms"
@@ -271,7 +271,7 @@ export default function RegisterPage() {
             </div>
           </form>
 
-          <div className="my-3 flex items-center gap-3">
+          <div className="my-2.5 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-600/40" />
             <span className="text-xs text-slate-300">Or</span>
             <span className="h-px flex-1 bg-slate-600/40" />
@@ -291,13 +291,13 @@ export default function RegisterPage() {
             Sign up with Google
           </button>
 
-          <div className="mt-4 border-t border-slate-600/35 pt-3 text-center">
+          <div className="mt-3 border-t border-slate-600/35 pt-2.5 text-center">
             <p className="text-sm font-bold text-white">{DEVELOPER_CONFIG.name}</p>
             <p className="mt-1 text-xs text-slate-300">{DEVELOPER_CONFIG.role}</p>
           </div>
         </section>
 
-        <p className="mt-4 text-center text-xs text-slate-300">
+        <p className="mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-xs text-slate-300">
           Already have an account?{" "}
           <button onClick={() => router.push("/auth/login")} className="font-semibold text-amber-200 hover:text-amber-100 transition">
             Sign in

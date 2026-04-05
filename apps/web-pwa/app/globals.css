@@ -49,7 +49,7 @@ html {
 }
 
 body {
-  min-height: 100svh;
+  min-height: 100dvh;
   overflow-x: clip;
   font-family: var(--font-body), var(--font-bengali), "Segoe UI", sans-serif;
   background: hsl(var(--background));
@@ -176,7 +176,7 @@ a:focus-visible {
 .animate-erp-glow   { animation: erpGlow 2.5s ease-in-out infinite; }
 
 /* ─── Utility classes ─── */
-.screen-shell { min-height: 100svh; }
+.screen-shell { min-height: 100dvh; }
 
 /* Glassmorphism card */
 .glass {
@@ -267,15 +267,27 @@ html.reduce-motion *::after {
 .login-shell {
   position: fixed;
   inset: 0;
-  overflow-y: auto;
+  width: 100%;
+  overflow-y: hidden;
   overflow-x: hidden;
   overscroll-behavior: none;
 }
 
+.register-shell {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .auth-page {
   min-height: 100dvh;
+  height: 100dvh;
   padding-top: max(1rem, env(safe-area-inset-top));
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.75rem, env(keyboard-inset-height, 0px), env(safe-area-inset-bottom));
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
 }
