@@ -1,5 +1,5 @@
 // SUMONIX "S" Logo — brand icon using letter S
-const BDCR7Logo = ({ size = 100, className = "" }: { size?: number; className?: string }) => (
+const SumonixLogo = ({ size = 100, className = "" }: { size?: number; className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 100 100"
@@ -37,4 +37,4 @@ const BDCR7Logo = ({ size = 100, className = "" }: { size?: number; className?: 
   </svg>
 );
 
-export default BDCR7Logo;
+export default SumonixLogo;

@@ -38,7 +38,7 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
           {/* Logo mark — visible on desktop icon-only sidebar */}
           <div className="hidden lg:flex items-center justify-center py-2 mb-1">
             <div className="h-9 w-9 overflow-hidden rounded-xl shadow-sm">
-              <Image src="/icons/icon.svg" alt="S" width={36} height={36} className="h-9 w-9 object-contain" />
+              <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={36} height={36} className="h-9 w-9 object-contain" />
             </div>
           </div>
           {items.map((item) => {
