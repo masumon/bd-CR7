@@ -31,6 +31,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { ERPModuleStatusGrid } from "@/components/ui/ERPModuleStatusGrid";
 
 function fmt(n: number) {
   if (n >= 1_000_000) return `৳${(n / 1_000_000).toFixed(1)}M`;
@@ -178,6 +179,11 @@ export function DashboardHomeView() {
         </h1>
         <p className="mt-0.5 text-[12px] text-muted-foreground tracking-wide">{t.subtitle}</p>
       </div>
+
+      {/* ERP Cross-Module Status Grid */}
+      <section aria-label="ERP module status">
+        <ERPModuleStatusGrid />
+      </section>
 
       {/* KPI Cards — skeleton while loading */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Key performance indicators">

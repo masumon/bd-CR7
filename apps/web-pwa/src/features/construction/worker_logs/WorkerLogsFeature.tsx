@@ -6,6 +6,7 @@ import { ArrowDownToLine, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
 
 const ROLES = [
   "Brick Mason", "Iron Worker", "Steel Fabricator", "Welder",
@@ -50,7 +51,6 @@ export function WorkerLogsFeature() {
   const supabase = useMemo(() => createClient(), []);
   const toast = useToast();
 
-  // --- Form state ---
   const [workerName, setWorkerName]               = useState("");
   const [phone, setPhone]                         = useState("");
   const [role, setRole]                           = useState<(typeof ROLES)[number]>("General Labour");
@@ -61,8 +61,10 @@ export function WorkerLogsFeature() {
   const [latitude, setLatitude]                   = useState("23.777176");
   const [longitude, setLongitude]                 = useState("90.399452");
 
-  // --- Log list state ---
-  const [logs, setLogs]       = useState<AttendanceLog[]>([]);
+  // Work proof (warn severity — not a hard block)
+  const [proofFileId, setProofFileId] = useState<string | null>(null);
+
+  const [logs, setLogs]               = useState<AttendanceLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
   const fetchLogs = useCallback(async () => {
@@ -103,12 +105,15 @@ export function WorkerLogsFeature() {
     return 6371 * c;
   }, [latitude, longitude]);
 
+  const handleFileReady = ({ fileId }: EvidenceGateFileReady) => {
+    setProofFileId(fileId);
+  };
+
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const today = new Date().toISOString().slice(0, 10);
     const statusLower = attendanceStatus.toLowerCase() as "present" | "absent" | "half";
 
-    // Try Supabase first
     try {
       const { error } = await supabase.from("attendance").insert({
         worker_name:      workerName.trim(),
@@ -121,11 +126,13 @@ export function WorkerLogsFeature() {
         date:             today,
         latitude:         Number(latitude),
         longitude:        Number(longitude),
+        proof_file_id:    proofFileId || null,
       });
       if (error) throw error;
-      toast.success("Worker log saved", `${workerName} — ${attendanceStatus}`);
+      toast.success("Worker log saved", `${workerName} — ${attendanceStatus}${proofFileId ? " · Proof attached" : ""}`);
       setWorkerName(""); setPhone(""); setWorkDescription(""); setPaidAmount("0");
-      fetchLogs(); // refresh list
+      setProofFileId(null);
+      fetchLogs();
       return;
     } catch (_) {
       // fallback to Python API
@@ -152,11 +159,27 @@ export function WorkerLogsFeature() {
   return (
     <div className="space-y-5">
       {/* Entry Form */}
-      <section className="module rounded-[1.5rem] border border-border/70 bg-white/80 p-5 shadow-soft dark:bg-slate-950/45">
-        <div className="mb-4">
+      <section className="module rounded-[1.5rem] border border-border/70 bg-white/80 p-5 shadow-soft dark:bg-slate-950/45 space-y-4">
+        <div>
           <h3 className="text-xl font-semibold text-foreground">Worker & HR</h3>
           <p className="mt-1 text-sm text-muted-foreground">Track attendance, wage exposure, and geofence compliance.</p>
         </div>
+
+        {/* Work proof (warn severity — recommended but not blocking) */}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2">
+            Work Proof (Recommended)
+          </p>
+          <EvidenceGate
+            module="workforce"
+            category="work-proof"
+            severity="warn"
+            label="Attach a work photo or timesheet for this attendance log."
+            onFileReady={handleFileReady}
+            onCleared={() => setProofFileId(null)}
+          />
+        </div>
+
         <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
           <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="Worker Name" required />
           <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" />
@@ -183,8 +206,12 @@ export function WorkerLogsFeature() {
             </p>
             <p className="mt-1 text-xs">{geoDistanceKm.toFixed(2)} km from site</p>
           </div>
-          <button className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 md:col-span-2" type="submit">
+          <button
+            className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 md:col-span-2"
+            type="submit"
+          >
             Save Worker Log / শ্রমিক লগ সেভ করুন
+            {proofFileId && <span className="ml-2 text-[11px] opacity-75">· Proof attached ✓</span>}
           </button>
         </form>
       </section>
@@ -197,36 +224,23 @@ export function WorkerLogsFeature() {
             <p className="mt-0.5 text-xs text-muted-foreground">Last 50 entries</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => fetchLogs()}
-              disabled={logsLoading}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition hover:bg-muted disabled:opacity-50"
-              aria-label="Refresh"
-            >
+            <button type="button" onClick={() => fetchLogs()} disabled={logsLoading}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition hover:bg-muted disabled:opacity-50" aria-label="Refresh">
               <RefreshCw className={`h-3.5 w-3.5 ${logsLoading ? "animate-spin" : ""}`} />
             </button>
-            <button
-              type="button"
+            <button type="button"
               onClick={() =>
-                downloadCSV(
-                  `worker-attendance-${new Date().toISOString().slice(0, 10)}.csv`,
+                downloadCSV(`worker-attendance-${new Date().toISOString().slice(0, 10)}.csv`,
                   logs.map((l) => ({
-                    date: l.date,
-                    name: l.worker_name,
-                    role: l.role,
-                    status: l.status,
-                    daily_wage: l.daily_wage,
-                    paid: l.paid_amount,
+                    date: l.date, name: l.worker_name, role: l.role, status: l.status,
+                    daily_wage: l.daily_wage, paid: l.paid_amount,
                     unpaid: Math.max(0, l.daily_wage * (l.status === "present" ? 1 : l.status === "half" ? 0.5 : 0) - l.paid_amount),
-                    phone: l.phone ?? "",
-                    description: l.work_description ?? "",
+                    phone: l.phone ?? "", description: l.work_description ?? "",
                   }))
                 )
               }
               disabled={!logs.length}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50"
-            >
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50">
               <ArrowDownToLine className="h-3.5 w-3.5" /> CSV
             </button>
           </div>

@@ -40,7 +40,7 @@ def create_app() -> Any:
     from core.logging import configure_logging
     from core.middleware import RateLimitMiddleware
     from core.supabase import supabase_service
-    from routers import ai, approval_intelligence, auth, finance, hr, import_supply, pos, project_management, users
+    from routers import ai, ai_employment, approval_intelligence, auth, finance, hr, import_supply, pos, project_management, users
 
     configure_logging(settings.log_level)
 
@@ -79,6 +79,7 @@ def create_app() -> Any:
     app.include_router(project_management.router, prefix="/api/project-management", tags=["project_management"])
     app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
     app.include_router(approval_intelligence.router, prefix="/api/ai-intelligence", tags=["ai_intelligence"])
+    app.include_router(ai_employment.router, prefix="/api", tags=["ai_employment"])
     app.include_router(users.router, prefix="/api/users", tags=["users"])
 
     @app.get("/api")

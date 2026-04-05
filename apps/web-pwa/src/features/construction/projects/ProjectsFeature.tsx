@@ -19,6 +19,8 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { uploadToCloudinary } from "@bdcr7/media-engine";
 import { apiRequest } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
@@ -395,9 +397,36 @@ export function ProjectsFeature() {
         eyebrow="Project Desk / প্রজেক্ট ডেস্ক"
         title="Project cards with update controls"
         actions={
-          <Button onClick={openCreate} className="gap-1.5 h-10 px-4 text-sm">
-            <Plus className="h-4 w-4" /> New Project
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportPDFButton
+              onBuildOptions={() => ({
+                moduleName: "Projects",
+                moduleNameBn: "প্রকল্প ব্যবস্থাপনা",
+                description: "Active construction project register.",
+                descriptionBn: "সক্রিয় নির্মাণ প্রকল্পের তালিকা।",
+                sections: [
+                  {
+                    title: "Projects Overview",
+                    titleBn: "প্রকল্প সারসংক্ষেপ",
+                    rows: [],
+                    tableHeaders: ["Name", "Status", "Phase", "Budget", "Start", "End"],
+                    tableHeadersBn: ["নাম", "স্ট্যাটাস", "পর্যায়", "বাজেট", "শুরু", "শেষ"],
+                    tableRows: projects.map((p) => [
+                      p.name,
+                      p.status,
+                      p.phase ?? "—",
+                      p.budget != null ? `৳${Number(p.budget).toLocaleString()}` : "—",
+                      p.start_date ?? "—",
+                      p.end_date ?? "—",
+                    ]),
+                  },
+                ],
+              })}
+            />
+            <Button onClick={openCreate} className="gap-1.5 h-10 px-4 text-sm">
+              <Plus className="h-4 w-4" /> New Project
+            </Button>
+          </div>
         }
       />
 
@@ -639,6 +668,17 @@ export function ProjectsFeature() {
           </Card>
         </div>
       ) : null}
+
+      {/* Centralized file vault for the selected project */}
+      {selectedProject && (
+        <ProjectFilesPanel
+          module="construction"
+          category="progress"
+          projectId={selectedProject.id}
+          label={`All Files — ${selectedProject.name}`}
+          subcategory="site"
+        />
+      )}
 
       {detailsError ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
