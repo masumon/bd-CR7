@@ -158,7 +158,8 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       {/* ── Global Floating Upload Button ───────────────────────────────── */}
       <button
         type="button"
-        aria-label="Upload file"
+        aria-label="Upload evidence file"
+        title="Upload Evidence / File"
         onClick={() => setUploadOpen(true)}
         className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+12px)] right-20 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/50 active:scale-95 transition-transform lg:bottom-6 lg:right-20"
       >

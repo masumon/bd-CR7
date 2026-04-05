@@ -22,17 +22,24 @@ export function detectFileType(urlOrName: string): FileType {
   return "document";
 }
 
-/** Only allow safe URL schemes to prevent XSS via javascript: URLs */
+/** 
+ * Validates URLs using the URL API to block javascript: and other unsafe schemes.
+ * Returns the original URL for safe schemes, or "about:blank" as a safe fallback.
+ */
 function safeUrl(url: string): string {
-  if (
-    url.startsWith("https://") ||
-    url.startsWith("http://") ||
-    url.startsWith("blob:") ||
-    url.startsWith("/")
-  ) {
-    return url;
+  // Allow blob: URLs (local file previews) — they are same-origin safe
+  if (url.startsWith("blob:")) return url;
+  // Allow root-relative paths
+  if (url.startsWith("/")) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      return url;
+    }
+    return "about:blank";
+  } catch {
+    return "about:blank";
   }
-  return "#";
 }
 
 interface FilePreviewInlineProps {
@@ -84,7 +91,7 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
           title={fileName ?? "PDF Preview"}
           className="w-full h-64 border-0"
           loading="lazy"
-          sandbox="allow-same-origin allow-scripts"
+          sandbox="allow-same-origin"
         />
       </div>
     );

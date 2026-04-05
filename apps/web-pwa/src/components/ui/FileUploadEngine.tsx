@@ -94,7 +94,7 @@ export function FileUploadEngine({
         } catch (parseErr) {
           // AI returned non-JSON; this is expected when the AI gives a narrative response
           if (process.env.NODE_ENV === "development") {
-            console.debug("[FileUploadEngine] AI reply not JSON:", parseErr);
+            console.debug("[FileUploadEngine] AI reply not JSON (reply text logged):", res.reply, parseErr);
           }
         }
       }
