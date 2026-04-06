@@ -14,7 +14,6 @@ import {
   type SettingsTab,
   type UserProfile,
 } from "@/features/settings_rbac/model";
-import { ModuleControlPanel } from "@/features/settings_rbac/tabs/ModuleControlPanel";
 import { SyncControlPanel } from "@/features/settings_rbac/tabs/SyncControlPanel";
 import { AdvancedTab } from "@/features/settings_rbac/tabs/AdvancedTab";
 import { IntegrationsTab } from "@/features/settings_rbac/tabs/IntegrationsTab";
@@ -248,7 +247,6 @@ export function SettingsFeature() {
         />
       ) : null}
 
-      {activeTab === "Modules" ? <ModuleControlPanel language={language} /> : null}
       {activeTab === "Sync" ? <SyncControlPanel language={language} /> : null}
       {activeTab === "Advanced" ? <AdvancedTab onReset={resetWorkspacePreferences} /> : null}
 

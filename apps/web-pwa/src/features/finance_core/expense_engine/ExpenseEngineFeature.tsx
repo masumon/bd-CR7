@@ -9,7 +9,6 @@ import { apiClient } from "@/lib/apiClient";
 import { validateDualApproval } from "@bdcr7/rbac-engine";
 import { useToast } from "@/components/ui/toast";
 import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
-import { AIAutoInsertPanel } from "@/components/ui/AIAutoInsertPanel";
 
 const USERS = ["Owner", "Supervisor", "Accountant", "Worker"];
 const CATEGORIES = ["Materials", "Labor", "Transport", "Utility", "Misc"];
@@ -41,7 +40,6 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   // Evidence enforcement state
   const [proofFileId, setProofFileId] = useState<string | null>(null);
   const [proofFileUrl, setProofFileUrl] = useState<string | null>(null);
-  const [aiProposalFileId, setAiProposalFileId] = useState<string | null>(null);
 
   const canApprove = useMemo(() => {
     if (!userId || !approverId) return false;
@@ -61,7 +59,6 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   const handleFileReady = ({ fileId, fileUrl, fileName }: EvidenceGateFileReady) => {
     setProofFileId(fileId);
     setProofFileUrl(fileUrl);
-    setAiProposalFileId(fileId);
     // Try to auto-fill amount from filename hints
     const match = /(\d[\d,]*(?:\.\d{1,2})?)/.exec(fileName.replace(/[^\d.,]/g, " "));
     if (match) {
@@ -117,7 +114,6 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
       setSubcategory(SUBCATEGORIES[category][0]);
       setProofFileId(null);
       setProofFileUrl(null);
-      setAiProposalFileId(null);
       onSaved?.();
     } catch (error) {
       toast.error("Failed to save expense", (error as Error).message);
@@ -145,25 +141,9 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           severity="block"
           label="Invoice or receipt required before saving expense."
           onFileReady={handleFileReady}
-          onCleared={() => { setProofFileId(null); setProofFileUrl(null); setAiProposalFileId(null); }}
+          onCleared={() => { setProofFileId(null); setProofFileUrl(null); }}
         />
       </div>
-
-      {/* ── STEP 2: AI Auto-Insert Panel (appears after upload) ───── */}
-      {aiProposalFileId && (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2">
-            Step 2 — Review AI Auto-Fill
-          </p>
-          <AIAutoInsertPanel
-            fileId={aiProposalFileId}
-            onConfirmed={() => {
-              toast.info("AI applied", "Data applied from invoice. You can still edit below.");
-            }}
-            onRejected={() => setAiProposalFileId(null)}
-          />
-        </div>
-      )}
 
       {/* ── STEP 3: Manual Entry Form ─────────────────────────────── */}
       <div>

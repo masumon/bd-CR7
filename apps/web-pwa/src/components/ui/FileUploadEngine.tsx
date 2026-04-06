@@ -15,7 +15,6 @@ import { uploadToCloudinary } from "@bdcr7/media-engine";
 import { Button } from "@/components/ui/button";
 import { FilePreviewInline, detectFileType } from "@/components/ui/FilePreviewInline";
 import { useProjectFiles, type InsertProjectFile } from "@/hooks/useProjectFiles";
-import { apiRequest } from "@/lib/api";
 
 const ACCEPTED = "image/*,video/*,audio/*,.pdf,.docx,.xlsx";
 const CAMERA_ACCEPTED = "image/*,video/*";
@@ -29,13 +28,6 @@ interface FileUploadEngineProps {
   refId?: string;
   onUploaded?: (fileUrl: string, fileId: string) => void;
   compact?: boolean;
-}
-
-interface AiClassifyResult {
-  module?: string;
-  category?: string;
-  extracted_text?: string;
-  confidence?: number;
 }
 
 export function FileUploadEngine({
@@ -55,8 +47,6 @@ export function FileUploadEngine({
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<AiClassifyResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,43 +58,13 @@ export function FileUploadEngine({
     setPreview(URL.createObjectURL(f));
     setMessage(null);
     setError(null);
-    setAiResult(null);
   };
 
   const clearFile = () => {
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview(null);
-    setAiResult(null);
     if (inputRef.current) inputRef.current.value = "";
-  };
-
-  const classifyWithAI = async (fileUrl: string, fileName: string) => {
-    setAiLoading(true);
-    try {
-      const prompt = `Classify this file for a construction ERP. File: "${fileName}", URL: ${fileUrl}. Respond JSON: {module, category, extracted_text, confidence}`;
-      const res = await apiRequest<{ reply?: string }>("/api/ai/chat", {
-        method: "POST",
-        body: JSON.stringify({ message: prompt, intent: "file_classify" }),
-      });
-      if (res?.reply) {
-        try {
-          const json = JSON.parse(res.reply) as AiClassifyResult;
-          setAiResult(json);
-        } catch (parseErr) {
-          // AI returned non-JSON; this is expected when the AI gives a narrative response
-          if (process.env.NODE_ENV === "development") {
-            // Limit log to first 80 chars to avoid exposing document content
-            const preview = typeof res.reply === "string" ? res.reply.slice(0, 80) : "(empty)";
-            console.debug("[FileUploadEngine] AI reply not JSON:", preview, parseErr instanceof Error ? parseErr.message : "parse error");
-          }
-        }
-      }
-    } catch {
-      // AI classify failed; non-blocking
-    } finally {
-      setAiLoading(false);
-    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -134,8 +94,6 @@ export function FileUploadEngine({
 
       setMessage(`✓ Uploaded: ${file.name}`);
       onUploaded?.(fileUrl, saved.id);
-      // Trigger AI classification asynchronously
-      void classifyWithAI(fileUrl, file.name);
       clearFile();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -225,27 +183,6 @@ export function FileUploadEngine({
 
       {message && <p className="text-xs text-emerald-500">{message}</p>}
       {error && <p className="text-xs text-rose-500">{error}</p>}
-
-      {aiLoading && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          <span>SUMONIX AI is classifying file…</span>
-        </div>
-      )}
-
-      {aiResult && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-1">
-          <p className="font-semibold text-primary">AI Classification</p>
-          {aiResult.module && <p>Module: <span className="font-medium">{aiResult.module}</span></p>}
-          {aiResult.category && <p>Category: <span className="font-medium">{aiResult.category}</span></p>}
-          {aiResult.extracted_text && (
-            <p className="text-muted-foreground line-clamp-2">Extracted: {aiResult.extracted_text}</p>
-          )}
-          {aiResult.confidence && (
-            <p>Confidence: <span className="font-medium">{Math.round(aiResult.confidence * 100)}%</span></p>
-          )}
-        </div>
-      )}
     </form>
   );
 }

@@ -9,7 +9,7 @@ export interface UserProfile {
 }
 
 export type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
-export type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Modules" | "Sync" | "Advanced";
+export type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Sync" | "Advanced";
 
 export type IntegrationState = {
   cloudinary: boolean;
@@ -41,7 +41,6 @@ export const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
     Security: "Security",
     Data: "Categories",
     Integrations: "Integrations",
-    Modules: "Modules",
     Sync: "Sync",
     Advanced: "About",
   },
@@ -52,13 +51,12 @@ export const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
     Security: "নিরাপত্তা",
     Data: "ক্যাটাগরি",
     Integrations: "ইন্টিগ্রেশন",
-    Modules: "মডিউল",
     Sync: "সিঙ্ক",
     Advanced: "তথ্য",
   },
 };
 
-export const SETTINGS_TABS: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Modules", "Sync", "Advanced"];
+export const SETTINGS_TABS: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Sync", "Advanced"];
 
 export const TAB_META: Record<SettingsTab, { Icon: ElementType; desc: string }> = {
   Profile: { Icon: UserRound, desc: "আপনার তথ্য" },
@@ -67,7 +65,6 @@ export const TAB_META: Record<SettingsTab, { Icon: ElementType; desc: string }> 
   Security: { Icon: Shield, desc: "নিরাপত্তা" },
   Data: { Icon: Database, desc: "ডেটা ম্যানেজ" },
   Integrations: { Icon: Globe, desc: "API কানেকশন" },
-  Modules: { Icon: Layers, desc: "মডিউল চালু/বন্ধ" },
   Sync: { Icon: CloudUpload, desc: "সিঙ্ক কন্ট্রোল" },
   Advanced: { Icon: Settings2, desc: "অ্যাডভান্সড" },
 };

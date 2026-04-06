@@ -44,7 +44,7 @@ def create_app() -> Any:
     from core.logging import configure_logging
     from core.middleware import RateLimitMiddleware
     from core.supabase import supabase_service
-    from routers import ai, ai_employment, approval_intelligence, auth, contractor, finance, hr, import_supply, inventory, pos, project_management, users
+    from routers import ai, approval_intelligence, auth, contractor, finance, hr, project_management, users
 
     configure_logging(settings.log_level, env=settings.env)
 
@@ -152,14 +152,10 @@ def create_app() -> Any:
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(finance.router, prefix="/api/finance", tags=["finance"])
     app.include_router(hr.router, prefix="/api/construction", tags=["construction"])
-    app.include_router(pos.router, prefix="/api/pos", tags=["pos"])
     app.include_router(contractor.router, prefix="/api/contractor", tags=["contractor"])
-    app.include_router(inventory.router, prefix="/api/inventory", tags=["inventory"])
-    app.include_router(import_supply.router, prefix="/api/import-supply", tags=["import_supply"])
     app.include_router(project_management.router, prefix="/api/project-management", tags=["project_management"])
     app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
     app.include_router(approval_intelligence.router, prefix="/api/ai-intelligence", tags=["ai_intelligence"])
-    app.include_router(ai_employment.router, prefix="/api", tags=["ai_employment"])
     app.include_router(users.router, prefix="/api/users", tags=["users"])
 
     @app.get("/api")

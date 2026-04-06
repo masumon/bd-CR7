@@ -23,8 +23,6 @@ import { AlertTriangle, Camera, CheckCircle2, FileUp, Loader2, Paperclip, Shield
 import { uploadToCloudinary } from "@bdcr7/media-engine";
 import { FilePreviewInline, detectFileType } from "@/components/ui/FilePreviewInline";
 import { useProjectFiles, type InsertProjectFile } from "@/hooks/useProjectFiles";
-import { apiRequest } from "@/lib/api";
-import { useAuthStore } from "@/store/authStore";
 
 const ACCEPTED = "image/*,video/*,audio/*,.pdf,.docx,.xlsx";
 const CAMERA_ACCEPTED = "image/*,video/*";
@@ -60,7 +58,6 @@ export function EvidenceGate({
   onFileReady,
   onCleared,
 }: EvidenceGateProps) {
-  const token = useAuthStore((s) => s.token);
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const { insertFile } = useProjectFiles();
@@ -121,27 +118,6 @@ export function EvidenceGate({
       setSavedFileId(saved.id);
       setSavedFileUrl(fileUrl);
       onFileReady?.({ fileId: saved.id, fileUrl, fileName: file.name });
-
-      // Trigger AI auto-classification asynchronously (non-blocking)
-      if (token) {
-        setClassifying(true);
-        apiRequest(
-          "/api/ai-employ/classify",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              file_id: saved.id,
-              module,
-              category,
-              file_name: file.name,
-              file_url: fileUrl,
-            }),
-          },
-          token,
-        )
-          .catch(() => {}) // never block UI on classification failure
-          .finally(() => setClassifying(false));
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {

@@ -7,7 +7,6 @@ import { AlertTriangle, ArrowDownToLine, Package, RefreshCw } from "lucide-react
 
 import { createClient } from "@/lib/supabase/client";
 import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
-import { AIAutoInsertPanel } from "@/components/ui/AIAutoInsertPanel";
 
 const MOVEMENT_TYPES = ["in", "out", "adjust"] as const;
 type MovementType = (typeof MOVEMENT_TYPES)[number];
@@ -71,7 +70,6 @@ export function MaterialTrackFeature() {
 
   // Evidence enforcement
   const [proofFileId, setProofFileId]   = useState<string | null>(null);
-  const [aiFileId, setAiFileId]         = useState<string | null>(null);
 
   // Evidence only required for 'in' movements (deliveries)
   const evidenceRequired = movementType === "in";
@@ -109,7 +107,6 @@ export function MaterialTrackFeature() {
 
   const handleFileReady = ({ fileId }: EvidenceGateFileReady) => {
     setProofFileId(fileId);
-    setAiFileId(fileId);
   };
 
   const onSubmit = async (event: FormEvent) => {
@@ -138,7 +135,7 @@ export function MaterialTrackFeature() {
 
     setMessage("✅ Movement saved.");
     setMaterialName(""); setQuantity("0"); setUnitPrice("0"); setSupplier(""); setNotes("");
-    setProofFileId(null); setAiFileId(null);
+    setProofFileId(null);
     fetchStock();
     fetchMovements();
   };
@@ -161,7 +158,6 @@ export function MaterialTrackFeature() {
             onChange={(e) => {
               setMovementType(e.target.value as MovementType);
               setProofFileId(null);
-              setAiFileId(null);
             }}
           >
             {MOVEMENT_TYPES.map((t) => <option key={t} value={t}>{t.toUpperCase()}</option>)}
@@ -200,15 +196,8 @@ export function MaterialTrackFeature() {
             severity="block"
             label="Delivery note, photo, or challan required for inbound materials."
             onFileReady={handleFileReady}
-            onCleared={() => { setProofFileId(null); setAiFileId(null); }}
+            onCleared={() => { setProofFileId(null); }}
           />
-          {aiFileId && (
-            <AIAutoInsertPanel
-              fileId={aiFileId}
-              onConfirmed={() => setMessage("✅ AI auto-applied material data.")}
-              onRejected={() => setAiFileId(null)}
-            />
-          )}
         </div>
       )}
 

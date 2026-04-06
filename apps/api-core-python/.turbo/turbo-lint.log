@@ -1,5 +1,0 @@
-
-> api-core-python@ lint D:\BD CR7 Project\apps\api-core-python
-> python -m compileall routers main.py
-
-Listing 'routers'...

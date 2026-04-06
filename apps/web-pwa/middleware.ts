@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+import { NON_CORE_DASHBOARD_PREFIXES } from "@/lib/dashboardPolicy";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 
 /**
@@ -57,6 +58,10 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("returnTo", pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    if (NON_CORE_DASHBOARD_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     const roleFromClaims = normalizeRoleName(

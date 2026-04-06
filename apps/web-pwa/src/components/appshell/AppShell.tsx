@@ -11,31 +11,16 @@ import {
   FolderKanban,
   HardHat,
   Home,
-  PackageOpen,
   Settings2,
   ShieldCheck,
-  ShoppingCart,
-  Truck,
-  Users2,
-  Warehouse,
 } from "lucide-react";
-import { type LucideIcon } from "lucide-react";
-import type { DynamicModuleKey } from "@/store/moduleStore";
-
-const MODULE_ICONS: Record<DynamicModuleKey, LucideIcon> = {
-  import_lc: Truck,
-  pos: ShoppingCart,
-  crm: Users2,
-  contractor: Briefcase,
-  inventory_advanced: Warehouse,
-};
 
 import { TopBar } from "@/components/appshell/TopBar";
 import { BottomNav } from "@/components/appshell/BottomNav";
 import { Sidebar } from "@/components/appshell/Sidebar";
 import { UserDrawer } from "@/components/appshell/UserDrawer";
+import { CORE_MAIN_DASHBOARD_PATHS } from "@/lib/dashboardPolicy";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
-import { useModuleStore } from "@/store/moduleStore";
 
 import type { NavItem } from "./types";
 
@@ -54,23 +39,12 @@ type AppShellProps = {
 export function AppShell({ children, dark, language, online, unread, role, onToggleTheme, onToggleLanguage, onOpenNotifications }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
-  const enabledModules = useModuleStore((s) => s.enabledModules);
   const normalizedRole = normalizeRoleName(role);
+  const corePathSet = useMemo<Set<string>>(() => new Set(CORE_MAIN_DASHBOARD_PATHS), []);
   const allowedPaths = useMemo(
     () => new Set(ROLE_ACCESS[normalizedRole] ?? ROLE_ACCESS.viewer),
     [normalizedRole]
   );
-
-  const dynamicItems = useMemo<NavItem[]>(() => {
-    return enabledModules()
-      .filter((m) => m.key !== "contractor") // contractor is a core nav item
-      .filter((m) => allowedPaths.has(m.href))
-      .map((m) => ({
-        href: m.href,
-        label: language === "bn" ? m.labelBn : m.labelEn,
-        icon: MODULE_ICONS[m.key] ?? PackageOpen,
-      }));
-  }, [allowedPaths, enabledModules, language]);
 
   const coreItems = useMemo<NavItem[]>(() => {
     const isEn = language === "en";
@@ -86,13 +60,10 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
       { href: "/dashboard/audit", label: isEn ? "Audit" : "অডিট", icon: ShieldCheck },
       { href: "/dashboard/contractor", label: isEn ? "Contractor" : "ঠিকাদার", icon: Briefcase },
       { href: "/dashboard/settings", label: isEn ? "Settings" : "সেটিংস", icon: Settings2 },
-    ].filter((item) => allowedPaths.has(item.href));
-  }, [allowedPaths, language]);
+    ].filter((item) => corePathSet.has(item.href) && allowedPaths.has(item.href));
+  }, [allowedPaths, corePathSet, language]);
 
-  const navItems = useMemo<NavItem[]>(
-    () => [...coreItems, ...dynamicItems],
-    [coreItems, dynamicItems]
-  );
+  const navItems = coreItems;
 
   // Bottom nav: Dashboard, Projects, Finance, Workforce, Reports
   const bottomItems = useMemo<NavItem[]>(() => {

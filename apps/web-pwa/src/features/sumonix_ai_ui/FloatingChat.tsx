@@ -132,7 +132,6 @@ export function FloatingChat() {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [longPressMenu, setLongPressMenu] = useState(false);
   const token = useAuthStore((s) => s.token);
-  const role  = useAuthStore((s) => s.role);
   const [criticalAlerts, setCriticalAlerts] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -192,18 +191,10 @@ export function FloatingChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Fetch critical system alerts once on mount for admin/super_admin
+  // Chatbot-only mode: keep alert badge disabled.
   useEffect(() => {
-    const isAdmin = role === "admin" || role === "super_admin";
-    if (!isAdmin || !token) return;
-    apiRequest<{ critical_count?: number }>(
-      "/api/ai/alerts",
-      { method: "GET" },
-      token,
-    )
-      .then((res) => setCriticalAlerts(res.critical_count ?? 0))
-      .catch(() => {}); // never block UI on alert fetch failure
-  }, [token, role]);
+    setCriticalAlerts(0);
+  }, []);
 
   const speak = (raw: string) => {
     if (!voice || typeof window === "undefined" || !window.speechSynthesis) {

@@ -205,5 +205,43 @@ class ValidationErrorFormatTests(unittest.TestCase):
         self.assertFalse(body.get("success", True))
 
 
+@unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
+class RemovedAiEmployEndpointsTests(unittest.TestCase):
+    def test_classify_returns_404(self) -> None:
+        r = client.post("/api/ai-employ/classify", json={})
+        self.assertEqual(r.status_code, 404)
+
+    def test_propose_returns_404(self) -> None:
+        r = client.post("/api/ai-employ/propose", json={})
+        self.assertEqual(r.status_code, 404)
+
+    def test_confirm_returns_404(self) -> None:
+        r = client.post("/api/ai-employ/confirm", json={})
+        self.assertEqual(r.status_code, 404)
+
+    def test_reject_returns_404(self) -> None:
+        r = client.post("/api/ai-employ/reject", json={})
+        self.assertEqual(r.status_code, 404)
+
+    def test_pending_returns_404(self) -> None:
+        r = client.get("/api/ai-employ/pending")
+        self.assertEqual(r.status_code, 404)
+
+
+@unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
+class RemovedNonCoreModuleEndpointsTests(unittest.TestCase):
+    def test_pos_returns_404(self) -> None:
+        r = client.get("/api/pos/sales")
+        self.assertEqual(r.status_code, 404)
+
+    def test_inventory_returns_404(self) -> None:
+        r = client.patch("/api/inventory/stock/some-product-id", json={"stock_qty": 10})
+        self.assertEqual(r.status_code, 404)
+
+    def test_import_supply_returns_404(self) -> None:
+        r = client.get("/api/import-supply/lc-records")
+        self.assertEqual(r.status_code, 404)
+
+
 if __name__ == "__main__":
     unittest.main()
