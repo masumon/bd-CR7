@@ -4,8 +4,12 @@ from typing import Any
 
 try:
     from fastapi import FastAPI
+    from fastapi import HTTPException
+    from fastapi import Request
     from fastapi import Response, status
+    from fastapi.exceptions import RequestValidationError
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import JSONResponse
 
     FASTAPI_AVAILABLE = True
 except ModuleNotFoundError:
@@ -69,7 +73,65 @@ def create_app() -> Any:
         RateLimitMiddleware,
         requests_per_minute=settings.rate_limit_requests_per_minute,
         redis_url=settings.redis_url or None,
+        fail_closed_without_redis=settings.is_production and settings.require_redis_in_production,
     )
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self)"
+        if settings.is_production:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+            response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+        return response
+
+    @app.middleware("http")
+    async def response_envelope(request: Request, call_next):
+        response = await call_next(request)
+        if not request.url.path.startswith("/api"):
+            return response
+
+        content_type = response.headers.get("content-type", "")
+        if "application/json" not in content_type:
+            return response
+
+        if response.status_code >= 400:
+            return response
+
+        body = b""
+        async for chunk in response.body_iterator:
+            body += chunk
+
+        if not body:
+            payload = None
+        else:
+            try:
+                payload = json.loads(body)
+            except json.JSONDecodeError:
+                payload = body.decode("utf-8")
+
+        if isinstance(payload, dict) and "success" in payload and "data" in payload:
+            normalized = payload
+        else:
+            normalized = {"success": True, "data": payload}
+
+        return JSONResponse(status_code=response.status_code, content=normalized)
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        detail = exc.detail if isinstance(exc.detail, str) else json.dumps(exc.detail)
+        return JSONResponse(status_code=exc.status_code, content={"success": False, "data": None, "error": detail})
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"success": False, "data": None, "error": str(exc)})
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"success": False, "data": None, "error": "Internal server error"})
 
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(finance.router, prefix="/api/finance", tags=["finance"])

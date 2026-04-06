@@ -16,6 +16,13 @@ class UserContext(dict):
         return self["role"]
 
 
+def _normalize_role_name(raw: str | None) -> str | None:
+    if not isinstance(raw, str):
+        return None
+    role = raw.strip().lower()
+    return role or None
+
+
 def _extract_role_name(user_row: dict) -> str:
     role_obj = user_row.get("roles")
     if isinstance(role_obj, dict):
@@ -34,7 +41,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
 
     try:
         auth_user = supabase_anon.auth.get_user(credentials.credentials)
-        supabase_user_id = auth_user.user.id if auth_user and auth_user.user else None
+        supabase_user = auth_user.user if auth_user and auth_user.user else None
+        supabase_user_id = supabase_user.id if supabase_user else None
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid bearer token") from exc
 
@@ -57,7 +65,14 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     if not user_row.get("is_active", True):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User profile not found or inactive")
 
-    role_name = _extract_role_name(user_row)
+    db_role_name = _extract_role_name(user_row)
+    claim_role_name = _normalize_role_name(
+        supabase_user.app_metadata.get("role") if getattr(supabase_user, "app_metadata", None) else None
+    )
+    if claim_role_name and claim_role_name != db_role_name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role claim mismatch; please re-authenticate")
+
+    role_name = claim_role_name or db_role_name
 
     return UserContext({"user_id": str(user_row["id"]), "role": str(role_name)})
 

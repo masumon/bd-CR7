@@ -1,5 +1,41 @@
 import { supabase } from "@/lib/supabase";
 
+function resolveApiBase(): string {
+  const raw = (process.env.NEXT_PUBLIC_API_URL || "").trim();
+  if (!raw) return "";
+  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
+}
+
+function buildApiUrl(path: string): string {
+  const base = resolveApiBase();
+  return base ? `${base}${path}` : path;
+}
+
+async function apiPost<T>(path: string, token: string, payload: unknown): Promise<T> {
+  const response = await fetch(buildApiUrl(path), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let detail = "Request failed";
+    try {
+      const data = (await response.json()) as { detail?: string };
+      detail = data?.detail || detail;
+    } catch {
+      const text = await response.text();
+      detail = text || detail;
+    }
+    throw new Error(detail);
+  }
+
+  return (await response.json()) as T;
+}
+
 type BiometricCredentialRow = {
   id: string;
   credential_id: string;
@@ -60,7 +96,7 @@ export async function ensureBiometricCredential(token: string, userId: string, u
   }
 
   const existing = await listBiometricCredentials();
-  if (existing.some((item) => item.is_active)) {
+  if (existing.some((item) => item.is_active && item.credential_id)) {
     return;
   }
 
@@ -97,20 +133,24 @@ export async function ensureBiometricCredential(token: string, userId: string, u
   const credentialId = toBase64UrlFromBuffer(credential.rawId);
   const attestationResponse = credential.response as AuthenticatorAttestationResponse & {
     getTransports?: () => string[];
+    getPublicKey?: () => ArrayBuffer | null;
   };
   const transports = typeof attestationResponse.getTransports === "function" ? attestationResponse.getTransports() : [];
-
-  const { error: insertError } = await supabase
-    .from("biometric_credentials")
-    .insert({
-      credential_id: credentialId,
-      device_name: "Primary Device",
-      transports,
-      sign_count: 0,
-    });
-  if (insertError) {
-    throw new Error(insertError.message || "Failed to save biometric credential.");
+  const publicKeyBuffer = typeof attestationResponse.getPublicKey === "function" ? attestationResponse.getPublicKey() : null;
+  if (!publicKeyBuffer) {
+    throw new Error("Authenticator did not expose a public key; cannot enroll biometric securely.");
   }
+  const publicKey = toBase64UrlFromBuffer(publicKeyBuffer);
+
+  await apiPost<{ ok: boolean }>("/api/auth/webauthn/register", token, {
+    credential_id: credentialId,
+    public_key: publicKey,
+    device_name: "Primary Device",
+    transports,
+    sign_count: 0,
+    user_id: userId,
+    user_email: userEmail,
+  });
 }
 
 export async function verifyBiometricAssertion(token: string): Promise<void> {
@@ -118,20 +158,22 @@ export async function verifyBiometricAssertion(token: string): Promise<void> {
     throw new Error("WebAuthn is not supported on this browser/device.");
   }
 
-  const credentials = await listBiometricCredentials();
-  const activeCredentials = credentials.filter((item) => item.is_active);
-  if (!activeCredentials.length) {
-    throw new Error("No biometric credential is enrolled for this account. Sign in once and enroll biometric first.");
-  }
+  const challenge = await apiPost<{
+    challenge: string;
+    rp_id: string;
+    allow_credentials: Array<{ id: string; type: PublicKeyCredentialType }>;
+    timeout?: number;
+  }>("/api/auth/webauthn/challenge", token, {});
 
   const assertion = (await navigator.credentials.get({
     publicKey: {
-      challenge: randomChallenge(),
-      allowCredentials: activeCredentials.map((item) => ({
-        id: fromBase64UrlToBuffer(item.credential_id),
-        type: "public-key",
+      challenge: fromBase64UrlToBuffer(challenge.challenge),
+      rpId: challenge.rp_id,
+      allowCredentials: challenge.allow_credentials.map((item) => ({
+        id: fromBase64UrlToBuffer(item.id),
+        type: item.type,
       })),
-      timeout: 60_000,
+      timeout: challenge.timeout || 60_000,
       userVerification: "required",
     },
   })) as PublicKeyCredential | null;
@@ -139,4 +181,13 @@ export async function verifyBiometricAssertion(token: string): Promise<void> {
   if (!assertion) {
     throw new Error("Biometric verification was cancelled or failed.");
   }
+
+  const assertionResponse = assertion.response as AuthenticatorAssertionResponse;
+  await apiPost<{ ok: boolean; verified: boolean }>("/api/auth/webauthn/verify", token, {
+    credential_id: assertion.id,
+    authenticator_data: toBase64UrlFromBuffer(assertionResponse.authenticatorData),
+    client_data_json: toBase64UrlFromBuffer(assertionResponse.clientDataJSON),
+    signature: toBase64UrlFromBuffer(assertionResponse.signature),
+    user_handle: assertionResponse.userHandle ? toBase64UrlFromBuffer(assertionResponse.userHandle) : null,
+  });
 }

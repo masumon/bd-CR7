@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { useAuthStore } from "@/store/authStore";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/apiClient";
 import { validateDualApproval } from "@bdcr7/rbac-engine";
 import { useToast } from "@/components/ui/toast";
 import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
@@ -34,6 +34,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ExpenseStatus>("pending");
   const [approverId, setApproverId] = useState("");
+  const [accountId, setAccountId] = useState<string | null>(null);
 
   // Evidence enforcement state
   const [proofFileId, setProofFileId] = useState<string | null>(null);
@@ -44,6 +45,16 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
     if (!userId || !approverId) return false;
     return validateDualApproval({ createdBy: userId, approvedBy: approverId, status: "approved" });
   }, [userId, approverId]);
+
+  useEffect(() => {
+    (async () => {
+      if (!token) return;
+      const rows = await apiClient<Array<{ id: string }>>("/api/finance/accounts", { method: "GET" }, token);
+      if (rows?.length && rows[0]?.id) {
+        setAccountId(rows[0].id);
+      }
+    })();
+  }, [token]);
 
   const handleFileReady = ({ fileId, fileUrl, fileName }: EvidenceGateFileReady) => {
     setProofFileId(fileId);
@@ -66,31 +77,33 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
       toast.error("Proof required", "Please upload an invoice or receipt before saving.");
       return;
     }
+    if (!accountId) {
+      toast.error("Account required", "No fund account found. Ask your admin to create one first.");
+      return;
+    }
 
     try {
-      if (!supabase) throw new Error("Supabase is not configured");
-
       const finalStatus: ExpenseStatus = status === "approved" && canApprove ? "approved" : "pending";
-      const { error } = await supabase.from("expenses").insert({
-        amount: Number(amount),
-        description,
-        status: finalStatus,
-        maker_id: userId,
-        category_id: null,
-        metadata: {
-          module: "finance_workspace",
-          expense_date: date,
-          paid_by: paidBy,
-          category,
-          subcategory,
-          receipt_url: proofFileUrl,
-          proof_file_id: proofFileId,
-          approval_status: finalStatus,
-          approved_by: finalStatus === "approved" ? approverId : null,
-          ai_auto_filled: !!aiProposalFileId,
+      await apiClient(
+        "/api/finance/expenses/manual",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            account_id: accountId,
+            amount: Number(amount),
+            description,
+            status: finalStatus,
+            category,
+            subcategory,
+            expense_date: date,
+            paid_by: paidBy,
+            receipt_url: proofFileUrl,
+            proof_file_id: proofFileId,
+            approved_by: finalStatus === "approved" ? approverId : null,
+          }),
         },
-      });
-      if (error) throw error;
+        token,
+      );
 
       toast.success(
         "Expense saved",
@@ -239,15 +252,15 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
 
           <button
             className={`rounded-2xl px-4 py-3 text-sm font-medium transition md:col-span-2 ${
-              proofFileId
+              proofFileId && accountId
                 ? "bg-primary text-primary-foreground hover:opacity-95"
                 : "bg-muted text-muted-foreground cursor-not-allowed"
             }`}
             type="submit"
-            disabled={!token || !proofFileId}
-            title={!proofFileId ? "Upload proof file to enable save" : undefined}
+            disabled={!token || !proofFileId || !accountId}
+            title={!proofFileId ? "Upload proof file to enable save" : !accountId ? "No fund account found" : undefined}
           >
-            {proofFileId ? "Save Expense" : "⬆ Upload proof file first to enable save"}
+            {proofFileId && accountId ? "Save Expense" : "⬆ Upload proof file and ensure fund account exists"}
           </button>
         </form>
       </div>

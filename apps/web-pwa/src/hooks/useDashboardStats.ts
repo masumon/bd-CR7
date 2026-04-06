@@ -1,16 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+
+import { apiClient } from "@/lib/apiClient";
+import { useAuthStore } from "@/store/authStore";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// Only fetch last 6 months of transactional data to avoid unbounded scans
-function sixMonthsAgo(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 6);
-  return d.toISOString();
-}
+type DashboardApi = {
+  total_balance?: number;
+  fund_balance?: number;
+  monthly_sales?: number;
+  total_expenses?: number;
+  pending_expenses?: number;
+  total_workers?: number;
+  total_projects?: number;
+  recent_expenses?: Array<{ id?: string; description?: string; amount?: number | string; status?: string; created_at?: string }>;
+};
+
+type ExpensesResponse = {
+  expenses?: Array<{ amount?: number | string; status?: string; created_at?: string; metadata?: { category?: string } }>;
+};
 
 export interface DashboardStats {
   totalFundsReceived: number;
@@ -45,115 +55,68 @@ const DEFAULT: DashboardStats = {
 };
 
 export function useDashboardStats(): DashboardStats {
+  const token = useAuthStore((state) => state.token ?? undefined);
   const [stats, setStats] = useState<DashboardStats>(DEFAULT);
 
   useEffect(() => {
-    if (!supabase) {
+    if (!token) {
       setStats({ ...DEFAULT, loading: false, error: null });
       return;
     }
-    void fetchAll();
-  }, []);
+    void fetchAll(token);
+  }, [token]);
 
-  async function fetchAll() {
-    if (!supabase) return;
-    const cutoff = sixMonthsAgo();
+  async function fetchAll(authToken: string) {
     try {
-      const [
-        { data: accounts },
-        { data: txns },
-        { data: allExp },
-        { count: workerCount },
-        { count: projectCount },
-        { count: approvalCount },
-        { data: auditRows },
-        { data: catBreakdown },
-      ] = await Promise.all([
-        supabase.from("fund_accounts").select("balance"),
-        // Filtered to last 6 months — prevents full-table scan
-        supabase
-          .from("fund_transactions")
-          .select("amount, direction, created_at")
-          .gte("created_at", cutoff),
-        supabase
-          .from("expenses")
-          .select("amount, status, created_at, category_id")
-          .gte("created_at", cutoff),
-        supabase.from("workers").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("projects").select("id", { count: "exact", head: true }),
-        supabase.from("approvals").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase
-          .from("audit_logs")
-          .select("action, entity_type, created_at")
-          .order("created_at", { ascending: false })
-          .limit(5),
-        // Real expense category breakdown (join with expense_categories)
-        supabase
-          .from("expenses")
-          .select("amount, expense_categories(name)")
-          .eq("status", "approved")
-          .gte("created_at", cutoff)
-          .limit(500),
+      const [dashboard, expensesResp] = await Promise.all([
+        apiClient<DashboardApi>("/api/ai/dashboard", { method: "GET" }, authToken),
+        apiClient<ExpensesResponse>("/api/finance/expenses?limit=200&offset=0", { method: "GET" }, authToken),
       ]);
 
-      const currentBalance = (accounts ?? []).reduce((s, r) => s + Number(r.balance), 0);
+      const expenses = expensesResp.expenses || [];
+      const totalExpenses = expenses
+        .filter((e) => String(e.status || "").toLowerCase() === "approved")
+        .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-      const txnList = txns ?? [];
-      const totalFundsReceived = txnList
-        .filter((t) => !t.direction || t.direction === "credit")
-        .reduce((s, r) => s + Number(r.amount), 0);
+      const recentActivity = (dashboard.recent_expenses || []).slice(0, 5).map((item) => {
+        const created = item.created_at ? new Date(item.created_at) : new Date();
+        return `${item.description || "Expense"} · ${Number(item.amount || 0).toLocaleString("en-BD")} · ${created.toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}`;
+      });
 
-      const expList = allExp ?? [];
-      const totalExpenses = expList
-        .filter((e) => e.status === "approved")
-        .reduce((s, r) => s + Number(r.amount), 0);
-
-      const pendingExpenses = expList.filter((e) => e.status === "pending").length;
-
-      // Client-side monthly aggregation over bounded 6-month dataset
       const now = new Date();
       const monthlySeries = Array.from({ length: 6 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
         const y = d.getFullYear();
         const m = d.getMonth();
-        const inMonth = (list: { created_at: string; amount: number }[]) =>
-          list.filter((r) => {
-            const rd = new Date(r.created_at);
+        const expense = expenses
+          .filter((row) => {
+            if (!row.created_at) return false;
+            const rd = new Date(row.created_at);
             return rd.getFullYear() === y && rd.getMonth() === m;
-          });
-        const fund = inMonth(txnList).reduce((s, r) => s + Number(r.amount), 0);
-        const expense = inMonth(expList).reduce((s, r) => s + Number(r.amount), 0);
-        return { name: MONTHS[m], fund, expense };
+          })
+          .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+        return { name: MONTHS[m], fund: 0, expense };
       });
 
-      // Real expense breakdown by category
       const categoryTotals: Record<string, number> = {};
-      for (const row of catBreakdown ?? []) {
-        const catName = (row as { expense_categories?: { name?: string } }).expense_categories?.name ?? "Other";
-        categoryTotals[catName] = (categoryTotals[catName] ?? 0) + Number(row.amount);
+      for (const row of expenses) {
+        const category = row.metadata?.category || "Other";
+        categoryTotals[category] = (categoryTotals[category] || 0) + Number(row.amount || 0);
       }
-      const sortedCats = Object.entries(categoryTotals)
+      const expenseBreakdown = Object.entries(categoryTotals)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, 4);
-      const expenseBreakdown = sortedCats.map(([name, value]) => ({ name, value }));
-
-      const recentActivity = (auditRows ?? []).map(
-        (r) =>
-          `${r.action} · ${r.entity_type} · ${new Date(r.created_at).toLocaleTimeString("en-BD", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}`
-      );
+        .slice(0, 4)
+        .map(([name, value]) => ({ name, value }));
 
       setStats({
-        totalFundsReceived,
-        currentBalance,
-        totalExpenses,
-        pendingExpenses,
-        totalWorkers: workerCount ?? 0,
-        totalProjects: projectCount ?? 0,
-        totalExpenseEntries: expList.length,
-        pendingApprovals: approvalCount ?? 0,
+        totalFundsReceived: Number(dashboard.monthly_sales || 0),
+        currentBalance: Number(dashboard.fund_balance || dashboard.total_balance || 0),
+        totalExpenses: Number(dashboard.total_expenses || totalExpenses),
+        pendingExpenses: Number(dashboard.pending_expenses || 0),
+        totalWorkers: Number(dashboard.total_workers || 0),
+        totalProjects: Number(dashboard.total_projects || 0),
+        totalExpenseEntries: expenses.length,
+        pendingApprovals: 0,
         recentActivity: recentActivity.length ? recentActivity : ["No recent activity recorded"],
         monthlySeries,
         expenseBreakdown,

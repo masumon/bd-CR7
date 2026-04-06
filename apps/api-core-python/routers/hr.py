@@ -6,14 +6,17 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user, require_roles
-from core.db import fetch_all, fetch_one, tx
+from core.config import settings
+from core.supabase import supabase_service
 from schemas.construction import AttendanceMark, MaterialMovement, WorkerCreate
 
 router = APIRouter()
 
-SITE_LAT = 23.777176
-SITE_LNG = 90.399452
-MAX_RADIUS_KM = 2.0
+
+def _require_supabase():
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    return supabase_service
 
 
 def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -27,65 +30,77 @@ def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 @router.post("/workers")
 async def create_worker(payload: WorkerCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
+    client = _require_supabase()
     worker_id = str(uuid4())
-    with tx() as conn:
-        conn.exec_driver_sql(
-            "INSERT INTO workers (id, full_name, trade, daily_rate, created_by) VALUES (%s, %s, %s, %s, %s)",
-            (worker_id, payload.full_name, payload.trade, Decimal(payload.daily_rate), user.user_id),
-        )
+    client.table("workers").insert(
+        {
+            "id": worker_id,
+            "full_name": payload.full_name,
+            "trade": payload.trade,
+            "daily_rate": str(Decimal(payload.daily_rate)),
+            "created_by": user.user_id,
+        }
+    ).execute()
     return {"id": worker_id}
 
 
 @router.get("/workers")
 async def list_workers(user: UserContext = Depends(get_current_user)):
-    rows = fetch_all("SELECT id, full_name, trade, daily_rate, is_active FROM workers ORDER BY full_name")
-    return [dict(x) for x in rows]
+    client = _require_supabase()
+    rows = client.table("workers").select("id,full_name,trade,daily_rate,is_active").order("full_name").execute()
+    return rows.data or []
 
 
 @router.post("/attendance")
 async def mark_attendance(payload: AttendanceMark, user: UserContext = Depends(require_roles("admin", "maker", "checker"))):
-    worker = fetch_one("SELECT id FROM workers WHERE id = :worker_id", {"worker_id": payload.worker_id})
-    if not worker:
+    client = _require_supabase()
+    worker = client.table("workers").select("id").eq("id", payload.worker_id).limit(1).execute()
+    if not worker.data:
         raise HTTPException(status_code=404, detail="Worker not found")
 
-    dist = distance_km(payload.latitude, payload.longitude, SITE_LAT, SITE_LNG)
-    if dist > MAX_RADIUS_KM:
+    dist = distance_km(payload.latitude, payload.longitude, settings.site_latitude, settings.site_longitude)
+    if dist > settings.site_max_radius_km:
         raise HTTPException(status_code=400, detail="Attendance outside site geofence")
 
-    attendance_id = str(uuid4())
-    with tx() as conn:
-        conn.exec_driver_sql(
-            """
-            INSERT INTO attendance (id, worker_id, attendance_date, latitude, longitude, marked_by)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (worker_id, attendance_date)
-            DO UPDATE SET latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude, marked_by = EXCLUDED.marked_by, updated_at = NOW()
-            """,
-            (attendance_id, payload.worker_id, date.today(), payload.latitude, payload.longitude, user.user_id),
-        )
+    attendance_date = date.today().isoformat()
+    existing = client.table("attendance").select("id").eq("worker_id", payload.worker_id).eq("attendance_date", attendance_date).limit(1).execute()
+    if existing.data:
+        client.table("attendance").update(
+            {
+                "latitude": payload.latitude,
+                "longitude": payload.longitude,
+                "marked_by": user.user_id,
+            }
+        ).eq("id", existing.data[0]["id"]).execute()
+    else:
+        client.table("attendance").insert(
+            {
+                "id": str(uuid4()),
+                "worker_id": payload.worker_id,
+                "attendance_date": attendance_date,
+                "latitude": payload.latitude,
+                "longitude": payload.longitude,
+                "marked_by": user.user_id,
+            }
+        ).execute()
     return {"message": "attendance marked", "distance_km": round(dist, 3)}
 
 
 @router.post("/materials")
 async def material_movement(payload: MaterialMovement, user: UserContext = Depends(require_roles("admin", "maker"))):
+    client = _require_supabase()
     movement_id = str(uuid4())
     signed_qty = Decimal(payload.quantity) if payload.movement_type == "in" else (Decimal(payload.quantity) * Decimal("-1"))
-
-    with tx() as conn:
-        conn.exec_driver_sql(
-            """
-            INSERT INTO material_movements (id, project_id, material_name, quantity, unit_cost, movement_type, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                movement_id,
-                payload.project_id,
-                payload.material_name,
-                signed_qty,
-                Decimal(payload.unit_cost),
-                payload.movement_type,
-                user.user_id,
-            ),
-        )
+    client.table("material_movements").insert(
+        {
+            "id": movement_id,
+            "project_id": payload.project_id,
+            "material_name": payload.material_name,
+            "quantity": str(signed_qty),
+            "unit_cost": str(Decimal(payload.unit_cost)),
+            "movement_type": payload.movement_type,
+            "created_by": user.user_id,
+        }
+    ).execute()
 
     return {"id": movement_id}

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/apiClient";
 
 type NumericValue = number | string;
 
@@ -9,6 +9,13 @@ type Dashboard = {
   monthly_sales: NumericValue;
   pending_expenses: number;
   recent_expenses: Array<Record<string, unknown>>;
+};
+
+type DashboardPayload = {
+  total_balance?: NumericValue;
+  monthly_sales?: NumericValue;
+  pending_expenses?: number;
+  recent_expenses?: Array<Record<string, unknown>>;
 };
 
 function normalizeDashboard(dashboard: Dashboard): Dashboard {
@@ -24,30 +31,16 @@ type AppState = {
   dashboard: Dashboard | null;
   loading: boolean;
   error: string | null;
-  loadDashboard: (token: string) => Promise<void>;
+  loadDashboard: (token?: string) => Promise<void>;
 };
 
-async function fetchDashboard(): Promise<Dashboard> {
-  if (!supabase) {
-    throw new Error("Supabase is not configured");
-  }
-
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-
-  const [{ data: accounts }, { data: sales }, { count: pendingCount }, { data: recent }] = await Promise.all([
-    supabase.from("fund_accounts").select("balance"),
-    supabase.from("sales").select("total_amount,created_at").gte("created_at", monthStart.toISOString()),
-    supabase.from("expenses").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("expenses").select("id,description,amount,status,created_at").order("created_at", { ascending: false }).limit(20),
-  ]);
-
+async function fetchDashboard(token?: string): Promise<Dashboard> {
+  const payload = await apiClient<DashboardPayload>("/api/ai/dashboard", { method: "GET" }, token);
   return normalizeDashboard({
-    total_balance: (accounts || []).reduce((sum, a: { balance?: number | string }) => sum + Number(a.balance || 0), 0),
-    monthly_sales: (sales || []).reduce((sum, s: { total_amount?: number | string }) => sum + Number(s.total_amount || 0), 0),
-    pending_expenses: Number(pendingCount || 0),
-    recent_expenses: (recent || []) as Array<Record<string, unknown>>,
+    total_balance: payload.total_balance || 0,
+    monthly_sales: payload.monthly_sales || 0,
+    pending_expenses: Number(payload.pending_expenses || 0),
+    recent_expenses: payload.recent_expenses || [],
   });
 }
 
@@ -55,10 +48,10 @@ export const useAppStore = create<AppState>((set) => ({
   dashboard: null,
   loading: false,
   error: null,
-  loadDashboard: async () => {
+  loadDashboard: async (token) => {
     try {
       set({ loading: true, error: null });
-      set({ dashboard: await fetchDashboard(), loading: false });
+      set({ dashboard: await fetchDashboard(token), loading: false });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
@@ -68,9 +61,9 @@ export const useAppStore = create<AppState>((set) => ({
 type AppStateWithPolling = AppState & {
   pollInterval: NodeJS.Timeout | null;
   retryCount: number;
-  startPolling: (token: string) => void;
+  startPolling: (token?: string) => void;
   stopPolling: () => void;
-  retryLoad: (token: string) => Promise<void>;
+  retryLoad: (token?: string) => Promise<void>;
 };
 
 export const useAppStoreWithPolling = create<AppStateWithPolling>((set, get) => ({
@@ -79,32 +72,32 @@ export const useAppStoreWithPolling = create<AppStateWithPolling>((set, get) => 
   error: null,
   pollInterval: null,
   retryCount: 0,
-  loadDashboard: async () => {
+  loadDashboard: async (token) => {
     try {
       set({ loading: true, error: null, retryCount: 0 });
-      set({ dashboard: await fetchDashboard(), loading: false, error: null });
+      set({ dashboard: await fetchDashboard(token), loading: false, error: null });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
   },
   retryLoad: async (token) => {
     const { retryCount } = get();
-    const backoffMs = Math.min(1000 * Math.pow(2, retryCount), 10000); // exponential backoff, max 10s
+    const backoffMs = Math.min(1000 * Math.pow(2, retryCount), 10000);
     await new Promise((resolve) => setTimeout(resolve, backoffMs));
     try {
       set({ loading: true });
-      set({ dashboard: await fetchDashboard(), loading: false, error: null, retryCount: 0 });
+      set({ dashboard: await fetchDashboard(token), loading: false, error: null, retryCount: 0 });
     } catch (error) {
       set({ error: (error as Error).message, loading: false, retryCount: retryCount + 1 });
     }
   },
   startPolling: (token) => {
     const state = get();
-    if (state.pollInterval) return; // already polling
-    state.loadDashboard(token);
+    if (state.pollInterval) return;
+    void state.loadDashboard(token);
     const interval = setInterval(() => {
-      state.loadDashboard(token);
-    }, 30000); // poll every 30 seconds
+      void state.loadDashboard(token);
+    }, 30000);
     set({ pollInterval: interval });
   },
   stopPolling: () => {

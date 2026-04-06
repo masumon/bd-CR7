@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 
 /**
  * Edge middleware — protects /dashboard/* routes.
@@ -11,19 +14,64 @@ import { NextRequest, NextResponse } from "next/server";
  * If no session cookie is found the user is redirected to /login with a
  * `returnTo` search-param so we can deep-link them back after sign-in.
  */
-export function middleware(request: NextRequest) {
+function isPathAllowed(pathname: string, allowed: string[]): boolean {
+  return allowed.some((base) => {
+    if (base === "/dashboard") {
+      return pathname === "/dashboard";
+    }
+    return pathname === base || pathname.startsWith(`${base}/`);
+  });
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/dashboard")) {
-    const hasSession = request.cookies.getAll().some(
-      (cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"),
-    );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!hasSession) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.next();
+    }
+
+    let response = NextResponse.next({ request });
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          response = NextResponse.next({ request });
+          for (const cookie of cookiesToSet) {
+            response.cookies.set(cookie.name, cookie.value, cookie.options);
+          }
+        },
+      },
+    });
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("returnTo", pathname);
       return NextResponse.redirect(loginUrl);
     }
+
+    const roleFromClaims = normalizeRoleName(
+      (session.user.app_metadata?.role as string | undefined) ||
+        (session.user.user_metadata?.role_name as string | undefined) ||
+        null,
+    );
+
+    const allowed = ROLE_ACCESS[roleFromClaims] ?? ROLE_ACCESS.viewer;
+    if (!isPathAllowed(pathname, allowed)) {
+      const fallback = allowed.find((route) => route !== "/dashboard") || "/dashboard";
+      return NextResponse.redirect(new URL(fallback, request.url));
+    }
+
+    return response;
   }
 
   return NextResponse.next();

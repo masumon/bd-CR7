@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user, require_roles
 from core.supabase import supabase_service
-from schemas.finance import ApprovalAction, ExpenseCreate, FundTransfer
+from schemas.finance import ApprovalAction, ExpenseCreate, ExpenseUpdate, FundEntryCreate, FundTransfer, ManualExpenseCreate
 from services.finance import approve_expense_atomic, create_expense_atomic, score_risk, transfer_funds_atomic
 
 router = APIRouter()
@@ -36,12 +37,104 @@ async def transfer_funds(payload: FundTransfer, user: UserContext = Depends(requ
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
+@router.post("/fund-entries")
+async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    account = (
+        supabase_service.table("fund_accounts")
+        .select("id,owner_user_id")
+        .eq("id", payload.account_id)
+        .limit(1)
+        .execute()
+    )
+    if not account.data:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if user.role not in ("admin", "checker") and str(account.data[0].get("owner_user_id")) != user.user_id:
+        raise HTTPException(status_code=403, detail="Insufficient role")
+
+    transaction_id = str(uuid4())
+    supabase_service.table("fund_transactions").insert(
+        {
+            "id": transaction_id,
+            "from_account_id": payload.account_id,
+            "to_account_id": payload.account_id,
+            "amount": str(payload.amount),
+            "reference": payload.reference,
+            "created_by": user.user_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "metadata": {
+                "description": payload.description,
+                "receipt_url": payload.receipt_url,
+                "transaction_date": payload.transaction_date,
+                "source_sender": payload.source_sender,
+                "payment_method": payload.payment_method,
+            },
+        }
+    ).execute()
+
+    return {"id": transaction_id, "message": "fund entry created"}
+
+
 @router.post("/expenses")
 async def create_expense(payload: ExpenseCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
     try:
         return create_expense_atomic(payload, user)
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/expenses/manual")
+async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    account = (
+        supabase_service.table("fund_accounts")
+        .select("id,owner_user_id")
+        .eq("id", payload.account_id)
+        .limit(1)
+        .execute()
+    )
+    if not account.data:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if user.role not in ("admin", "checker") and str(account.data[0].get("owner_user_id")) != user.user_id:
+        raise HTTPException(status_code=403, detail="Insufficient role")
+
+    if payload.status == "approved":
+        if not payload.approved_by:
+            raise HTTPException(status_code=400, detail="approved_by is required for approved expenses")
+        if payload.approved_by == user.user_id:
+            raise HTTPException(status_code=403, detail="Maker and checker must differ")
+
+    expense_id = str(uuid4())
+    risk = score_risk(Decimal(payload.amount))
+    row = {
+        "id": expense_id,
+        "account_id": payload.account_id,
+        "category_id": None,
+        "amount": str(payload.amount),
+        "description": payload.description,
+        "status": payload.status,
+        "maker_id": user.user_id,
+        "checker_id": payload.approved_by if payload.status == "approved" else None,
+        "risk_level": risk["risk_level"],
+        "risk_score": risk["risk_score"],
+        "receipt_url": payload.receipt_url,
+        "metadata": {
+            "category": payload.category,
+            "subcategory": payload.subcategory,
+            "expense_date": payload.expense_date,
+            "paid_by": payload.paid_by,
+            "proof_file_id": payload.proof_file_id,
+            "approval_status": payload.status,
+            "approved_by": payload.approved_by if payload.status == "approved" else None,
+        },
+    }
+    supabase_service.table("expenses").insert(row).execute()
+
+    return {"id": expense_id, "status": payload.status, "risk": risk}
 
 
 @router.post("/expenses/{expense_id}/approve")
@@ -62,7 +155,7 @@ async def list_expenses(user: UserContext = Depends(get_current_user), limit: in
         offset = 0
     query = (
         supabase_service.table("expenses")
-        .select("id,account_id,category_id,amount,description,status,maker_id,checker_id,risk_level,risk_score,created_at")
+        .select("id,account_id,category_id,amount,description,status,maker_id,checker_id,risk_level,risk_score,created_at,metadata,receipt_url")
         .order("created_at", desc=True)
         .limit(limit + 1)
         .offset(offset)
@@ -99,7 +192,7 @@ async def get_expense(expense_id: str, user: UserContext = Depends(get_current_u
 
 
 @router.patch("/expenses/{expense_id}")
-async def update_expense(expense_id: str, payload: ExpenseCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
+async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserContext = Depends(require_roles("admin", "maker"))):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
@@ -113,15 +206,24 @@ async def update_expense(expense_id: str, payload: ExpenseCreate, user: UserCont
         raise HTTPException(status_code=403, detail="Only the maker can update this expense")
 
     risk = score_risk(Decimal(payload.amount))
+    metadata: dict[str, str] = {}
+    if payload.category:
+        metadata["category"] = payload.category
+    if payload.subcategory:
+        metadata["subcategory"] = payload.subcategory
+
+    update_payload: dict[str, str | int | Decimal] = {
+        "amount": str(payload.amount),
+        "status": payload.status,
+        "description": payload.description,
+        "risk_level": risk["risk_level"],
+        "risk_score": risk["risk_score"],
+    }
+    if metadata:
+        update_payload["metadata"] = metadata
+
     supabase_service.table("expenses").update(
-        {
-            "account_id": payload.account_id,
-            "category_id": payload.category_id,
-            "amount": str(payload.amount),
-            "description": payload.description,
-            "risk_level": risk["risk_level"],
-            "risk_score": risk["risk_score"],
-        }
+        update_payload
     ).eq("id", expense_id).execute()
 
     return {"message": "expense updated"}

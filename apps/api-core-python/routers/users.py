@@ -4,10 +4,58 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user, require_roles
 from core.supabase import supabase_service
-from schemas.users import UserCreate, UserUpdate
+from schemas.users import UserCreate, UserProfileUpdate, UserUpdate, WorkspacePreferencesPatch
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+@router.get("/me/profile")
+async def get_my_profile(user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    row = supabase_service.table("users").select("id,email,full_name,phone,updated_at").eq("id", user.user_id).limit(1).execute()
+    if not row.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    return row.data[0]
+
+
+@router.patch("/me/profile")
+async def update_my_profile(payload: UserProfileUpdate, user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    supabase_service.table("users").update(
+        {
+            "full_name": payload.full_name,
+            "phone": payload.phone,
+        }
+    ).eq("id", user.user_id).execute()
+    return {"message": "profile updated"}
+
+
+@router.get("/me/preferences")
+async def get_my_preferences(user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    pref = supabase_service.table("workspace_preferences").select("theme,language,integrations").eq("user_id", user.user_id).maybe_single().execute()
+    return pref.data or {}
+
+
+@router.patch("/me/preferences")
+async def update_my_preferences(payload: WorkspacePreferencesPatch, user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    patch: dict[str, object] = {"user_id": user.user_id}
+    if payload.theme is not None:
+        patch["theme"] = payload.theme
+    if payload.language is not None:
+        patch["language"] = payload.language
+    if payload.integrations is not None:
+        patch["integrations"] = payload.integrations
+
+    supabase_service.table("workspace_preferences").upsert(patch, on_conflict="user_id").execute()
+    return {"message": "preferences updated"}
 
 
 @router.get("")

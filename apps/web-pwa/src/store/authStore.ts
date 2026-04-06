@@ -40,6 +40,21 @@ async function fetchUserRole(userId: string): Promise<string> {
   return extractRoleName((data as { roles?: RoleJoin }).roles);
 }
 
+function readLegacyPersistedToken(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem("bdcr7-auth");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { state?: { token?: unknown } };
+    const token = parsed?.state?.token;
+    return typeof token === "string" && token.trim() ? token : null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeAuthError(message: string | undefined, mode: "login" | "register"): string {
   const text = (message || "").toLowerCase();
 
@@ -97,19 +112,40 @@ export const useAuthStore = create<AuthState>()(
             throw new Error(error.message || "Failed to restore session");
           }
           const session = data.session;
-          if (!session?.user?.id) {
-            set({ token: null, userId: null, role: null, loading: false, hydrated: true });
+
+          if (session?.user?.id) {
+            const roleName = await fetchUserRole(session.user.id);
+            set({
+              token: session.access_token,
+              userId: session.user.id,
+              role: roleName,
+              loading: false,
+              hydrated: true,
+              error: null,
+            });
             return;
           }
-          const roleName = await fetchUserRole(session.user.id);
-          set({
-            token: session.access_token,
-            userId: session.user.id,
-            role: roleName,
-            loading: false,
-            hydrated: true,
-            error: null,
-          });
+
+          // Backward-compatible migration path: accept a previously persisted token
+          // for one restore cycle while cookie/session-based auth takes over.
+          const legacyToken = readLegacyPersistedToken();
+          if (legacyToken) {
+            const { data: legacyUserData, error: legacyUserError } = await supabase.auth.getUser(legacyToken);
+            if (!legacyUserError && legacyUserData?.user?.id) {
+              const roleName = await fetchUserRole(legacyUserData.user.id);
+              set({
+                token: legacyToken,
+                userId: legacyUserData.user.id,
+                role: roleName,
+                loading: false,
+                hydrated: true,
+                error: null,
+              });
+              return;
+            }
+          }
+
+          set({ token: null, userId: null, role: null, loading: false, hydrated: true });
         } catch (err) {
           set({
             token: null,
@@ -189,8 +225,23 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "bdcr7-auth",
+      version: 2,
+      migrate: (persistedState) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return persistedState;
+        }
+        const stateContainer = persistedState as { state?: Record<string, unknown> };
+        if (!stateContainer.state || typeof stateContainer.state !== "object") {
+          return persistedState;
+        }
+        const nextState = { ...stateContainer.state };
+        delete nextState.token;
+        return {
+          ...stateContainer,
+          state: nextState,
+        };
+      },
       partialize: (state) => ({
-        token: state.token,
         role: state.role,
         userId: state.userId,
       }),

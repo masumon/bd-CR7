@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { CalendarDays, Landmark, Link2, WalletCards } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
+import { apiClient } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 
 const SOURCE_OPTIONS = ["Client", "Owner", "Bank", "Investor", "Other"];
@@ -19,7 +19,6 @@ const METHOD_OPTIONS = [
 ];
 
 export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
-  const supabase = useMemo(() => createClient(), []);
   const userId = useAuthStore((s) => s.userId);
   const token  = useAuthStore((s) => s.token);
 
@@ -35,11 +34,15 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("fund_accounts").select("id").limit(1).maybeSingle();
-      if (data?.id) setAccountId(data.id);
-      else setNoAccount(true);
+      if (!token) return;
+      const rows = await apiClient<Array<{ id: string }>>("/api/finance/accounts", { method: "GET" }, token);
+      if (rows?.length && rows[0]?.id) {
+        setAccountId(rows[0].id);
+      } else {
+        setNoAccount(true);
+      }
     })();
-  }, [supabase]);
+  }, [token]);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -48,15 +51,23 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
     if (!accountId) { setMessage("No fund account found. Ask your admin to create one first."); return; }
 
     try {
-      const payload = {
-        from_account_id: accountId,
-        to_account_id:   accountId,
-        amount:    Number(amount),
-        reference: `${sourceSender}-${paymentMethod}-${date}`,
-        created_by: userId,
-      };
-      const { error } = await supabase.from("fund_transactions").insert(payload);
-      if (error) throw error;
+      await apiClient(
+        "/api/finance/fund-entries",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            account_id: accountId,
+            amount: Number(amount),
+            reference: `${sourceSender}-${paymentMethod}-${date}`,
+            description,
+            receipt_url: receiptUrl || null,
+            transaction_date: date,
+            source_sender: sourceSender,
+            payment_method: paymentMethod,
+          }),
+        },
+        token,
+      );
       setMessage("Fund entry created successfully.");
       setAmount("");
       setDescription("");
