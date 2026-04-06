@@ -40,11 +40,13 @@ const isVercelHostname = (hostname: string): boolean =>
   hostname === "vercel.app" || hostname.endsWith(".vercel.app");
 
 const getApiCandidates = (): string[] => {
-  const raw = [
-    process.env.PYTHON_API_URL,
-    process.env.NEXT_PUBLIC_API_URL,
-    process.env.NEXT_PUBLIC_API_BASE_URL,
-  ];
+  const raw = isProduction
+    ? [process.env.PYTHON_API_URL]
+    : [
+        process.env.PYTHON_API_URL,
+        process.env.NEXT_PUBLIC_API_URL,
+        process.env.NEXT_PUBLIC_API_BASE_URL,
+      ];
   const deduped = new Set<string>();
   for (const item of raw) {
     const normalized = normalizeApiUrl(item);
