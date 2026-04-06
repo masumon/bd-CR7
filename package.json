@@ -20,6 +20,7 @@
     "overrides": {
       "minimatch": ">=9.0.7",
       "serialize-javascript": ">=7.0.3"
-    }
+    },
+    "onlyBuiltDependencies": ["sharp", "unrs-resolver"]
   }
 }
