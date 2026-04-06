@@ -28,6 +28,17 @@ import { LOCALHOST_URL_PATTERN } from "@/core/config";
 const normalizeApiUrl = (value: string | undefined): string =>
   (value || "").trim().replace(/\/$/, "");
 
+const getHostname = (value: string): string => {
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+};
+
+const isVercelHostname = (hostname: string): boolean =>
+  hostname === "vercel.app" || hostname.endsWith(".vercel.app");
+
 const getApiCandidates = (): string[] => {
   const raw = [
     process.env.PYTHON_API_URL,
@@ -61,12 +72,22 @@ const isProduction = process.env.VERCEL_ENV
   : (process.env.APP_ENV || process.env.NODE_ENV) === "production";
 
 const resolvePythonApi = (requestOrigin: string): string => {
+  const requestHostname = getHostname(requestOrigin);
   const candidates = getApiCandidates();
   for (const candidate of candidates) {
+    const candidateHostname = getHostname(candidate);
     if (isProduction && LOCALHOST_URL_PATTERN.test(candidate)) {
       continue;
     }
+    // On Vercel production, never proxy to another Vercel app URL.
+    // Doing so can recurse back into this same deployment and trigger 508 loops.
+    if (isProduction && isVercelHostname(candidateHostname)) {
+      continue;
+    }
     if (candidate === requestOrigin) {
+      continue;
+    }
+    if (candidateHostname && requestHostname && candidateHostname === requestHostname) {
       continue;
     }
     if (candidate.startsWith(requestOrigin)) {
