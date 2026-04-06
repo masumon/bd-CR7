@@ -34,6 +34,7 @@ import { TopBar } from "@/components/appshell/TopBar";
 import { BottomNav } from "@/components/appshell/BottomNav";
 import { Sidebar } from "@/components/appshell/Sidebar";
 import { UserDrawer } from "@/components/appshell/UserDrawer";
+import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 import { useModuleStore } from "@/store/moduleStore";
 
 import type { NavItem } from "./types";
@@ -54,16 +55,22 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
   const enabledModules = useModuleStore((s) => s.enabledModules);
+  const normalizedRole = normalizeRoleName(role);
+  const allowedPaths = useMemo(
+    () => new Set(ROLE_ACCESS[normalizedRole] ?? ROLE_ACCESS.viewer),
+    [normalizedRole]
+  );
 
   const dynamicItems = useMemo<NavItem[]>(() => {
     return enabledModules()
       .filter((m) => m.key !== "contractor") // contractor is a core nav item
+      .filter((m) => allowedPaths.has(m.href))
       .map((m) => ({
         href: m.href,
         label: language === "bn" ? m.labelBn : m.labelEn,
         icon: MODULE_ICONS[m.key] ?? PackageOpen,
       }));
-  }, [enabledModules, language]);
+  }, [allowedPaths, enabledModules, language]);
 
   const coreItems = useMemo<NavItem[]>(() => {
     const isEn = language === "en";
@@ -79,8 +86,8 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
       { href: "/dashboard/audit", label: isEn ? "Audit" : "অডিট", icon: ShieldCheck },
       { href: "/dashboard/contractor", label: isEn ? "Contractor" : "ঠিকাদার", icon: Briefcase },
       { href: "/dashboard/settings", label: isEn ? "Settings" : "সেটিংস", icon: Settings2 },
-    ];
-  }, [language]);
+    ].filter((item) => allowedPaths.has(item.href));
+  }, [allowedPaths, language]);
 
   const navItems = useMemo<NavItem[]>(
     () => [...coreItems, ...dynamicItems],
@@ -88,13 +95,26 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
   );
 
   // Bottom nav: Dashboard, Projects, Finance, Workforce, Reports
-  const bottomItems = useMemo<NavItem[]>(() => [
-    coreItems[0], // Dashboard
-    coreItems[1], // Projects
-    coreItems[2], // Finance
-    coreItems[3], // Workforce
-    coreItems[6], // Reports
-  ], [coreItems]);
+  const bottomItems = useMemo<NavItem[]>(() => {
+    const preferred = [
+      "/dashboard",
+      "/dashboard/construction/projects",
+      "/dashboard/finance",
+      "/dashboard/workforce",
+      "/dashboard/reports",
+    ];
+
+    const selected = preferred
+      .map((href) => coreItems.find((item) => item.href === href))
+      .filter(Boolean) as NavItem[];
+
+    if (selected.length >= 5) {
+      return selected.slice(0, 5);
+    }
+
+    const fallback = coreItems.filter((item) => !selected.some((s) => s.href === item.href));
+    return [...selected, ...fallback].slice(0, 5);
+  }, [coreItems]);
 
   return (
     <div className="min-h-dvh app-gradient text-foreground">

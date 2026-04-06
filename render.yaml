@@ -28,6 +28,30 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      # Shared secret used by cron-safe internal governance refresh endpoint.
+      - key: GOVERNANCE_REFRESH_SECRET
+        sync: false
       # Comma-separated allowed CORS origins (non-secret).
       - key: CORS_ORIGINS
         value: https://bd-cr7.vercel.app
+
+  - type: cron
+    name: bdcr7-governance-refresh
+    runtime: python
+    pythonVersion: 3.11.9
+    schedule: "*/15 * * * *"
+    buildCommand: pip install --prefer-binary -r apps/api-core-python/requirements.txt
+    startCommand: python apps/api-core-python/scripts/refresh_approval_suggestions.py
+    envVars:
+      # Keep cron runtime in production mode for consistent policy behavior.
+      - key: APP_ENV
+        value: production
+      # Shared secret used for calling internal cron-safe refresh endpoint.
+      - key: GOVERNANCE_REFRESH_SECRET
+        sync: false
+      # Optional fallback: bearer token for the authenticated refresh endpoint.
+      - key: GOVERNANCE_REFRESH_BEARER_TOKEN
+        sync: false
+      # Override only if API URL changes from the default Render service URL.
+      - key: GOVERNANCE_REFRESH_API_URL
+        value: https://bd-cr7-api.onrender.com

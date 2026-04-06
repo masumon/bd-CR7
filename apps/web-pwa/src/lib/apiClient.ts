@@ -1,5 +1,6 @@
 import { appConfig, IS_PRODUCTION, LOCALHOST_URL_PATTERN } from "@/core/config";
 import { supabase } from "@/lib/supabase";
+import useOfflineQueue, { type QueueMethod } from "@/store/offlineQueue";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -38,6 +39,30 @@ const toErrorMessage = (payload: unknown, status: number) => {
   return `Request failed (${status})`;
 };
 
+const QUEUEABLE_METHODS: QueueMethod[] = ["POST", "PUT", "PATCH", "DELETE"];
+
+const normalizeMethod = (method?: string): QueueMethod | null => {
+  const upper = (method || "GET").toUpperCase();
+  return QUEUEABLE_METHODS.includes(upper as QueueMethod) ? (upper as QueueMethod) : null;
+};
+
+const parseJsonBody = (body: BodyInit | null | undefined): Record<string, unknown> => {
+  if (!body) {
+    return {};
+  }
+  if (typeof body === "string") {
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed && typeof parsed === "object") {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return { raw: body };
+    }
+  }
+  return {};
+};
+
 export async function apiClient<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   if (!appConfig.apiBaseUrl && path.startsWith("/api/")) {
     // Keep same-origin behavior, but provide a clearer path for debugging in production.
@@ -65,12 +90,35 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
   if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");
   if (resolvedToken) headers.set("Authorization", `Bearer ${resolvedToken}`);
 
-  const response = await fetch(buildUrl(path), {
-    ...init,
-    headers,
-    credentials: "same-origin",
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path), {
+      ...init,
+      headers,
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+  } catch (error) {
+    const method = normalizeMethod(init.method);
+    if (method && path.startsWith("/api/")) {
+      const added = useOfflineQueue.getState().addToQueueValidated({
+        id: crypto.randomUUID(),
+        endpoint: path,
+        method,
+        payload: parseJsonBody(init.body),
+        attempts: 0,
+        createdAt: Date.now(),
+      });
+      if (added) {
+        if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.warn(`[apiClient] Request queued for offline sync: ${method} ${path}`);
+        }
+        return {} as T;
+      }
+    }
+    throw error;
+  }
 
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json") ? await response.json() : await response.text();

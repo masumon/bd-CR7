@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from hmac import compare_digest
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from core.auth import UserContext, get_current_user, require_roles
+from core.config import settings
 from core.supabase import supabase_service
 
 router = APIRouter()
@@ -25,38 +27,7 @@ def _require_supabase() -> Any:
     return supabase_service
 
 
-@router.get("/rules")
-async def list_decision_rules(user: UserContext = Depends(require_roles("admin", "checker"))):
-    client = _require_supabase()
-    rows = client.table("decision_rules").select("id,rule_key,label,is_enabled,risk_threshold,payload,updated_at").order("rule_key").execute()
-    return rows.data or []
-
-
-@router.put("/rules/{rule_key}")
-async def upsert_decision_rule(
-    rule_key: str,
-    payload: DecisionRuleUpsert,
-    user: UserContext = Depends(require_roles("admin")),
-):
-    client = _require_supabase()
-
-    row = {
-        "rule_key": rule_key,
-        "label": payload.label or rule_key.replace("_", " ").title(),
-        "is_enabled": payload.is_enabled,
-        "risk_threshold": payload.risk_threshold,
-        "payload": payload.payload,
-        "created_by": user.user_id,
-    }
-
-    res = client.table("decision_rules").upsert(row, on_conflict="rule_key").execute()
-    return (res.data or [row])[0]
-
-
-@router.post("/suggestions/refresh")
-async def refresh_pending_approvals(user: UserContext = Depends(require_roles("admin", "checker"))):
-    client = _require_supabase()
-
+def _refresh_pending_approvals_impl(client: Any) -> dict[str, int | str]:
     rules_res = client.table("decision_rules").select("risk_threshold,is_enabled,payload").eq("rule_key", "expense_risk_auto_suggest").limit(1).execute()
     default_threshold = 80
     if rules_res.data:
@@ -102,6 +73,54 @@ async def refresh_pending_approvals(user: UserContext = Depends(require_roles("a
         created += 1
 
     return {"created": created, "threshold": default_threshold}
+
+
+@router.get("/rules")
+async def list_decision_rules(user: UserContext = Depends(require_roles("admin", "checker"))):
+    client = _require_supabase()
+    rows = client.table("decision_rules").select("id,rule_key,label,is_enabled,risk_threshold,payload,updated_at").order("rule_key").execute()
+    return rows.data or []
+
+
+@router.put("/rules/{rule_key}")
+async def upsert_decision_rule(
+    rule_key: str,
+    payload: DecisionRuleUpsert,
+    user: UserContext = Depends(require_roles("admin")),
+):
+    client = _require_supabase()
+
+    row = {
+        "rule_key": rule_key,
+        "label": payload.label or rule_key.replace("_", " ").title(),
+        "is_enabled": payload.is_enabled,
+        "risk_threshold": payload.risk_threshold,
+        "payload": payload.payload,
+        "created_by": user.user_id,
+    }
+
+    res = client.table("decision_rules").upsert(row, on_conflict="rule_key").execute()
+    return (res.data or [row])[0]
+
+
+@router.post("/suggestions/refresh")
+async def refresh_pending_approvals(user: UserContext = Depends(require_roles("admin", "checker"))):
+    client = _require_supabase()
+    return _refresh_pending_approvals_impl(client)
+
+
+@router.post("/suggestions/refresh/internal")
+async def refresh_pending_approvals_internal(request: Request):
+    expected_secret = settings.governance_refresh_secret
+    if not expected_secret:
+        raise HTTPException(status_code=503, detail="GOVERNANCE_REFRESH_SECRET is not configured")
+
+    provided_secret = (request.headers.get("x-governance-refresh-secret") or "").strip()
+    if not provided_secret or not compare_digest(provided_secret, expected_secret):
+        raise HTTPException(status_code=401, detail="Invalid governance refresh secret")
+
+    client = _require_supabase()
+    return _refresh_pending_approvals_impl(client)
 
 
 @router.get("/pending")
