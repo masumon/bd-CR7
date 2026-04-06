@@ -61,7 +61,8 @@ const PYTHON_API =
 // Default is conservative (9s) to stay within Vercel Hobby's 10s limit.
 // Override via PROXY_TIMEOUT_MS env var for Pro/Enterprise plans where longer
 // AI/DB queries may require more time (e.g. set to 30000 on Vercel Pro).
-const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS) || 9_000;
+const _rawTimeout = Number(process.env.PROXY_TIMEOUT_MS);
+const PROXY_TIMEOUT_MS = Number.isFinite(_rawTimeout) && _rawTimeout > 0 ? _rawTimeout : 9_000;
 
 /** Returns a 503 JSON response indicating the backend API is not configured. */
 const createNotConfiguredResponse = () =>

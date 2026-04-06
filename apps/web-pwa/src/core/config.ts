@@ -23,17 +23,18 @@ export const LOCALHOST_URL_PATTERN =
 /**
  * True when the code is running in a real production deployment.
  *
- * Logic (used by the browser API client; server-side code in route handlers
- * additionally checks APP_ENV which is unavailable in browser bundles):
+ * This constant is safe for browser (client) bundles — it only reads
+ * NEXT_PUBLIC_* and NODE_ENV which are available client-side.
+ *
+ * Server-side code in route handlers extends this with APP_ENV and the
+ * non-public VERCEL_ENV (see app/api/[...path]/route.ts `isProduction`).
+ *
  *   1. NEXT_PUBLIC_VERCEL_ENV — set by the Vercel platform; "preview" is NOT
  *      production even though NODE_ENV is also "production" on preview builds.
  *   2. NODE_ENV — standard Node.js / Next.js fallback for non-Vercel hosts.
  *
  * Note: APP_ENV (server-side only, no NEXT_PUBLIC_ prefix) cannot be read in
- * browser bundles, so it is intentionally omitted here. The server-side proxy
- * route (app/api/[...path]/route.ts) checks it separately.
- *
- * NEXT_PUBLIC_ prefix makes this available to browser (client) bundles.
+ * browser bundles so it is intentionally omitted here.
  */
 export const IS_PRODUCTION: boolean = process.env.NEXT_PUBLIC_VERCEL_ENV
   ? process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
