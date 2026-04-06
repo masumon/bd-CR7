@@ -90,15 +90,14 @@ export function useProjectFiles(filters?: {
   }, [loadFiles]);
 
   const insertFile = useCallback(
-    async (payload: InsertProjectFile): Promise<ProjectFile | null> => {
+    async (payload: InsertProjectFile): Promise<ProjectFile> => {
       const { data, error: err } = await supabase
         .from("project_files")
         .insert({ ...payload, uploaded_by: userId ?? null })
         .select()
         .single();
       if (err) {
-        setError(err.message);
-        return null;
+        throw new Error(err.message);
       }
       setFiles((prev) => [data as ProjectFile, ...prev]);
       return data as ProjectFile;

@@ -117,7 +117,6 @@ export function EvidenceGate({
       };
 
       const saved = await insertFile(payload);
-      if (!saved) throw new Error("Failed to save file record");
 
       setSavedFileId(saved.id);
       setSavedFileUrl(fileUrl);

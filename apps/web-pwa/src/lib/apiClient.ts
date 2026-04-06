@@ -46,7 +46,7 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
   const response = await fetch(buildUrl(path), {
     ...init,
     headers,
-    credentials: "include",
+    credentials: "same-origin",
     cache: "no-store",
   });
 
