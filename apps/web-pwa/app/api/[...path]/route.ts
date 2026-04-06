@@ -18,23 +18,29 @@
  *                     https://api.example.com (production)
  *
  * Backward-compat fallback: if PYTHON_API_URL is not set, the handler tries
- * NEXT_PUBLIC_API_URL (existing env var used in previous deployments).
+ * NEXT_PUBLIC_API_URL / NEXT_PUBLIC_API_BASE_URL (existing env vars used in
+ * previous deployments).
  */
 
 import { type NextRequest, NextResponse } from "next/server";
 import { LOCALHOST_URL_PATTERN } from "@/core/config";
 
-// NEXT_PUBLIC_API_URL kept as a backward-compat fallback so existing
-// deployments that already have it set keep working automatically.
-// In production, ignore localhost/127.0.0.1 values from NEXT_PUBLIC_API_URL
-// because the browser cannot reach those addresses from the internet.
-const rawApiUrl = (
-  process.env.PYTHON_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  ""
-)
-  .trim()
-  .replace(/\/$/, "");
+const normalizeApiUrl = (value: string | undefined): string =>
+  (value || "").trim().replace(/\/$/, "");
+
+const getApiCandidates = (): string[] => {
+  const raw = [
+    process.env.PYTHON_API_URL,
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.NEXT_PUBLIC_API_BASE_URL,
+  ];
+  const deduped = new Set<string>();
+  for (const item of raw) {
+    const normalized = normalizeApiUrl(item);
+    if (normalized) deduped.add(normalized);
+  }
+  return [...deduped];
+};
 
 // Detect production environment using whichever variable is available:
 //   VERCEL_ENV  — set automatically by the Vercel platform ("production" | "preview" | "development")
@@ -50,12 +56,22 @@ const isProduction = process.env.VERCEL_ENV
   ? process.env.VERCEL_ENV === "production"
   : (process.env.APP_ENV || process.env.NODE_ENV) === "production";
 
-// If the resolved API URL points to localhost and we're in production, it can
-// never be reached from the internet — discard it so the proxy returns a clear
-// 503 rather than an unreachable-host error. This applies regardless of which
-// env var (PYTHON_API_URL or NEXT_PUBLIC_API_URL) provided the localhost value.
-const PYTHON_API =
-  isProduction && LOCALHOST_URL_PATTERN.test(rawApiUrl) ? "" : rawApiUrl;
+const resolvePythonApi = (requestOrigin: string): string => {
+  const candidates = getApiCandidates();
+  for (const candidate of candidates) {
+    if (isProduction && LOCALHOST_URL_PATTERN.test(candidate)) {
+      continue;
+    }
+    if (candidate === requestOrigin) {
+      continue;
+    }
+    if (candidate.startsWith(requestOrigin)) {
+      continue;
+    }
+    return candidate;
+  }
+  return "";
+};
 
 // Proxy request timeout in milliseconds.
 // Default is conservative (9s) to stay within Vercel Hobby's 10s limit.
@@ -66,24 +82,24 @@ const PROXY_TIMEOUT_MS = Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? p
 const PROXY_TIMEOUT_SECONDS = PROXY_TIMEOUT_MS / 1000;
 
 /** Returns a 503 JSON response indicating the backend API is not configured. */
-const createNotConfiguredResponse = () =>
+const createNotConfiguredResponse = (requestOrigin: string) =>
   NextResponse.json(
     {
       success: false,
       data: null,
       error:
-        "Backend API not configured. Set PYTHON_API_URL (server-side, recommended) or NEXT_PUBLIC_API_URL (legacy fallback) to the URL of the Python API service.",
+        `Backend API not configured. Set PYTHON_API_URL (server-side, recommended) or NEXT_PUBLIC_API_URL/NEXT_PUBLIC_API_BASE_URL to the Python API service URL. Current app origin: ${requestOrigin}`,
     },
     { status: 503 },
   );
 
 /** Returns a 508 JSON response when the proxy target resolves to itself. */
-const createLoopDetectedResponse = (targetUrl: string) =>
+const createLoopDetectedResponse = (requestOrigin: string, targetUrl: string) =>
   NextResponse.json(
     {
       success: false,
       data: null,
-      error: `Proxy loop detected: PYTHON_API_URL (${PYTHON_API}) points back to this Next.js application. Set PYTHON_API_URL to the actual Python FastAPI backend URL (e.g. https://bd-cr7-api.onrender.com). Target was: ${targetUrl}`,
+      error: `Proxy loop detected: resolved API target points to current origin (${requestOrigin}). Set PYTHON_API_URL to the actual Python backend URL (e.g. https://bd-cr7-api.onrender.com). Target was: ${targetUrl}`,
     },
     { status: 508 },
   );
@@ -96,19 +112,20 @@ async function proxyRequest(
   request: NextRequest,
   pathSegments: string[],
 ): Promise<NextResponse> {
-  if (!PYTHON_API) return createNotConfiguredResponse();
+  const requestOrigin = request.nextUrl.origin;
+  const pythonApi = resolvePythonApi(requestOrigin);
+  if (!pythonApi) return createNotConfiguredResponse(requestOrigin);
 
   const targetPath = "/api/" + pathSegments.join("/");
   const search = request.nextUrl.search;
-  const targetUrl = `${PYTHON_API}${targetPath}${search}`;
+  const targetUrl = `${pythonApi}${targetPath}${search}`;
 
   // Guard against proxy loops: if PYTHON_API points to the same host as the
   // current request, forwarding would call this handler again recursively,
   // resulting in a 508 Loop Detected error. Catch it early and return a
   // descriptive 508 immediately.
-  const requestOrigin = request.nextUrl.origin;
-  if (PYTHON_API.startsWith(requestOrigin)) {
-    return createLoopDetectedResponse(targetUrl);
+  if (pythonApi.startsWith(requestOrigin)) {
+    return createLoopDetectedResponse(requestOrigin, targetUrl);
   }
 
   // Forward only the headers the backend cares about.
@@ -159,8 +176,8 @@ async function proxyRequest(
         success: false,
         data: null,
         error: isTimeout
-          ? `Backend request timed out after ${PROXY_TIMEOUT_SECONDS}s. The Python API at ${PYTHON_API} is not responding.`
-          : `Backend unreachable at ${PYTHON_API}. Check PYTHON_API_URL. (${(fetchError as Error).message})`,
+          ? `Backend request timed out after ${PROXY_TIMEOUT_SECONDS}s. The Python API at ${pythonApi} is not responding.`
+          : `Backend unreachable at ${pythonApi}. Check PYTHON_API_URL. (${(fetchError as Error).message})`,
       },
       { status: isTimeout ? 504 : 503 },
     );
