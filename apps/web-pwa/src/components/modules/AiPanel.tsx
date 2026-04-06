@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BrainCircuit, Loader2, Radar, Search, Sparkles } from "lucide-react";
+import { Bot, Loader2, RefreshCw, Send, Sparkles, Wand2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,9 +13,13 @@ export function AiPanel() {
   const token = useAuthStore((s) => s.token);
   const hydrated = useAuthStore((s) => s.hydrated);
   const authLoading = useAuthStore((s) => s.loading);
-  const [vector, setVector] = useState("[0.01,0.02,0.03]");
-  const [anomalies, setAnomalies] = useState<Array<Record<string, unknown>>>([]);
-  const [answer, setAnswer] = useState("");
+  const [messages, setMessages] = useState<Array<{ id: string; role: "user" | "ai"; text: string; loading?: boolean }>>([
+    {
+      id: "welcome",
+      role: "ai",
+      text: "আমি SUMONIX AI। আপনার finance, project, workforce, report, risk analysis এবং daily action plan-এ সাহায্য করতে প্রস্তুত।\n\nI am ready to assist with finance, project planning, risk analysis, and operational decisions.",
+    },
+  ]);
   const [prompt, setPrompt] = useState("Dashboard summary");
   const [message, setMessage] = useState("");
   const [loadingChat, setLoadingChat] = useState(false);
@@ -27,35 +31,66 @@ export function AiPanel() {
   const isAuthenticated = authReady && Boolean(token);
   const isAuthPending = !hydrated || authLoading;
 
-  const loadAnomalies = () => {
-    setMessage("Automation is disabled. Chatbot mode is active.");
-  };
-
-  const searchMemory = () => {
-    setMessage("Automation is disabled. Chatbot mode is active.");
-  };
-
-  const askAi = async () => {
+  const sendPrompt = async (input: string) => {
     if (isAuthPending) return;
     if (!isAuthenticated) {
       setMessage("Login required.");
       return;
     }
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
     setMessage("");
-    setAnswer("");
-    setLoadingChat(true);
+    const userMessageId = `u-${Date.now()}`;
+    const loadingId = `l-${Date.now()}`;
+
+    const previousContext = messages
+      .slice(-6)
+      .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
+      .join("\n");
+    const composed = previousContext
+      ? `Context:\n${previousContext}\n\nNew request:\n${trimmed}`
+      : trimmed;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: userMessageId, role: "user", text: trimmed },
+      { id: loadingId, role: "ai", text: "", loading: true },
+    ]);
+    setPrompt("");
+
     try {
       const data = await apiRequest<{ reply?: string }>(
         "/api/ai/chat",
         {
           method: "POST",
-          body: JSON.stringify({ message: prompt }),
+          body: JSON.stringify({ message: composed }),
         },
         token ?? undefined
       );
-      setAnswer(data.reply || "No answer returned.");
+      const reply = data.reply || "No answer returned.";
+      setMessages((prev) => prev.map((m) => (m.id === loadingId ? { id: loadingId, role: "ai", text: reply } : m)));
     } catch (err) {
-      setMessage((err as Error).message || "AI chat failed.");
+      const fallback = (err as Error).message || "AI chat failed.";
+      setMessages((prev) => prev.map((m) => (m.id === loadingId ? { id: loadingId, role: "ai", text: fallback } : m)));
+    }
+  };
+
+  const askAi = async () => {
+    if (loadingChat) return;
+    setLoadingChat(true);
+    try {
+      await sendPrompt(prompt);
+    } finally {
+      setLoadingChat(false);
+    }
+  };
+
+  const runHelper = async (helperPrompt: string) => {
+    if (loadingChat) return;
+    setLoadingChat(true);
+    try {
+      await sendPrompt(helperPrompt);
     } finally {
       setLoadingChat(false);
     }
@@ -68,8 +103,8 @@ export function AiPanel() {
       <WorkspaceHero
         badge="SUMONIX AI / বুদ্ধিমান সহকারী"
         stats={[
-          { label: "Assistant Mode", value: "Ready" },
-          { label: "Anomaly Feed", value: String(anomalies.length) },
+          { label: "Assistant Mode", value: "Advanced Chat" },
+          { label: "Conversation", value: String(messages.filter((m) => !m.loading).length) },
           { label: "Auth Status", value: authStatusLabel },
         ]}
       />
@@ -112,15 +147,36 @@ export function AiPanel() {
                   rows={4}
                   className="w-full resize-none bg-transparent text-sm leading-6 outline-none"
                 />
-                <div className="mt-3 flex justify-end">
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setMessages((prev) => prev.slice(0, 1))}
+                    disabled={loadingChat || messages.length <= 1}
+                    className="gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Reset Chat
+                  </Button>
                   <Button onClick={askAi} disabled={!isAuthenticated || isAuthPending || loadingChat || !prompt.trim()} className="gap-2">
                     {loadingChat ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     Ask SUMONIX
                   </Button>
                 </div>
               </div>
-              <div className="rounded-[1.25rem] border border-primary/15 bg-primary/5 p-4 text-sm leading-7 text-foreground">
-                {answer || "AI reply will appear here with a practical summary and next-step guidance."}
+
+              <div className="max-h-[26rem] space-y-2 overflow-y-auto rounded-[1.25rem] border border-primary/15 bg-primary/5 p-3 text-sm leading-7 text-foreground">
+                {messages.map((entry) => (
+                  <div key={entry.id} className={`rounded-2xl px-3 py-2 ${entry.role === "user" ? "bg-primary text-primary-foreground" : "border border-border bg-background/85"}`}>
+                    <p className="mb-1 text-[11px] font-medium opacity-80">{entry.role === "user" ? "You / আপনি" : "SUMONIX AI"}</p>
+                    {entry.loading ? (
+                      <span className="inline-flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking...
+                      </span>
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words">{entry.text}</p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -128,27 +184,29 @@ export function AiPanel() {
               <div className="rounded-[1.4rem] border border-border/70 bg-background/75 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-foreground">Anomaly Watch</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Review suspicious expense patterns.</p>
+                    <p className="text-sm font-semibold text-foreground">Smart Assistant Tools</p>
+                    <p className="mt-1 text-xs text-muted-foreground">One tap prompts for instant operations guidance.</p>
                   </div>
-                  <Button variant="outline" onClick={loadAnomalies} disabled className="gap-2">
-                    <Radar className="h-4 w-4" />
-                    Scan
+                  <Button variant="outline" onClick={() => void runHelper("Analyze current expense risk and show top anomalies with reason.")} disabled={!isAuthenticated || loadingChat} className="gap-2">
+                    <Wand2 className="h-4 w-4" />
+                    Analyze
                   </Button>
                 </div>
               </div>
 
               <div className="rounded-[1.4rem] border border-border/70 bg-background/75 p-4">
-                <p className="text-sm font-semibold text-foreground">Memory Search</p>
-                <p className="mt-1 text-xs text-muted-foreground">Use vector search when memory entries exist.</p>
-                <div className="mt-3 flex items-center gap-2 rounded-[1.2rem] border border-border bg-card px-3 py-3">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <input value={vector} onChange={(event) => setVector(event.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="Vector e.g. [0.1,0.2,0.3]" />
+                <p className="text-sm font-semibold text-foreground">Workflow Copilot</p>
+                <p className="mt-1 text-xs text-muted-foreground">Get next-step task plan across modules.</p>
+                <div className="mt-3 grid gap-2">
+                  <Button variant="outline" onClick={() => void runHelper("Create my prioritized action plan for today from dashboard data.")} disabled={!isAuthenticated || loadingChat} className="justify-start gap-2">
+                    <Bot className="h-4 w-4" />
+                    Today Priority Plan
+                  </Button>
+                  <Button variant="outline" onClick={() => void runHelper("Generate a bilingual (Bangla + English) status summary for management.")} disabled={!isAuthenticated || loadingChat} className="justify-start gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Bilingual Executive Summary
+                  </Button>
                 </div>
-                <Button variant="outline" onClick={searchMemory} disabled className="mt-3 w-full gap-2">
-                  <BrainCircuit className="h-4 w-4" />
-                  Search Memory
-                </Button>
               </div>
             </div>
           </div>
@@ -158,22 +216,11 @@ export function AiPanel() {
           <div className="rounded-[1.4rem] border border-border/70 bg-background/75 p-4">
             <SectionHeader
               eyebrow="AI File Processing / ফাইল প্রক্রিয়াকরণ"
-              title="Upload any file for AI classification"
+              title="Assistant Mode Active"
             />
             <p className="mb-1 text-xs text-muted-foreground">
-              Automation is currently disabled. SUMONIX AI is running in chatbot-only mode.
+              SUMONIX AI এখন conversational assistant mode-এ সক্রিয়। আপনি finance, risk, reports, workforce এবং planning prompt দিয়ে তাৎক্ষণিক guidance পাবেন।
             </p>
-          </div>
-
-          <div className="grid gap-3 lg:grid-cols-2">
-            {anomalies.map((item) => (
-              <div key={String(item.id)} className="rounded-[1.25rem] border border-border/70 bg-background/75 p-4 text-sm">
-                <p className="font-semibold text-foreground">{String(item.id)}</p>
-                <p className="mt-1 text-muted-foreground">Amount: {String(item.amount || "N/A")}</p>
-                {item.description ? <p className="mt-1 text-muted-foreground">{String(item.description)}</p> : null}
-              </div>
-            ))}
-            {!anomalies.length ? <div className="rounded-[1.25rem] border border-dashed border-border bg-background/75 px-4 py-8 text-center text-sm text-muted-foreground lg:col-span-2">Anomaly or memory results will appear here.</div> : null}
           </div>
         </CardContent>
       </Card>

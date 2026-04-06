@@ -32,6 +32,13 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  webpack: (config) => {
+    config.infrastructureLogging = {
+      ...(config.infrastructureLogging || {}),
+      level: "error",
+    };
+    return config;
+  },
   transpilePackages: ["@bdcr7/media-engine", "@bdcr7/rbac-engine", "@bdcr7/ui-system", "@bdcr7/core-logic"],
   images: {
     remotePatterns: [

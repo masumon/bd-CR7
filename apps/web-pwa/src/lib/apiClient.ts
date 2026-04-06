@@ -94,6 +94,26 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
   if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");
   if (resolvedToken) headers.set("Authorization", `Bearer ${resolvedToken}`);
 
+  const method = normalizeMethod(init.method);
+  if (typeof navigator !== "undefined" && !navigator.onLine && method && path.startsWith("/api/")) {
+    const added = useOfflineQueue.getState().addToQueueValidated({
+      id: crypto.randomUUID(),
+      endpoint: path,
+      method,
+      payload: parseJsonBody(init.body),
+      attempts: 0,
+      createdAt: Date.now(),
+      lastError: "offline",
+    });
+    if (added) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.warn(`[apiClient] Offline queue accepted: ${method} ${path}`);
+      }
+      return {} as T;
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(buildUrl(path), {
@@ -103,7 +123,6 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
       cache: "no-store",
     });
   } catch (error) {
-    const method = normalizeMethod(init.method);
     if (method && path.startsWith("/api/")) {
       const added = useOfflineQueue.getState().addToQueueValidated({
         id: crypto.randomUUID(),

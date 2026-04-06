@@ -74,8 +74,10 @@ export function setupOfflineSync(): () => void {
   };
 
   if (typeof window !== 'undefined') {
-    timer = setInterval(trigger, 5000);
+    // Fast replay keeps the app feeling instant after reconnect.
+    timer = setInterval(trigger, 3000);
     window.addEventListener('online', trigger);
+    window.addEventListener('bdcr7:sync', trigger as EventListener);
   }
 
   return () => {
@@ -84,6 +86,7 @@ export function setupOfflineSync(): () => void {
     }
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', trigger);
+      window.removeEventListener('bdcr7:sync', trigger as EventListener);
     }
   };
 }

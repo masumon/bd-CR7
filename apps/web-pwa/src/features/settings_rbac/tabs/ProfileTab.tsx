@@ -104,7 +104,7 @@ export function ProfileTab({
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="settings-user-code" className="text-xs text-muted-foreground">Custom User ID</label>
+              <label htmlFor="settings-user-code" className="text-xs text-muted-foreground">Custom User ID / নিজের ইউজার আইডি</label>
               <input
                 id="settings-user-code"
                 title="Custom User ID"
@@ -113,6 +113,7 @@ export function ProfileTab({
                 onChange={(e) => setUserCode(e.target.value.toLowerCase())}
                 placeholder="e.g. admin_main_01"
               />
+              <p className="text-[11px] text-muted-foreground">Set your own public ID (letters, numbers, _ or -). Example: masum_admin_01</p>
             </div>
 
             <div className="space-y-1.5">
