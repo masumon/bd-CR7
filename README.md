@@ -124,6 +124,14 @@ pnpm --filter ./apps/web-pwa build
 - Bangla surgical audit (latest): `surgical_audit_report_last.bn.md`
 - Architecture: `CURRENT_ARCHITECTURE.md`
 
+## Developer Credit
+- Lead Developer: **MUMAIN AHMED**
+- Role: Full-stack architect, UI systems designer, and deployment lead for BD CR7
+- Email: m.a.sumon92@gmail.com
+- Website: https://mumainsumon.netlify.app
+- Facebook: https://www.facebook.com/sumon.mumain
+- WhatsApp: https://wa.me/8801825007977
+
 ## Security and Conventions
 - Never commit secrets
 - Keep request/response models explicit in FastAPI

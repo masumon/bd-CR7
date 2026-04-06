@@ -36,7 +36,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const [dark, setDark] = useState(true);
-  const [language, setLanguage] = useState<"en" | "bn">("en");
+  const [language, setLanguage] = useState<"en" | "bn">("bn");
   const [online, setOnline] = useState(true);
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [openNotifications, setOpenNotifications] = useState(false);
@@ -96,8 +96,8 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
 
     const channel = client
       .channel(`bdcr7-mobile-notify-${userId || "anonymous"}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "approvals" }, () => push("Approval", "New approval queued"))
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "expenses" }, () => push("Expense", "New expense logged"))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "approvals" }, () => push("Approval / অনুমোদন", "নতুন অনুমোদন কিউ-তে যোগ হয়েছে"))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "expenses" }, () => push("Expense / খরচ", "নতুন খরচ যুক্ত হয়েছে"))
       .subscribe();
 
     return () => {
@@ -174,8 +174,8 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       {/* ── Global Floating Upload Button ───────────────────────────────── */}
       <button
         type="button"
-        aria-label="Upload evidence file"
-        title="Upload Evidence / File"
+        aria-label={language === "bn" ? "প্রমাণ বা ফাইল আপলোড" : "Upload evidence file"}
+        title={language === "bn" ? "ফাইল আপলোড" : "Upload Evidence / File"}
         onClick={() => setUploadOpen(true)}
         className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+12px)] right-20 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/50 transition-transform hover:scale-[1.02] active:scale-95 lg:bottom-6 lg:right-20"
       >

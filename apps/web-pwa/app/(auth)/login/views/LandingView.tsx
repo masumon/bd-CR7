@@ -37,31 +37,31 @@ export function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading
       </header>
 
       <h2 className="mt-6 text-center text-4xl font-extrabold text-white" style={{ fontFamily: "var(--font-outfit-var)", letterSpacing: "-0.01em" }}>
-        Welcome Back
+        স্বাগতম ফিরে এলেন
       </h2>
 
       <div className="flex-1" />
 
       <div className="w-full max-w-sm space-y-3">
-        <button type="button" onClick={onSignup} className="btn-bdcr7-outline flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold" aria-label="Sign Up">
+        <button type="button" onClick={onSignup} className="btn-bdcr7-outline flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold" aria-label="নতুন একাউন্ট খুলুন">
           <User className="h-5 w-5" />
-          Sign Up / <span style={{ fontFamily: "var(--font-hind-var)" }}>নতুন একাউন্ট</span>
+          নতুন একাউন্ট / <span style={{ fontFamily: "var(--font-hind-var)" }}>Sign Up</span>
         </button>
 
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-white/[0.1]" />
-          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>or</span>
+          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>অথবা</span>
           <span className="h-px flex-1 bg-white/[0.1]" />
         </div>
 
-        <button type="button" onClick={onOtp} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:bg-white/[0.07] hover:border-amber-300/25 active:scale-[0.97]" style={{ height: "52px" }} aria-label="Login with OTP">
+        <button type="button" onClick={onOtp} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:bg-white/[0.07] hover:border-amber-300/25 active:scale-[0.97]" style={{ height: "52px" }} aria-label="ওটিপি দিয়ে লগইন">
           <MessageSquare className="h-5 w-5 text-amber-300/70" />
-          Login with OTP
+          ওটিপি দিয়ে লগইন
         </button>
 
-        <button type="button" onClick={onSignin} className="btn-bdcr7-gold flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base" aria-label="Sign In">
+        <button type="button" onClick={onSignin} className="btn-bdcr7-gold flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base" aria-label="লগইন করুন">
           <Lock className="h-5 w-5" />
-          Sign In / <span style={{ fontFamily: "var(--font-hind-var)" }}>লগইন</span>
+          লগইন / <span style={{ fontFamily: "var(--font-hind-var)" }}>Sign In</span>
         </button>
       </div>
 
@@ -74,7 +74,7 @@ export function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading
           {bioState === "success" ? (
             <motion.div key="bio-success" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.7, opacity: 0 }} className="flex flex-col items-center gap-1">
               <CheckCircle2 className="h-12 w-12 text-emerald-400" />
-              <p className="text-[11px] text-emerald-300">Biometric verified!</p>
+              <p className="text-[11px] text-emerald-300">বায়োমেট্রিক যাচাই সম্পন্ন!</p>
             </motion.div>
           ) : (
             <motion.div key="bio-button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
@@ -86,12 +86,12 @@ export function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading
               </div>
 
               <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.52)" }}>
-                {bioState === "scanning" ? "Scanning..." : bioState === "failed" ? "Biometric failed" : "Tap to scan fingerprint"}
+                {bioState === "scanning" ? "স্ক্যান হচ্ছে..." : bioState === "failed" ? "বায়োমেট্রিক যাচাই ব্যর্থ" : "স্ক্যান করতে চাপ দিন"}
               </p>
 
               {bioState === "failed" && (
                 <button type="button" onClick={onSignin} className="text-[11px] font-medium transition-colors hover:underline" style={{ color: "rgba(251,189,35,0.85)" }}>
-                  Use password instead
+                  পাসওয়ার্ড দিয়ে লগইন করুন
                 </button>
               )}
             </motion.div>

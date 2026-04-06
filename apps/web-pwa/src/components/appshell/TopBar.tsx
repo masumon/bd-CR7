@@ -22,12 +22,14 @@ type TopBarProps = {
 
 export function TopBar({ title, online, unread, dark, language, role, onMenu, onToggleTheme, onToggleLanguage, onOpenNotifications, onOpenUserDrawer }: TopBarProps) {
   const initials = role ? role.slice(0, 2).toUpperCase() : "U";
+  const onlineLabel = language === "bn" ? "সিস্টেম অনলাইন" : "System Online";
+  const offlineLabel = language === "bn" ? "সিস্টেম অফলাইন" : "System Offline";
 
   return (
     <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-border/65 bg-background/88 px-2 backdrop-blur-xl">
       <div className="mx-auto flex h-full max-w-7xl items-center gap-1.5">
         {/* Mobile hamburger */}
-        <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label="Open menu">
+        <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label={language === "bn" ? "মেনু খুলুন" : "Open menu"}>
           <Menu className="h-4 w-4" />
         </Button>
 
@@ -44,7 +46,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
           <div className="flex min-w-0 flex-col text-left">
             <p className="truncate font-display text-sm font-semibold text-foreground leading-tight">{title}</p>
             <p className={cn("text-[10px] uppercase tracking-[0.12em] leading-tight", online ? "text-emerald-400" : "text-rose-400")}>
-              {online ? "System Online" : "System Offline"}
+              {online ? onlineLabel : offlineLabel}
             </p>
           </div>
           <span className={cn("h-2 w-2 shrink-0 rounded-full", online ? "bg-emerald-400" : "bg-rose-500")} aria-hidden="true" />
@@ -52,7 +54,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
         </div>
 
         {/* Theme toggle */}
-        <Button variant="ghost" className="h-11 w-11 p-0" onClick={onToggleTheme} aria-label="Toggle theme">
+        <Button variant="ghost" className="h-11 w-11 p-0" onClick={onToggleTheme} aria-label={language === "bn" ? "থিম পরিবর্তন" : "Toggle theme"}>
           {dark ? <Sun className="h-4 w-4 text-gold" /> : <Moon className="h-4 w-4" />}
         </Button>
 
@@ -60,14 +62,14 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
         <button
           className="flex h-9 items-center justify-center gap-1 rounded-full border border-border/60 bg-muted/55 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground transition hover:border-primary/40 hover:text-primary focus-visible:outline-none"
           onClick={onToggleLanguage}
-          aria-label="Toggle language"
+          aria-label={language === "bn" ? "ভাষা পরিবর্তন" : "Toggle language"}
         >
           <Languages className="h-3 w-3" />
           <span>{language === "bn" ? "বাং" : "EN"}</span>
         </button>
 
         {/* Notifications */}
-        <Button variant="ghost" className="relative h-11 w-11 p-0" onClick={onOpenNotifications} aria-label="Notifications">
+        <Button variant="ghost" className="relative h-11 w-11 p-0" onClick={onOpenNotifications} aria-label={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
           <Bell className="h-4 w-4" />
           {unread > 0 && (
             <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
@@ -84,7 +86,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
             "transition hover:opacity-90 active:scale-95"
           )}
           onClick={onOpenUserDrawer}
-          aria-label="Open user profile"
+          aria-label={language === "bn" ? "ইউজার প্রোফাইল খুলুন" : "Open user profile"}
         >
           {initials}
         </button>

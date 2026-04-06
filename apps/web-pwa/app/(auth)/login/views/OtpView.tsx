@@ -47,19 +47,19 @@ export function OtpView({
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back"><ChevronLeft className="h-5 w-5" /></button>
-          <h1 className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>OTP Login</h1>
+          <h1 className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>ওটিপি লগইন</h1>
         </header>
 
         <div className="flex-1 min-h-[1.5rem]" />
 
         <div className="glass-bdcr7 rounded-3xl p-5 space-y-4">
           {error && <div className="bdcr7-error"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span>{error}</span></div>}
-          {success && <div className="bdcr7-success"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 bdcr7-check-in" /><span>OTP verified! Signing you in...</span></div>}
+          {success && <div className="bdcr7-success"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 bdcr7-check-in" /><span>ওটিপি যাচাই সম্পন্ন! লগইন করা হচ্ছে...</span></div>}
 
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="otp-step1" {...fadeUp} transition={{ duration: 0.28 }} className="space-y-3">
-                <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-outfit-var)" }}>Enter your phone number to receive an OTP</p>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-outfit-var)" }}>ওটিপি পেতে আপনার ফোন নম্বর লিখুন</p>
                 <div className="bdcr7-input-wrap" data-filled={Boolean(contact)}>
                   <Phone className="h-4 w-4 shrink-0 text-amber-300/60" />
                   <label className="bdcr7-input-label">Phone / ফোন নম্বর</label>
@@ -67,7 +67,7 @@ export function OtpView({
                 </div>
                 <button type="button" onClick={onSend} disabled={loading || !contact.trim()} className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
-                  {loading ? "Sending OTP..." : "Send OTP"}
+                  {loading ? "ওটিপি পাঠানো হচ্ছে..." : "ওটিপি পাঠান"}
                 </button>
               </motion.div>
             )}
@@ -75,7 +75,7 @@ export function OtpView({
             {step === 2 && (
               <motion.div key="otp-step2" {...fadeUp} transition={{ duration: 0.28 }} className="space-y-4">
                 <div className="text-center">
-                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>Enter the 6-digit code sent to</p>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>নিচে পাঠানো ৬ সংখ্যার কোড লিখুন</p>
                   <p className="mt-0.5 text-sm font-semibold text-amber-300">{contact}</p>
                 </div>
 
@@ -93,20 +93,20 @@ export function OtpView({
                       onKeyDown={(e) => onDigitKeyDown(i, e)}
                       onFocus={(e) => e.target.select()}
                       className={`otp-box ${d ? "otp-filled" : ""}`}
-                      aria-label={`OTP digit ${i + 1}`}
+                      aria-label={`ওটিপি ডিজিট ${i + 1}`}
                     />
                   ))}
                 </div>
 
                 <button type="button" onClick={onVerify} disabled={loading || digits.join("").length < 6} className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  {loading ? "Verifying..." : "Verify OTP"}
+                  {loading ? "যাচাই হচ্ছে..." : "ওটিপি যাচাই করুন"}
                 </button>
 
                 <div className="flex items-center justify-center gap-2">
                   <button type="button" onClick={onResend} disabled={resendTimer > 0 || loading} className="flex items-center gap-1.5 text-[12px] transition-colors disabled:opacity-40" style={{ color: resendTimer > 0 ? "rgba(255,255,255,0.35)" : "rgba(251,189,35,0.85)" }}>
                     <RefreshCcw className="h-3.5 w-3.5" />
-                    {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend OTP"}
+                    {resendTimer > 0 ? `${resendTimer} সেকেন্ড পর আবার পাঠান` : "আবার ওটিপি পাঠান"}
                   </button>
                 </div>
               </motion.div>
@@ -115,7 +115,7 @@ export function OtpView({
         </div>
 
         <p className="mt-3 pb-2 text-center text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-          Having trouble? <a href="/forgot-password" style={{ color: "rgba(251,189,35,0.8)" }} className="font-medium hover:underline">Try another method</a>
+          সমস্যা হচ্ছে? <a href="/forgot-password" style={{ color: "rgba(251,189,35,0.8)" }} className="font-medium hover:underline">অন্য পদ্ধতি ব্যবহার করুন</a>
         </p>
       </div>
       <DevFooter />

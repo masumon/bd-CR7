@@ -22,7 +22,7 @@ export function SplashView() {
       </motion.div>
 
       <h1 className="text-3xl font-bold tracking-tight text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
-        Welcome / <span style={{ fontFamily: "var(--font-hind-var)" }}>স্বাগতম</span>
+        স্বাগতম / <span style={{ fontFamily: "var(--font-hind-var)" }}>Welcome</span>
       </h1>
 
       <div className="mt-6 flex items-center justify-center gap-2.5">
@@ -39,7 +39,7 @@ export function SplashView() {
 
       <div className="absolute bottom-0 left-0 right-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
         <p className="text-[10px] uppercase tracking-[0.22em]" style={{ color: "rgba(255,255,255,0.32)" }}>
-          Powered by
+          পরিচালনায়
         </p>
         <p className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em] gold-text-gradient">SUMONIX AI</p>
       </div>
