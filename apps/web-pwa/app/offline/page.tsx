@@ -1,3 +1,5 @@
+"use client";
+
 export default function OfflinePage() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background px-4 text-foreground">
