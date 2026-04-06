@@ -1,14 +1,11 @@
 import { supabase } from "@/lib/supabase";
 
-function resolveApiBase(): string {
-  const raw = (process.env.NEXT_PUBLIC_API_URL || "").trim();
-  if (!raw) return "";
-  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
-}
-
+/**
+ * Always use same-origin relative paths so that the Next.js API proxy
+ * (app/api/[...path]/route.ts) forwards requests to the Python backend.
+ */
 function buildApiUrl(path: string): string {
-  const base = resolveApiBase();
-  return base ? `${base}${path}` : path;
+  return path;
 }
 
 async function apiPost<T>(path: string, token: string, payload: unknown): Promise<T> {

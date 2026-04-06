@@ -4,12 +4,14 @@ import { useAuthStore } from '@/store/authStore';
 const MAX_ATTEMPTS = 5;
 let flushInProgress = false;
 
+/**
+ * Always use same-origin relative paths so that the Next.js API proxy
+ * (app/api/[...path]/route.ts) forwards requests to the Python backend.
+ * This avoids relying on the NEXT_PUBLIC_API_URL browser env var, which can
+ * be misconfigured and cause wrong routing in production.
+ */
 function resolveApiBase(): string {
-  const raw = (process.env.NEXT_PUBLIC_API_URL || '').trim();
-  if (!raw) {
-    return '';
-  }
-  return raw.endsWith('/') ? raw.slice(0, -1) : raw;
+  return '';
 }
 
 async function flushQueueOnce(): Promise<void> {
