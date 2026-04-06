@@ -17,7 +17,7 @@ BEGIN;
 DROP FUNCTION IF EXISTS public.create_sale_atomic(UUID, UUID, JSONB);
 
 -- Advanced inventory helper from migration 016.
-DROP FUNCTION IF EXISTS public.set_warehouse_stock_updated_at();
+DROP FUNCTION IF EXISTS public.set_warehouse_stock_updated_at() CASCADE;
 
 -- CRM module tables (migration 015)
 DROP TABLE IF EXISTS public.crm_interactions CASCADE;
