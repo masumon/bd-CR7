@@ -37,31 +37,31 @@ export function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading
       </header>
 
       <h2 className="mt-6 text-center text-4xl font-extrabold text-white" style={{ fontFamily: "var(--font-outfit-var)", letterSpacing: "-0.01em" }}>
-        স্বাগতম ফিরে এলেন
+        Welcome Back
       </h2>
 
       <div className="flex-1" />
 
       <div className="w-full max-w-sm space-y-3">
-        <button type="button" onClick={onSignup} className="btn-bdcr7-outline flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold" aria-label="নতুন একাউন্ট খুলুন">
+        <button type="button" onClick={onSignup} className="btn-bdcr7-outline flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold" aria-label="Create account">
           <User className="h-5 w-5" />
-          নতুন একাউন্ট / <span style={{ fontFamily: "var(--font-hind-var)" }}>Sign Up</span>
+          Sign Up
         </button>
 
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-white/[0.1]" />
-          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>অথবা</span>
+          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>OR</span>
           <span className="h-px flex-1 bg-white/[0.1]" />
         </div>
 
-        <button type="button" onClick={onOtp} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:bg-white/[0.07] hover:border-amber-300/25 active:scale-[0.97]" style={{ height: "52px" }} aria-label="ওটিপি দিয়ে লগইন">
+        <button type="button" onClick={onOtp} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:bg-white/[0.07] hover:border-amber-300/25 active:scale-[0.97]" style={{ height: "52px" }} aria-label="Sign in with OTP">
           <MessageSquare className="h-5 w-5 text-amber-300/70" />
-          ওটিপি দিয়ে লগইন
+          Sign in with OTP
         </button>
 
-        <button type="button" onClick={onSignin} className="btn-bdcr7-gold flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base" aria-label="লগইন করুন">
+        <button type="button" onClick={onSignin} className="btn-bdcr7-gold flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base" aria-label="Sign in">
           <Lock className="h-5 w-5" />
-          লগইন / <span style={{ fontFamily: "var(--font-hind-var)" }}>Sign In</span>
+          Sign In
         </button>
       </div>
 
@@ -74,7 +74,7 @@ export function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading
           {bioState === "success" ? (
             <motion.div key="bio-success" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.7, opacity: 0 }} className="flex flex-col items-center gap-1">
               <CheckCircle2 className="h-12 w-12 text-emerald-400" />
-              <p className="text-[11px] text-emerald-300">বায়োমেট্রিক যাচাই সম্পন্ন!</p>
+              <p className="text-[11px] text-emerald-300">Biometric verification complete!</p>
             </motion.div>
           ) : (
             <motion.div key="bio-button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
@@ -86,12 +86,12 @@ export function LandingView({ onSignin, onSignup, onOtp, onBiometric, bioLoading
               </div>
 
               <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.52)" }}>
-                {bioState === "scanning" ? "স্ক্যান হচ্ছে..." : bioState === "failed" ? "বায়োমেট্রিক যাচাই ব্যর্থ" : "স্ক্যান করতে চাপ দিন"}
+                {bioState === "scanning" ? "Scanning..." : bioState === "failed" ? "Biometric verification failed" : "Tap to scan"}
               </p>
 
               {bioState === "failed" && (
                 <button type="button" onClick={onSignin} className="text-[11px] font-medium transition-colors hover:underline" style={{ color: "rgba(251,189,35,0.85)" }}>
-                  পাসওয়ার্ড দিয়ে লগইন করুন
+                  Use password sign in
                 </button>
               )}
             </motion.div>

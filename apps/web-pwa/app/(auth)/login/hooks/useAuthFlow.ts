@@ -17,11 +17,12 @@ export function useAuthFlow(router: RouterLike) {
   const persistedToken = useAuthStore((s) => s.token);
   const persistedUserId = useAuthStore((s) => s.userId);
 
-  const [view, setView] = useState<View>("signin");
+  const [view, setView] = useState<View>("splash");
   const [showOverlay, setShowOverlay] = useState(false);
   const [authDone, setAuthDone] = useState(false);
   const persistedTokenRef = useRef(persistedToken);
   useEffect(() => {
+    let splashTimer: ReturnType<typeof setTimeout> | undefined;
     const run = async () => {
       if (supabase) {
         const { data } = await supabase.auth.getSession();
@@ -30,9 +31,23 @@ export function useAuthFlow(router: RouterLike) {
           return;
         }
       }
-      setView("signin");
+
+      const splashAlreadyShown =
+        typeof window !== "undefined" && window.sessionStorage.getItem("bdcr7-login-splash-shown") === "1";
+      if (splashAlreadyShown) {
+        setView("landing");
+        return;
+      }
+
+      splashTimer = setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("bdcr7-login-splash-shown", "1");
+        }
+        setView("landing");
+      }, 800);
     };
     void run();
+    return () => clearTimeout(splashTimer);
   }, [router]);
 
   useEffect(() => {
@@ -292,7 +307,7 @@ export function useAuthFlow(router: RouterLike) {
         setOtpStep(1);
         setOtpDigits(Array(6).fill(""));
         setOtpError("");
-        setView("signin");
+        setView("landing");
       },
     },
     biometric: { loading: bioLoading, error: bioError, state: bioState, setState: setBioState, trigger: handleBiometric },

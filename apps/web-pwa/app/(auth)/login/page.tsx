@@ -53,7 +53,7 @@ export default function LoginPageController() {
             {flow.view === "signin" && (
               <SigninView
                 key="signin"
-                onBack={() => flow.setView("signin")}
+                onBack={() => flow.setView("landing")}
                 onSignup={() => flow.setView("signup")}
                 onOtp={() => flow.setView("otp")}
                 onGoogle={flow.oauth.loginWithGoogle}
@@ -76,7 +76,7 @@ export default function LoginPageController() {
             {flow.view === "signup" && (
               <SignupView
                 key="signup"
-                onBack={() => flow.setView("signin")}
+                onBack={() => flow.setView("landing")}
                 onGoogle={flow.oauth.signUpWithGoogle}
                 loading={flow.signup.loading}
                 onSubmit={flow.signup.submit}
