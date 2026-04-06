@@ -42,6 +42,10 @@ const getApiCandidates = (): string[] => {
   return [...deduped];
 };
 
+const defaultProductionApi = normalizeApiUrl(
+  process.env.PROXY_DEFAULT_PYTHON_API || "https://bd-cr7-api.onrender.com",
+);
+
 // Detect production environment using whichever variable is available:
 //   VERCEL_ENV  — set automatically by the Vercel platform ("production" | "preview" | "development")
 //               — takes precedence; "preview" must not be treated as production.
@@ -70,6 +74,18 @@ const resolvePythonApi = (requestOrigin: string): string => {
     }
     return candidate;
   }
+
+  // Safety net: in production, if all configured candidates are invalid
+  // (localhost/self-loop/missing), fall back to the known Python API host.
+  if (
+    isProduction &&
+    defaultProductionApi &&
+    defaultProductionApi !== requestOrigin &&
+    !defaultProductionApi.startsWith(requestOrigin)
+  ) {
+    return defaultProductionApi;
+  }
+
   return "";
 };
 
