@@ -9,23 +9,47 @@
   "description": "BD CR7 production ERP mobile workspace",
   "orientation": "any",
   "categories": ["business", "productivity", "finance"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon.svg",
-      "sizes": "192x192",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon.svg",
-      "sizes": "512x512",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
       "src": "/icons/apple-touch-icon.svg",
       "sizes": "180x180",
       "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to the main dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Finance",
+      "short_name": "Finance",
+      "description": "Finance module",
+      "url": "/dashboard/finance",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "SUMONIX AI",
+      "short_name": "AI",
+      "description": "SUMONIX AI assistant",
+      "url": "/dashboard/ai",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
     }
   ]
 }

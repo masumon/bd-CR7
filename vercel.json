@@ -3,14 +3,5 @@
   "framework": "nextjs",
   "buildCommand": "pnpm --filter web-pwa run build",
   "outputDirectory": "apps/web-pwa/.next",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "functions": {
-    "api/main.py": {
-      "maxDuration": 30
-    }
-  },
-  "rewrites": [
-    { "source": "/api", "destination": "/api/main.py" },
-    { "source": "/api/:path*", "destination": "/api/main.py" }
-  ]
+  "installCommand": "pnpm install --frozen-lockfile"
 }
