@@ -12,6 +12,8 @@ import { useAuthStore } from "@/store/authStore";
 
 export function AiPanel() {
   const token = useAuthStore((s) => s.token);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const authLoading = useAuthStore((s) => s.loading);
   const [vector, setVector] = useState("[0.01,0.02,0.03]");
   const [anomalies, setAnomalies] = useState<Array<Record<string, unknown>>>([]);
   const [answer, setAnswer] = useState("");
@@ -21,15 +23,25 @@ export function AiPanel() {
   const [loadingAnomalies, setLoadingAnomalies] = useState(false);
   const [loadingMemory, setLoadingMemory] = useState(false);
 
+  // Auth is ready once the store has finished hydrating (initialize() resolved).
+  // While hydrating, token may be null even for an authenticated user because
+  // the JWT is not persisted — it is re-fetched from the live Supabase session.
+  const authReady = hydrated && !authLoading;
+  const isAuthenticated = authReady && Boolean(token);
+  const isAuthPending = !hydrated || authLoading;
+
   const loadAnomalies = async () => {
-    if (!token) {
+    if (isAuthPending) return;
+    if (!isAuthenticated) {
       setMessage("Login required.");
       return;
     }
     setMessage("");
     setLoadingAnomalies(true);
     try {
-      const data = await apiRequest<Array<Record<string, unknown>>>("/api/ai/anomalies", {}, token);
+      // token may be null here but apiClient will auto-resolve from the live
+      // Supabase session, so pass it as-is and let apiClient handle it.
+      const data = await apiRequest<Array<Record<string, unknown>>>("/api/ai/anomalies", {}, token ?? undefined);
       setAnomalies(data || []);
       if (!data?.length) {
         setMessage("No anomalies detected.");
@@ -42,7 +54,8 @@ export function AiPanel() {
   };
 
   const searchMemory = async () => {
-    if (!token) {
+    if (isAuthPending) return;
+    if (!isAuthenticated) {
       setMessage("Login required.");
       return;
     }
@@ -52,7 +65,7 @@ export function AiPanel() {
       const data = await apiRequest<Array<Record<string, unknown>>>(
         `/api/ai/memory/search?vector=${encodeURIComponent(vector)}&top_k=5`,
         {},
-        token
+        token ?? undefined
       );
       setAnomalies(data || []);
       if (!data?.length) {
@@ -66,7 +79,8 @@ export function AiPanel() {
   };
 
   const askAi = async () => {
-    if (!token) {
+    if (isAuthPending) return;
+    if (!isAuthenticated) {
       setMessage("Login required.");
       return;
     }
@@ -80,7 +94,7 @@ export function AiPanel() {
           method: "POST",
           body: JSON.stringify({ message: prompt }),
         },
-        token
+        token ?? undefined
       );
       setAnswer(data.reply || "No answer returned.");
     } catch (err) {
@@ -90,6 +104,8 @@ export function AiPanel() {
     }
   };
 
+  const authStatusLabel = isAuthPending ? "Initializing…" : isAuthenticated ? "Active" : "Login Required";
+
   return (
     <div className="space-y-5">
       <WorkspaceHero
@@ -97,7 +113,7 @@ export function AiPanel() {
         stats={[
           { label: "Assistant Mode", value: "Ready" },
           { label: "Anomaly Feed", value: String(anomalies.length) },
-          { label: "Auth Status", value: token ? "Active" : "Login Required" },
+          { label: "Auth Status", value: authStatusLabel },
         ]}
       />
 
@@ -108,7 +124,14 @@ export function AiPanel() {
             title="Ask SUMONIX like a real chatbot"
           />
 
-          {!token ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">Please login to activate AI tools.</div> : null}
+          {isAuthPending ? (
+            <div className="flex items-center gap-2 rounded-2xl border border-border/50 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Initializing session…
+            </div>
+          ) : !isAuthenticated ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">Please login to activate AI tools.</div>
+          ) : null}
 
           <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
             <div className="space-y-4 rounded-[1.4rem] border border-border/70 bg-background/75 p-4">
@@ -133,7 +156,7 @@ export function AiPanel() {
                   className="w-full resize-none bg-transparent text-sm leading-6 outline-none"
                 />
                 <div className="mt-3 flex justify-end">
-                  <Button onClick={askAi} disabled={!token || loadingChat || !prompt.trim()} className="gap-2">
+                  <Button onClick={askAi} disabled={!isAuthenticated || isAuthPending || loadingChat || !prompt.trim()} className="gap-2">
                     {loadingChat ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     Ask SUMONIX
                   </Button>
@@ -151,7 +174,7 @@ export function AiPanel() {
                     <p className="text-sm font-semibold text-foreground">Anomaly Watch</p>
                     <p className="mt-1 text-xs text-muted-foreground">Review suspicious expense patterns.</p>
                   </div>
-                  <Button variant="outline" onClick={loadAnomalies} disabled={!token || loadingAnomalies} className="gap-2">
+                  <Button variant="outline" onClick={loadAnomalies} disabled={!isAuthenticated || isAuthPending || loadingAnomalies} className="gap-2">
                     {loadingAnomalies ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radar className="h-4 w-4" />}
                     Scan
                   </Button>
@@ -165,7 +188,7 @@ export function AiPanel() {
                   <Search className="h-4 w-4 text-muted-foreground" />
                   <input value={vector} onChange={(event) => setVector(event.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="Vector e.g. [0.1,0.2,0.3]" />
                 </div>
-                <Button variant="outline" onClick={searchMemory} disabled={!token || loadingMemory} className="mt-3 w-full gap-2">
+                <Button variant="outline" onClick={searchMemory} disabled={!isAuthenticated || isAuthPending || loadingMemory} className="mt-3 w-full gap-2">
                   {loadingMemory ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrainCircuit className="h-4 w-4" />}
                   Search Memory
                 </Button>

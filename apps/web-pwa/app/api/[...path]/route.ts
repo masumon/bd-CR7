@@ -77,6 +77,17 @@ const createNotConfiguredResponse = () =>
     { status: 503 },
   );
 
+/** Returns a 508 JSON response when the proxy target resolves to itself. */
+const createLoopDetectedResponse = (targetUrl: string) =>
+  NextResponse.json(
+    {
+      success: false,
+      data: null,
+      error: `Proxy loop detected: PYTHON_API_URL (${PYTHON_API}) points back to this Next.js application. Set PYTHON_API_URL to the actual Python FastAPI backend URL (e.g. https://bd-cr7-api.onrender.com). Target was: ${targetUrl}`,
+    },
+    { status: 508 },
+  );
+
 /**
  * Forward an incoming Next.js request to the Python backend.
  * Always returns an application/json response.
@@ -90,6 +101,15 @@ async function proxyRequest(
   const targetPath = "/api/" + pathSegments.join("/");
   const search = request.nextUrl.search;
   const targetUrl = `${PYTHON_API}${targetPath}${search}`;
+
+  // Guard against proxy loops: if PYTHON_API points to the same host as the
+  // current request, forwarding would call this handler again recursively,
+  // resulting in a 508 Loop Detected error. Catch it early and return a
+  // descriptive 508 immediately.
+  const requestOrigin = request.nextUrl.origin;
+  if (PYTHON_API.startsWith(requestOrigin)) {
+    return createLoopDetectedResponse(targetUrl);
+  }
 
   // Forward only the headers the backend cares about.
   const forwardHeaders = new Headers();

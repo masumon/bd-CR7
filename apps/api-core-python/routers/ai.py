@@ -177,7 +177,23 @@ async def ai_chat(payload: ChatMessage, user: UserContext = Depends(get_current_
     """
     message = payload.message.strip()
 
-    result = process_message(message=message, role=user.role, user_id=user.user_id)
+    try:
+        result = process_message(message=message, role=user.role, user_id=user.user_id)
+    except Exception as exc:  # noqa: BLE001
+        # Keep the AI endpoint available even when the DB or an external service
+        # is temporarily unreachable.  Return a degraded-mode reply instead of
+        # propagating a 500 that would surface as an unhandled error to the UI.
+        import logging as _logging
+        _logging.getLogger(__name__).error("ai_engine process_message failed: %s", exc, exc_info=True)
+        result = {
+            "reply": (
+                "SUMONIX AI is temporarily unavailable due to a backend issue. "
+                "Please try again in a moment."
+            ),
+            "intent": "error",
+            "lang": "en",
+            "translated_input": None,
+        }
 
     _log_ai_interaction(
         user_id=user.user_id,
