@@ -5,8 +5,29 @@ services:
     pythonVersion: 3.11.9
     buildCommand: pip install --prefer-binary -r apps/api-core-python/requirements.txt
     startCommand: uvicorn main:app --app-dir apps/api-core-python --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
     envVars:
+      # Writable /tmp dir for Rust/maturin wheels during pip install
       - key: CARGO_HOME
         value: /tmp/.cargo
-      - key: PYTHON_VERSION
-        value: "3.11.9"
+
+      # Runtime mode — required so CORS validation and production guards activate
+      - key: APP_ENV
+        value: production
+
+      # No Redis service is provisioned; disable the Redis requirement guard
+      - key: REQUIRE_REDIS_IN_PRODUCTION
+        value: "false"
+
+      # Secrets — set these in the Render Dashboard (not stored in the yaml)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # Comma-separated allowed CORS origins, e.g. https://bd-cr7.vercel.app
+      - key: CORS_ORIGINS
+        sync: false
