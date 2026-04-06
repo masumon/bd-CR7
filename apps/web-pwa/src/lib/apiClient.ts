@@ -1,4 +1,5 @@
 import { appConfig, IS_PRODUCTION, LOCALHOST_URL_PATTERN } from "@/core/config";
+import { supabase } from "@/lib/supabase";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -47,9 +48,16 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
     }
   }
 
+  // Auto-resolve bearer token from active Supabase session when caller omits it.
+  let resolvedToken = token;
+  if (!resolvedToken && supabase) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    resolvedToken = sessionData?.session?.access_token ?? undefined;
+  }
+
   const headers = new Headers(init.headers || {});
   if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (resolvedToken) headers.set("Authorization", `Bearer ${resolvedToken}`);
 
   const response = await fetch(buildUrl(path), {
     ...init,
