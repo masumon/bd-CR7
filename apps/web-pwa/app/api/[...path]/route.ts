@@ -58,14 +58,13 @@ const PYTHON_API =
   isProduction && LOCALHOST_URL_PATTERN.test(rawApiUrl) ? "" : rawApiUrl;
 
 // Proxy request timeout in milliseconds.
-// Chosen to stay within Vercel's default serverless function limits (10s on
-// Hobby, 60s on Pro) while giving the Python AI backend adequate time for
-// complex DB-backed queries. Increase maxDuration in vercel.json if you need
-// a higher timeout on a Pro/Enterprise plan.
-const PROXY_TIMEOUT_MS = 9_000;
+// Default is conservative (9s) to stay within Vercel Hobby's 10s limit.
+// Override via PROXY_TIMEOUT_MS env var for Pro/Enterprise plans where longer
+// AI/DB queries may require more time (e.g. set to 30000 on Vercel Pro).
+const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS) || 9_000;
 
-/** Create a fresh 503 response for each request (Response bodies are single-use streams). */
-const notConfigured = () =>
+/** Returns a 503 JSON response indicating the backend API is not configured. */
+const createNotConfiguredResponse = () =>
   NextResponse.json(
     {
       success: false,
@@ -84,7 +83,7 @@ async function proxyRequest(
   request: NextRequest,
   pathSegments: string[],
 ): Promise<NextResponse> {
-  if (!PYTHON_API) return notConfigured();
+  if (!PYTHON_API) return createNotConfiguredResponse();
 
   const targetPath = "/api/" + pathSegments.join("/");
   const search = request.nextUrl.search;
