@@ -15,8 +15,10 @@ class UserUpdate(BaseModel):
 
 
 class UserProfileUpdate(BaseModel):
-    full_name: str = Field(min_length=2, max_length=120)
+    full_name: str | None = Field(default=None, min_length=2, max_length=120)
     phone: str | None = Field(default=None, max_length=32)
+    user_code: str | None = Field(default=None, min_length=3, max_length=40, pattern=r"^[a-zA-Z0-9_-]+$")
+    profile_image_url: str | None = Field(default=None, max_length=500)
 
 
 class WorkspacePreferencesPatch(BaseModel):

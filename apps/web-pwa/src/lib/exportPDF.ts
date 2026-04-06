@@ -1,8 +1,7 @@
 /**
  * exportPDF.ts
- * Browser-native A4 PDF export with Bengali font support.
- * Opens a styled print window → user saves as PDF (or auto-prints).
- * No external library needed — Bengali text renders natively via Google Fonts.
+ * A4 PDF export with Bengali font support.
+ * Generates and downloads PDF directly (no print dialog).
  */
 
 export type ExportRow = { label: string; labelBn: string; value: string };
@@ -380,8 +379,6 @@ function buildHtml(opts: ExportPDFOptions): string {
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">⬇ Save as PDF</button>
-
   <div class="page">
     <!-- Header -->
     <header class="header">
@@ -428,32 +425,45 @@ function buildHtml(opts: ExportPDFOptions): string {
       </div>
     </footer>
   </div>
-
-  <script>
-    // Auto-trigger print after fonts load
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(function() {
-        setTimeout(function() { window.print(); }, 600);
-      });
-    }
-  </script>
 </body>
 </html>`;
 }
 
 /**
- * Triggers A4 PDF export by opening a print window.
- * The window loads Bengali fonts, renders the A4 template, then auto-triggers print.
- * The user can "Save as PDF" from the print dialog.
+ * Triggers A4 PDF export as direct download.
  */
-export function exportToPDF(opts: ExportPDFOptions): void {
-  const printWindow = window.open("", "_blank", "width=900,height=700,scrollbars=yes");
-  if (!printWindow) {
-    alert("Pop-up blocked. Please allow pop-ups for this site and try again.");
-    return;
-  }
+export async function exportToPDF(opts: ExportPDFOptions): Promise<void> {
+  const html2pdf = (await import("html2pdf.js")).default;
   const html = buildHtml(opts);
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "794px";
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+
+  const page = wrapper.querySelector(".page") as HTMLElement | null;
+  if (!page) {
+    document.body.removeChild(wrapper);
+    throw new Error("Failed to prepare PDF content");
+  }
+
+  const fileName = `${opts.moduleName.toLowerCase().replace(/\s+/g, "-")}-report.pdf`;
+
+  try {
+    await html2pdf()
+      .set({
+        margin: [8, 8, 8, 8],
+        filename: fileName,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
+      })
+      .from(page)
+      .save();
+  } finally {
+    document.body.removeChild(wrapper);
+  }
 }

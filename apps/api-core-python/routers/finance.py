@@ -12,6 +12,71 @@ from services.finance import approve_expense_atomic, create_expense_atomic, scor
 
 router = APIRouter()
 
+SENSITIVE_RISK_THRESHOLD = 80
+SENSITIVE_AMOUNT_THRESHOLD = Decimal("100000")
+
+
+def _is_sensitive_expense(expense_row: dict) -> bool:
+    risk_score = int(expense_row.get("risk_score") or 0)
+    amount = Decimal(str(expense_row.get("amount") or "0"))
+    return risk_score >= SENSITIVE_RISK_THRESHOLD or amount >= SENSITIVE_AMOUNT_THRESHOLD
+
+
+def _find_sensitive_approval(entity_type: str, expense_id: str):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    return (
+        supabase_service.table("pending_approvals")
+        .select("id,status,required_approvals,approval_count,first_approver_id,second_approver_id,operation,operation_payload")
+        .eq("entity_type", entity_type)
+        .eq("entity_id", expense_id)
+        .limit(1)
+        .execute()
+    )
+
+
+def _create_sensitive_approval(entity_type: str, expense_id: str, actor_id: str, operation: str, payload: dict):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    approval_id = str(uuid4())
+    supabase_service.table("pending_approvals").upsert(
+        {
+            "id": approval_id,
+            "entity_type": entity_type,
+            "entity_id": expense_id,
+            "suggested_action": "review",
+            "risk_score": 100,
+            "reason": "Sensitive operation requires dual-admin approval",
+            "status": "pending",
+            "suggested_by": "policy_engine",
+            "required_approvals": 2,
+            "approval_count": 1,
+            "first_approver_id": actor_id,
+            "second_approver_id": None,
+            "operation": operation,
+            "operation_payload": payload,
+            "sensitive": True,
+            "last_actor_id": actor_id,
+            "resolved_at": None,
+        },
+        on_conflict="entity_type,entity_id",
+    ).execute()
+    return approval_id
+
+
+def _mark_sensitive_approved(approval_id: str, actor_id: str):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    supabase_service.table("pending_approvals").update(
+        {
+            "approval_count": 2,
+            "second_approver_id": actor_id,
+            "status": "applied",
+            "last_actor_id": actor_id,
+            "resolved_at": datetime.now(timezone.utc).isoformat(),
+        }
+    ).eq("id", approval_id).execute()
+
 
 @router.get("/accounts")
 async def list_accounts(user: UserContext = Depends(get_current_user)):
@@ -151,7 +216,7 @@ async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext 
 
 
 @router.post("/expenses/{expense_id}/approve")
-async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserContext = Depends(require_roles("admin", "checker"))):
+async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserContext = Depends(require_roles("admin"))):
     try:
         result = approve_expense_atomic(expense_id, payload, user)
         audit_log(
@@ -211,18 +276,16 @@ async def get_expense(expense_id: str, user: UserContext = Depends(get_current_u
 
 
 @router.patch("/expenses/{expense_id}")
-async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserContext = Depends(require_roles("admin", "maker"))):
+async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserContext = Depends(require_roles("admin"))):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
-    expense = supabase_service.table("expenses").select("id,maker_id,status").eq("id", expense_id).limit(1).execute()
+    expense = supabase_service.table("expenses").select("id,maker_id,status,amount,risk_score").eq("id", expense_id).limit(1).execute()
     if not expense.data:
         raise HTTPException(status_code=404, detail="Expense not found")
     expense_row = expense.data[0]
     if expense_row["status"] != "pending":
         raise HTTPException(status_code=400, detail="Only pending expenses can be updated")
-    if user.role != "admin" and str(expense_row["maker_id"]) != user.user_id:
-        raise HTTPException(status_code=403, detail="Only the maker can update this expense")
 
     risk = score_risk(Decimal(payload.amount))
     metadata: dict[str, str] = {}
@@ -241,28 +304,83 @@ async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserCont
     if metadata:
         update_payload["metadata"] = metadata
 
+    if _is_sensitive_expense(expense_row):
+        approval_type = "expense_sensitive_update"
+        approval_res = _find_sensitive_approval(approval_type, expense_id)
+        approval = approval_res.data[0] if approval_res.data else None
+        if not approval or str(approval.get("status")) != "pending":
+            pending_id = _create_sensitive_approval(
+                approval_type,
+                expense_id,
+                user.user_id,
+                "update",
+                {k: v for k, v in update_payload.items()},
+            )
+            return {
+                "message": "Sensitive update queued. A second admin approval is required.",
+                "requires_second_admin": True,
+                "pending_id": pending_id,
+            }
+        if str(approval.get("first_approver_id") or "") == user.user_id:
+            return {
+                "message": "Awaiting second admin approval for this sensitive update.",
+                "requires_second_admin": True,
+                "pending_id": approval.get("id"),
+            }
+        stored_payload = approval.get("operation_payload") if isinstance(approval.get("operation_payload"), dict) else {}
+        if stored_payload:
+            update_payload = stored_payload
+        _mark_sensitive_approved(str(approval.get("id")), user.user_id)
+
     supabase_service.table("expenses").update(
         update_payload
     ).eq("id", expense_id).execute()
+
+    audit_log(
+        user_id=user.user_id,
+        action="expense.update",
+        entity_type="expense",
+        entity_id=expense_id,
+        meta={"sensitive": str(_is_sensitive_expense(expense_row)).lower()},
+    )
 
     return {"message": "expense updated"}
 
 
 @router.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: str, user: UserContext = Depends(require_roles("admin", "maker"))):
+async def delete_expense(expense_id: str, user: UserContext = Depends(require_roles("admin"))):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
-    expense = supabase_service.table("expenses").select("id,maker_id,status").eq("id", expense_id).limit(1).execute()
+    expense = supabase_service.table("expenses").select("id,maker_id,status,amount,risk_score").eq("id", expense_id).limit(1).execute()
     if not expense.data:
         raise HTTPException(status_code=404, detail="Expense not found")
     expense_row = expense.data[0]
     if expense_row["status"] != "pending":
         raise HTTPException(status_code=400, detail="Only pending expenses can be deleted")
-    if user.role != "admin" and str(expense_row["maker_id"]) != user.user_id:
-        raise HTTPException(status_code=403, detail="Only the maker can delete this expense")
+
+    if _is_sensitive_expense(expense_row):
+        approval_type = "expense_sensitive_delete"
+        approval_res = _find_sensitive_approval(approval_type, expense_id)
+        approval = approval_res.data[0] if approval_res.data else None
+        if not approval or str(approval.get("status")) != "pending":
+            pending_id = _create_sensitive_approval(approval_type, expense_id, user.user_id, "delete", {"expense_id": expense_id})
+            return {
+                "message": "Sensitive delete queued. A second admin approval is required.",
+                "requires_second_admin": True,
+                "pending_id": pending_id,
+            }
+        if str(approval.get("first_approver_id") or "") == user.user_id:
+            return {
+                "message": "Awaiting second admin approval for this sensitive deletion.",
+                "requires_second_admin": True,
+                "pending_id": approval.get("id"),
+            }
+        _mark_sensitive_approved(str(approval.get("id")), user.user_id)
 
     supabase_service.table("approvals").delete().eq("entity_type", "expense").eq("entity_id", expense_id).execute()
+    supabase_service.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_delete").eq("entity_id", expense_id).execute()
+    supabase_service.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_update").eq("entity_id", expense_id).execute()
     supabase_service.table("expenses").delete().eq("id", expense_id).execute()
     audit_log(
         user_id=user.user_id, action="expense.delete",

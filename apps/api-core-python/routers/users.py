@@ -15,7 +15,13 @@ logger = logging.getLogger(__name__)
 async def get_my_profile(user: UserContext = Depends(get_current_user)):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    row = supabase_service.table("users").select("id,email,full_name,phone,updated_at").eq("id", user.user_id).limit(1).execute()
+    row = (
+        supabase_service.table("users")
+        .select("id,email,full_name,phone,user_code,profile_image_url,updated_at")
+        .eq("id", user.user_id)
+        .limit(1)
+        .execute()
+    )
     if not row.data:
         raise HTTPException(status_code=404, detail="User not found")
     return row.data[0]
@@ -25,12 +31,34 @@ async def get_my_profile(user: UserContext = Depends(get_current_user)):
 async def update_my_profile(payload: UserProfileUpdate, user: UserContext = Depends(get_current_user)):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    supabase_service.table("users").update(
-        {
-            "full_name": payload.full_name,
-            "phone": payload.phone,
-        }
-    ).eq("id", user.user_id).execute()
+
+    patch: dict[str, object] = {}
+    if payload.full_name is not None:
+        patch["full_name"] = payload.full_name.strip()
+    if payload.phone is not None:
+        patch["phone"] = payload.phone.strip() if payload.phone else None
+    if payload.profile_image_url is not None:
+        patch["profile_image_url"] = payload.profile_image_url.strip() if payload.profile_image_url else None
+
+    if payload.user_code is not None:
+        normalized_code = payload.user_code.strip().lower() if payload.user_code else None
+        if normalized_code:
+            code_row = (
+                supabase_service.table("users")
+                .select("id")
+                .eq("user_code", normalized_code)
+                .neq("id", user.user_id)
+                .limit(1)
+                .execute()
+            )
+            if code_row.data:
+                raise HTTPException(status_code=409, detail="User ID already in use")
+        patch["user_code"] = normalized_code
+
+    if not patch:
+        return {"message": "no changes provided"}
+
+    supabase_service.table("users").update(patch).eq("id", user.user_id).execute()
     return {"message": "profile updated"}
 
 
@@ -129,7 +157,13 @@ async def get_user(user_id: str, actor: UserContext = Depends(get_current_user))
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
-    row = supabase_service.table("users").select("id,email,full_name,is_active,role_id,created_at,updated_at").eq("id", user_id).limit(1).execute()
+    row = (
+        supabase_service.table("users")
+        .select("id,email,full_name,phone,user_code,profile_image_url,is_active,role_id,created_at,updated_at")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+    )
     if not row.data:
         raise HTTPException(status_code=404, detail="User not found")
     role_id = row.data[0].get("role_id")

@@ -6,6 +6,8 @@ export interface UserProfile {
   email: string;
   full_name: string;
   phone: string | null;
+  user_code?: string | null;
+  profile_image_url?: string | null;
 }
 
 export type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";

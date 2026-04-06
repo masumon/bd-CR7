@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
+import { uploadToCloudinary } from "@bdcr7/media-engine";
 import { apiClient } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -30,6 +31,9 @@ export function SettingsFeature() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [userCode, setUserCode] = useState("");
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -146,8 +150,31 @@ export function SettingsFeature() {
     setProfile(p);
     setFullName(p.full_name || "");
     setPhone(p.phone || "");
+    setUserCode(p.user_code || "");
+    setProfileImageUrl(p.profile_image_url || "");
     setLoading(false);
   }, [token, userId]);
+
+  const handleUploadImage = useCallback(async (file: File) => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
+    if (!cloudName || !uploadPreset) {
+      setError("Upload service is not configured.");
+      return;
+    }
+    setUploadingImage(true);
+    setError("");
+    setMessage("");
+    try {
+      const fileUrl = await uploadToCloudinary({ cloudName, uploadPreset, file });
+      setProfileImageUrl(fileUrl);
+      setMessage("Profile photo uploaded. Click Save Profile to apply.");
+    } catch (uploadError) {
+      setError((uploadError as Error).message || "Image upload failed.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }, []);
 
   useEffect(() => {
     void loadProfile();
@@ -172,6 +199,8 @@ export function SettingsFeature() {
           body: JSON.stringify({
             full_name: fullName.trim() || profile.full_name,
             phone: phone.trim() || null,
+            user_code: userCode.trim() || null,
+            profile_image_url: profileImageUrl || null,
           }),
         },
         token,
@@ -222,8 +251,13 @@ export function SettingsFeature() {
           error={error}
           fullName={fullName}
           phone={phone}
+          userCode={userCode}
+          profileImageUrl={profileImageUrl}
+          uploadingImage={uploadingImage}
           setFullName={setFullName}
           setPhone={setPhone}
+          setUserCode={setUserCode}
+          onUploadImage={handleUploadImage}
           onReload={loadProfile}
           onSave={handleSave}
         />

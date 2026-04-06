@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, Activity, ShieldCheck, User, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 
@@ -45,8 +47,27 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
   const logout = useAuthStore((s) => s.logout);
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);
+  const token = useAuthStore((s) => s.token ?? undefined);
+  const [profile, setProfile] = useState<{ full_name?: string; email?: string; phone?: string | null; user_code?: string | null; profile_image_url?: string | null } | null>(null);
 
   const t = copy[language];
+
+  useEffect(() => {
+    if (!open || !token) return;
+    let cancelled = false;
+    const loadProfile = async () => {
+      try {
+        const data = await apiClient<{ full_name?: string; email?: string; phone?: string | null; user_code?: string | null; profile_image_url?: string | null }>("/api/users/me/profile", { method: "GET" }, token);
+        if (!cancelled) setProfile(data);
+      } catch {
+        if (!cancelled) setProfile(null);
+      }
+    };
+    void loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, token]);
 
   const handleLogout = () => {
     logout();
@@ -54,7 +75,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
     router.replace("/login");
   };
 
-  const initials = role ? role.slice(0, 2).toUpperCase() : "U";
+  const initials = (profile?.full_name?.trim()?.slice(0, 2) || role?.slice(0, 2) || "U").toUpperCase();
 
   return (
     <AnimatePresence>
@@ -96,12 +117,16 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
 
               {/* Avatar + Name */}
               <div className="flex flex-col items-center gap-3 border-b border-border px-4 py-6">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary text-xl font-bold text-primary-foreground shadow-lg">
-                  {initials}
-                </div>
+                {profile?.profile_image_url ? (
+                  <img src={profile.profile_image_url} alt="Profile" className="h-16 w-16 rounded-full object-cover shadow-lg" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary text-xl font-bold text-primary-foreground shadow-lg">
+                    {initials}
+                  </div>
+                )}
                 <div className="text-center">
-                  <p className="text-base font-semibold text-foreground">{role || t.unassigned}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">BD CR7 ERP</p>
+                  <p className="text-base font-semibold text-foreground">{profile?.full_name || role || t.unassigned}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{profile?.email || "BD CR7 ERP"}</p>
                 </div>
               </div>
 
@@ -118,8 +143,20 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                 <div className="flex items-center gap-3 rounded-xl px-3 py-3">
                   <User className="h-4 w-4 shrink-0 text-primary" />
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">User ID</p>
+                    <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Public User ID</p>
+                    <p className="truncate font-mono text-xs text-foreground">{profile?.user_code || "—"}</p>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Internal ID</p>
                     <p className="truncate font-mono text-xs text-muted-foreground">{userId || "—"}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-xl px-3 py-3">
+                  <User className="h-4 w-4 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">{t.email}</p>
+                    <p className="truncate text-xs text-foreground">{profile?.email || "—"}</p>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Phone</p>
+                    <p className="truncate text-xs text-foreground">{profile?.phone || "—"}</p>
                   </div>
                 </div>
 
@@ -139,7 +176,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                   onClick={onClose}
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/50 text-sm font-medium text-foreground transition hover:bg-muted"
                 >
-                  {t.settings}
+                  {language === "bn" ? "সেটিংস ও প্রোফাইল এডিট" : t.settings}
                 </Link>
                 <Button
                   variant="outline"
