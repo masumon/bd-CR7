@@ -132,15 +132,11 @@ export function FileUploadEngine({
 
       const saved = await insertFile(payload);
 
-      if (saved) {
-        setMessage(`✓ Uploaded: ${file.name}`);
-        onUploaded?.(fileUrl, saved.id);
-        // Trigger AI classification asynchronously
-        void classifyWithAI(fileUrl, file.name);
-        clearFile();
-      } else {
-        setError("Upload succeeded but failed to save file record.");
-      }
+      setMessage(`✓ Uploaded: ${file.name}`);
+      onUploaded?.(fileUrl, saved.id);
+      // Trigger AI classification asynchronously
+      void classifyWithAI(fileUrl, file.name);
+      clearFile();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
