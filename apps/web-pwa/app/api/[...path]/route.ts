@@ -100,9 +100,12 @@ const resolvePythonApi = (requestOrigin: string): string => {
 
   // Safety net: in production, if all configured candidates are invalid
   // (localhost/self-loop/missing), fall back to the known Python API host.
+  const defaultFallbackHost = getHostname(defaultProductionApi);
   if (
     isProduction &&
     defaultProductionApi &&
+    !isVercelHostname(defaultFallbackHost) &&
+    (!requestHostname || defaultFallbackHost !== requestHostname) &&
     defaultProductionApi !== requestOrigin &&
     !defaultProductionApi.startsWith(requestOrigin)
   ) {
