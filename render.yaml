@@ -28,6 +28,6 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      # Comma-separated allowed CORS origins, e.g. https://bd-cr7.vercel.app
+      # Comma-separated allowed CORS origins (non-secret).
       - key: CORS_ORIGINS
-        sync: false
+        value: https://bd-cr7.vercel.app
