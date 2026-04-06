@@ -38,21 +38,28 @@ const _rawApiUrl = (
 
 // Detect production environment using whichever variable is available:
 //   VERCEL_ENV  — set automatically by the Vercel platform ("production" | "preview" | "development")
-//   APP_ENV     — set manually for non-Vercel deployments
-//   NODE_ENV    — standard Node.js environment ("production" in Vercel builds)
-const _isProduction =
-  (process.env.VERCEL_ENV || process.env.APP_ENV || process.env.NODE_ENV) === "production";
+//               — takes precedence; "preview" must not be treated as production.
+//   APP_ENV     — set manually for non-Vercel deployments (e.g. Railway, Fly.io)
+//   NODE_ENV    — standard Node.js fallback ("production" in compiled/bundled builds)
+// When VERCEL_ENV is present we rely on it exclusively so that Vercel preview
+// deployments (where NODE_ENV is also "production") are NOT treated as production.
+const _isProduction = process.env.VERCEL_ENV
+  ? process.env.VERCEL_ENV === "production"
+  : (process.env.APP_ENV || process.env.NODE_ENV) === "production";
 
-// If only NEXT_PUBLIC_API_URL (not PYTHON_API_URL) is set and it points to
-// localhost, discard it in production — the server cannot reach its own
-// localhost via the public internet either.
+// If the resolved API URL points to localhost and we're in production, it can
+// never be reached from the internet — discard it so the proxy returns a clear
+// 503 rather than an unreachable-host error. This applies regardless of which
+// env var (PYTHON_API_URL or NEXT_PUBLIC_API_URL) provided the localhost value.
 const PYTHON_API =
-  LOCALHOST_URL_PATTERN.test(_rawApiUrl) && _isProduction && !process.env.PYTHON_API_URL
-    ? ""
-    : _rawApiUrl;
+  _isProduction && LOCALHOST_URL_PATTERN.test(_rawApiUrl) ? "" : _rawApiUrl;
 
 // Proxy request timeout in milliseconds.
-const PROXY_TIMEOUT_MS = 15_000;
+// Chosen to stay within Vercel's default serverless function limits (10s on
+// Hobby, 60s on Pro) while giving the Python AI backend adequate time for
+// complex DB-backed queries. Increase maxDuration in vercel.json if you need
+// a higher timeout on a Pro/Enterprise plan.
+const PROXY_TIMEOUT_MS = 9_000;
 
 /** Create a fresh 503 response for each request (Response bodies are single-use streams). */
 const notConfigured = () =>
@@ -61,7 +68,7 @@ const notConfigured = () =>
       success: false,
       data: null,
       error:
-        "Backend API not configured. Set the PYTHON_API_URL environment variable on the server to the URL of the Python API service.",
+        "Backend API not configured. Set PYTHON_API_URL (server-side, recommended) or NEXT_PUBLIC_API_URL (legacy fallback) to the URL of the Python API service.",
     },
     { status: 503 },
   );

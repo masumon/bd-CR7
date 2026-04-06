@@ -1,4 +1,4 @@
-import { appConfig, LOCALHOST_URL_PATTERN } from "@/core/config";
+import { appConfig, IS_PRODUCTION, LOCALHOST_URL_PATTERN } from "@/core/config";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -13,11 +13,7 @@ const buildUrl = (path: string) => {
   // In production (or when running in a browser outside dev), never forward
   // requests to a localhost address — it is unreachable from the internet.
   // The Next.js API proxy (/api/*) handles server-to-Python routing instead.
-  if (
-    LOCALHOST_URL_PATTERN.test(base) &&
-    typeof window !== "undefined" &&
-    process.env.NODE_ENV === "production"
-  ) {
+  if (LOCALHOST_URL_PATTERN.test(base) && typeof window !== "undefined" && IS_PRODUCTION) {
     return path;
   }
   return `${base}${path}`;
