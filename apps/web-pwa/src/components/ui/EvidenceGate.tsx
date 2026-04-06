@@ -58,6 +58,8 @@ export function EvidenceGate({
   onFileReady,
   onCleared,
 }: EvidenceGateProps) {
+  const inputId = "evidence-file-input";
+  const cameraId = "evidence-camera-input";
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const { insertFile } = useProjectFiles();
@@ -93,6 +95,10 @@ export function EvidenceGate({
 
   const upload = async () => {
     if (!file) return;
+    if (!cloudName || !uploadPreset) {
+      setError("Upload service is not configured. Please set Cloudinary environment variables.");
+      return;
+    }
     setUploading(true);
     setError(null);
 
@@ -144,6 +150,7 @@ export function EvidenceGate({
           <button
             type="button"
             onClick={clearFile}
+            aria-label="Remove proof file"
             className="text-muted-foreground hover:text-rose-500 transition-colors"
             title="Remove file"
           >
@@ -194,6 +201,7 @@ export function EvidenceGate({
             <button
               type="button"
               onClick={clearFile}
+              aria-label="Remove selected file"
               className="text-muted-foreground hover:text-rose-500 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
@@ -220,32 +228,24 @@ export function EvidenceGate({
           </button>
         </div>
       ) : (
-        <div
-          className="border-2 border-dashed border-border/50 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={() => inputRef.current?.click()}
-          onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-        >
+        <div className="border-2 border-dashed border-border/50 rounded-xl p-3 flex flex-col items-center gap-2 hover:border-primary/40 transition-colors">
           <FileUp className="h-5 w-5 text-muted-foreground" />
           <p className="text-[11px] text-muted-foreground text-center">
             Tap to attach proof or use camera
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
-              onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+            <label
+              htmlFor={inputId}
+              className="flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
             >
               <Paperclip className="h-3 w-3" /> File
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
-              onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+            </label>
+            <label
+              htmlFor={cameraId}
+              className="flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
             >
               <Camera className="h-3 w-3" /> Camera
-            </button>
+            </label>
           </div>
         </div>
       )}
@@ -253,17 +253,20 @@ export function EvidenceGate({
       {error && <p className="text-[11px] text-rose-500">{error}</p>}
 
       <input
+        id={inputId}
         ref={inputRef}
         type="file"
         accept={ACCEPTED}
+        aria-label="Attach proof file"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSelect(f); }}
       />
       <input
+        id={cameraId}
         ref={cameraRef}
         type="file"
         accept={CAMERA_ACCEPTED}
-        capture="environment"
+        aria-label="Capture proof with camera"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSelect(f); }}
       />

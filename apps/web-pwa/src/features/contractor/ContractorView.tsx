@@ -523,7 +523,7 @@ export function ContractorView() {
     }
     setDeleteTarget(null);
     void load();
-  }, [deleteTarget, supabase, load]);
+  }, [deleteTarget, load]);
 
   const tabs = ["Add Contractor", "Contractors", "Add Contract", "Contracts", "Add Payment", "Payments", "Files"];
 

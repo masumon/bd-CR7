@@ -70,6 +70,10 @@ export function FileUploadEngine({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!file) { setError("Please select a file."); return; }
+    if (!cloudName || !uploadPreset) {
+      setError("Upload service is not configured. Please set Cloudinary environment variables.");
+      return;
+    }
     setUploading(true);
     setError(null);
 
@@ -105,23 +109,19 @@ export function FileUploadEngine({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {!file ? (
-        <div
-          className="border-2 border-dashed border-border/60 rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => inputRef.current?.click()}
-          onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-        >
+        <div className="border-2 border-dashed border-border/60 rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors">
           <FileUp className="h-6 w-6 text-muted-foreground" />
           <p className="text-xs text-muted-foreground text-center">
             Tap to upload or use camera
           </p>
+          <p id="file-upload-hint" className="sr-only">Choose a file or capture from camera.</p>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               className="text-xs h-8 px-3"
-              onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+              aria-describedby="file-upload-hint"
+              onClick={() => inputRef.current?.click()}
             >
               <Paperclip className="h-3 w-3 mr-1" /> Choose File
             </Button>
@@ -129,7 +129,8 @@ export function FileUploadEngine({
               type="button"
               variant="outline"
               className="text-xs h-8 px-3"
-              onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+              aria-describedby="file-upload-hint"
+              onClick={() => cameraRef.current?.click()}
             >
               <Camera className="h-3 w-3 mr-1" /> Camera
             </Button>
@@ -139,7 +140,12 @@ export function FileUploadEngine({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium truncate max-w-[200px]">{file.name}</p>
-            <button type="button" onClick={clearFile} className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={clearFile}
+              aria-label="Remove selected file"
+              className="text-muted-foreground hover:text-foreground"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -157,6 +163,7 @@ export function FileUploadEngine({
         ref={inputRef}
         type="file"
         accept={ACCEPTED}
+        aria-label="Choose a file to upload"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
       />
@@ -166,7 +173,7 @@ export function FileUploadEngine({
         ref={cameraRef}
         type="file"
         accept={CAMERA_ACCEPTED}
-        capture="environment"
+        aria-label="Capture a photo or video"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
       />
