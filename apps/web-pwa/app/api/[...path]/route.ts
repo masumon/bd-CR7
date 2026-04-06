@@ -22,10 +22,13 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server";
+import { LOCALHOST_URL_PATTERN } from "@/core/config";
 
 // NEXT_PUBLIC_API_URL kept as a backward-compat fallback so existing
 // deployments that already have it set keep working automatically.
-const PYTHON_API = (
+// In production, ignore localhost/127.0.0.1 values from NEXT_PUBLIC_API_URL
+// because the browser cannot reach those addresses from the internet.
+const _rawApiUrl = (
   process.env.PYTHON_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   ""
@@ -33,15 +36,35 @@ const PYTHON_API = (
   .trim()
   .replace(/\/$/, "");
 
-const NOT_CONFIGURED = NextResponse.json(
-  {
-    success: false,
-    data: null,
-    error:
-      "Backend API not configured. Set the PYTHON_API_URL environment variable on the server to the URL of the Python API service.",
-  },
-  { status: 503 },
-);
+// Detect production environment using whichever variable is available:
+//   VERCEL_ENV  — set automatically by the Vercel platform ("production" | "preview" | "development")
+//   APP_ENV     — set manually for non-Vercel deployments
+//   NODE_ENV    — standard Node.js environment ("production" in Vercel builds)
+const _isProduction =
+  (process.env.VERCEL_ENV || process.env.APP_ENV || process.env.NODE_ENV) === "production";
+
+// If only NEXT_PUBLIC_API_URL (not PYTHON_API_URL) is set and it points to
+// localhost, discard it in production — the server cannot reach its own
+// localhost via the public internet either.
+const PYTHON_API =
+  LOCALHOST_URL_PATTERN.test(_rawApiUrl) && _isProduction && !process.env.PYTHON_API_URL
+    ? ""
+    : _rawApiUrl;
+
+// Proxy request timeout in milliseconds.
+const PROXY_TIMEOUT_MS = 15_000;
+
+/** Create a fresh 503 response for each request (Response bodies are single-use streams). */
+const notConfigured = () =>
+  NextResponse.json(
+    {
+      success: false,
+      data: null,
+      error:
+        "Backend API not configured. Set the PYTHON_API_URL environment variable on the server to the URL of the Python API service.",
+    },
+    { status: 503 },
+  );
 
 /**
  * Forward an incoming Next.js request to the Python backend.
@@ -51,7 +74,7 @@ async function proxyRequest(
   request: NextRequest,
   pathSegments: string[],
 ): Promise<NextResponse> {
-  if (!PYTHON_API) return NOT_CONFIGURED;
+  if (!PYTHON_API) return notConfigured();
 
   const targetPath = "/api/" + pathSegments.join("/");
   const search = request.nextUrl.search;
@@ -76,6 +99,11 @@ async function proxyRequest(
     }
   }
 
+  // Abort the upstream request if it exceeds PROXY_TIMEOUT_MS to prevent
+  // hanging serverless functions (which cause 504/508 errors on Vercel).
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+
   let upstream: Response;
   try {
     upstream = await fetch(targetUrl, {
@@ -85,17 +113,23 @@ async function proxyRequest(
       redirect: "manual",
       // Disable Next.js extended-fetch cache so proxy responses are always fresh.
       cache: "no-store",
+      signal: controller.signal,
     });
   } catch (fetchError) {
+    clearTimeout(timeoutId);
+    const isTimeout = (fetchError as Error).name === "AbortError";
     return NextResponse.json(
       {
         success: false,
         data: null,
-        error: `Backend unreachable at ${PYTHON_API}. Check PYTHON_API_URL. (${(fetchError as Error).message})`,
+        error: isTimeout
+          ? `Backend request timed out after ${PROXY_TIMEOUT_MS / 1000}s. The Python API at ${PYTHON_API} is not responding.`
+          : `Backend unreachable at ${PYTHON_API}. Check PYTHON_API_URL. (${(fetchError as Error).message})`,
       },
-      { status: 503 },
+      { status: isTimeout ? 504 : 503 },
     );
   }
+  clearTimeout(timeoutId);
 
   // Read the upstream response body as text first (handles non-JSON too).
   const rawBody = await upstream.text();
