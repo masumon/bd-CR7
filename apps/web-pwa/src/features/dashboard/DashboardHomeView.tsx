@@ -120,6 +120,7 @@ export function DashboardHomeView() {
   }, []);
 
   const t = T[lang];
+  const bi = (en: string, bn: string) => `${en} / ${bn}`;
 
   const kpis = [
     { label: t.budget, value: fmt(s.totalFundsReceived), icon: BadgeDollarSign, cls: "kpi-green", iconCls: "text-emerald-400" },
@@ -129,10 +130,10 @@ export function DashboardHomeView() {
   ];
 
   const quickActions = [
-    { label: t.addExpense, icon: BadgeDollarSign, href: "/dashboard/finance", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
-    { label: t.addWorker, icon: HardHat, href: "/dashboard/workforce", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
-    { label: t.upload, icon: Upload, href: "/dashboard/evidence", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
-    { label: t.addMaterial, icon: Building2, href: "/dashboard/materials", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+    { label: bi("Add Expense", "খরচ যোগ"), icon: BadgeDollarSign, href: "/dashboard/finance", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+    { label: bi("Add Worker", "শ্রমিক যোগ"), icon: HardHat, href: "/dashboard/workforce", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+    { label: bi("Upload", "আপলোড"), icon: Upload, href: "/dashboard/evidence", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+    { label: bi("Add Material", "মালামাল যোগ"), icon: Building2, href: "/dashboard/materials", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
   ];
 
   const activityItems = s.recentActivity?.length ? s.recentActivity : [t.noActivity];

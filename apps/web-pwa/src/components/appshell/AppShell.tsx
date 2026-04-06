@@ -47,21 +47,21 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
   );
 
   const coreItems = useMemo<NavItem[]>(() => {
-    const isEn = language === "en";
+    const bi = (en: string, bn: string) => `${en} / ${bn}`;
     return [
-      { href: "/dashboard", label: isEn ? "Dashboard" : "ড্যাশবোর্ড", icon: Home },
-      { href: "/dashboard/construction/projects", label: isEn ? "Projects" : "প্রজেক্ট", icon: FolderKanban },
-      { href: "/dashboard/finance", label: isEn ? "Finance" : "ফাইন্যান্স", icon: BadgeDollarSign },
-      { href: "/dashboard/workforce", label: isEn ? "Workforce" : "শ্রমিক", icon: HardHat },
-      { href: "/dashboard/materials", label: isEn ? "Materials" : "মালামাল", icon: Building2 },
-      { href: "/dashboard/evidence", label: isEn ? "Evidence" : "ডকুমেন্ট", icon: ClipboardList },
-      { href: "/dashboard/reports", label: isEn ? "Reports" : "রিপোর্ট", icon: BarChart3 },
+      { href: "/dashboard", label: bi("Dashboard", "ড্যাশবোর্ড"), icon: Home },
+      { href: "/dashboard/construction/projects", label: bi("Projects", "প্রজেক্ট"), icon: FolderKanban },
+      { href: "/dashboard/finance", label: bi("Finance", "ফাইন্যান্স"), icon: BadgeDollarSign },
+      { href: "/dashboard/workforce", label: bi("Workforce", "শ্রমিক"), icon: HardHat },
+      { href: "/dashboard/materials", label: bi("Materials", "মালামাল"), icon: Building2 },
+      { href: "/dashboard/evidence", label: bi("Evidence", "ডকুমেন্ট"), icon: ClipboardList },
+      { href: "/dashboard/reports", label: bi("Reports", "রিপোর্ট"), icon: BarChart3 },
       { href: "/dashboard/ai", label: "SUMONIX AI", icon: Bot },
-      { href: "/dashboard/audit", label: isEn ? "Audit" : "অডিট", icon: ShieldCheck },
-      { href: "/dashboard/contractor", label: isEn ? "Contractor" : "ঠিকাদার", icon: Briefcase },
-      { href: "/dashboard/settings", label: isEn ? "Settings" : "সেটিংস", icon: Settings2 },
+      { href: "/dashboard/audit", label: bi("Audit", "অডিট"), icon: ShieldCheck },
+      { href: "/dashboard/contractor", label: bi("Contractor", "ঠিকাদার"), icon: Briefcase },
+      { href: "/dashboard/settings", label: bi("Settings", "সেটিংস"), icon: Settings2 },
     ].filter((item) => corePathSet.has(item.href) && allowedPaths.has(item.href));
-  }, [allowedPaths, corePathSet, language]);
+  }, [allowedPaths, corePathSet]);
 
   const navItems = coreItems;
 

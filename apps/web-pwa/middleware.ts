@@ -66,6 +66,8 @@ export async function middleware(request: NextRequest) {
 
     const roleFromClaims = normalizeRoleName(
       (session.user.app_metadata?.role as string | undefined) ||
+        (session.user.app_metadata?.role_name as string | undefined) ||
+        (session.user.user_metadata?.role as string | undefined) ||
         (session.user.user_metadata?.role_name as string | undefined) ||
         null,
     );

@@ -79,5 +79,21 @@ export const ROLE_ACCESS: Record<string, string[]> = {
 };
 
 export function normalizeRoleName(role: string | null | undefined): string {
-  return (role || "viewer").trim().toLowerCase();
+  const normalized = (role || "viewer")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_")
+    .replace(/[^a-z_]/g, "");
+
+  const aliases: Record<string, string> = {
+    superadmin: "super_admin",
+    super_admin: "super_admin",
+    admin: "admin",
+    maker: "maker",
+    checker: "checker",
+    viewer: "viewer",
+    worker: "worker",
+  };
+
+  return aliases[normalized] ?? "viewer";
 }

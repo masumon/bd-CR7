@@ -41,7 +41,7 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
               <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={36} height={36} className="h-9 w-9 object-contain" />
             </div>
           </div>
-          <p className="section-label px-3 pb-2 pt-1 lg:hidden">Core Navigation</p>
+          <p className="section-label px-3 pb-2 pt-1 lg:hidden">Core Navigation / কোর নেভিগেশন</p>
           {items.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             const Icon = item.icon;
