@@ -1,4 +1,4 @@
-import { appConfig } from "@/core/config";
+import { appConfig, IS_PRODUCTION, LOCALHOST_URL_PATTERN } from "@/core/config";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -8,7 +8,15 @@ type ApiEnvelope<T> = {
 
 const buildUrl = (path: string) => {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return appConfig.apiBaseUrl ? `${appConfig.apiBaseUrl}${path}` : path;
+  const base = appConfig.apiBaseUrl;
+  if (!base) return path;
+  // Never forward requests to a localhost address in production — it is
+  // unreachable from the internet. Fall back to same-origin /api/* routing so
+  // the Next.js API proxy handles the actual server-to-Python forwarding.
+  if (IS_PRODUCTION && LOCALHOST_URL_PATTERN.test(base)) {
+    return path;
+  }
+  return `${base}${path}`;
 };
 
 const toErrorMessage = (payload: unknown, status: number) => {
