@@ -1,3 +1,4 @@
+// MODULE LOCKED: FULL API MODE (NO SUPABASE WRITE)
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -18,6 +19,7 @@ import { WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { Button } from "@/components/ui/button";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
+import { apiClient } from "@/lib/apiClient";
 import { exportCSV } from "@/lib/exportCSV";
 import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
@@ -163,16 +165,36 @@ function AddContractorForm({
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from("contractors").insert({
-      name: name.trim(),
-      phone: phone.trim() || null,
-      email: email.trim() || null,
-      company: company.trim() || null,
-      nid: nid.trim() || null,
-      specialization: specialization.trim() || null,
-      status,
-      notes: notes.trim() || null,
-    });
+    let error: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error } = await supabase.from("contractors").insert({
+    //   name: name.trim(),
+    //   phone: phone.trim() || null,
+    //   email: email.trim() || null,
+    //   company: company.trim() || null,
+    //   nid: nid.trim() || null,
+    //   specialization: specialization.trim() || null,
+    //   status,
+    //   notes: notes.trim() || null,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/contractor/contractors", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim() || null,
+          email: email.trim() || null,
+          company: company.trim() || null,
+          nid: nid.trim() || null,
+          specialization: specialization.trim() || null,
+          status,
+          notes: notes.trim() || null,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     setSaving(false);
     if (error) { setMsg(error.message); return; }
     setMsg("ঠিকাদার সংরক্ষিত হয়েছে।");
@@ -229,15 +251,34 @@ function AddContractForm({
     e.preventDefault();
     if (!contractorId) { setMsg("ঠিকাদার নির্বাচন করুন।"); return; }
     setSaving(true);
-    const { error } = await supabase.from("contractor_contracts").insert({
-      contractor_id: contractorId,
-      project_name: projectName.trim(),
-      contract_amount: Number(contractAmount),
-      start_date: startDate || null,
-      end_date: endDate || null,
-      status,
-      description: description.trim() || null,
-    });
+    let error: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error } = await supabase.from("contractor_contracts").insert({
+    //   contractor_id: contractorId,
+    //   project_name: projectName.trim(),
+    //   contract_amount: Number(contractAmount),
+    //   start_date: startDate || null,
+    //   end_date: endDate || null,
+    //   status,
+    //   description: description.trim() || null,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/contractor/contractor_contracts", {
+        method: "POST",
+        body: JSON.stringify({
+          contractor_id: contractorId,
+          project_name: projectName.trim(),
+          contract_amount: Number(contractAmount),
+          start_date: startDate || null,
+          end_date: endDate || null,
+          status,
+          description: description.trim() || null,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     setSaving(false);
     if (error) { setMsg(error.message); return; }
     setMsg("চুক্তি সংরক্ষিত হয়েছে।");
@@ -303,24 +344,54 @@ function AddPaymentForm({
     if (!contractorId) { setMsg("ঠিকাদার নির্বাচন করুন।"); return; }
     setSaving(true);
 
-    const { error: payErr } = await supabase.from("contractor_payments").insert({
-      contractor_id: contractorId,
-      contract_id: contractId || null,
-      amount: Number(amount),
-      payment_date: paymentDate,
-      method,
-      notes: notes.trim() || null,
-    });
+    let payErr: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error: payErr } = await supabase.from("contractor_payments").insert({
+    //   contractor_id: contractorId,
+    //   contract_id: contractId || null,
+    //   amount: Number(amount),
+    //   payment_date: paymentDate,
+    //   method,
+    //   notes: notes.trim() || null,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/contractor/contractor_payments", {
+        method: "POST",
+        body: JSON.stringify({
+          contractor_id: contractorId,
+          contract_id: contractId || null,
+          amount: Number(amount),
+          payment_date: paymentDate,
+          method,
+          notes: notes.trim() || null,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      payErr = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     if (payErr) { setSaving(false); setMsg(payErr.message); return; }
 
     // Update contract paid_amount — use increment via RPC if available, else read-then-write
     if (contractId) {
       const contract = contracts.find((c) => c.id === contractId);
       if (contract) {
-        const { error: updateErr } = await supabase
-          .from("contractor_contracts")
-          .update({ paid_amount: Number(contract.paid_amount) + Number(amount) })
-          .eq("id", contractId);
+        const nextPaidAmount = Number(contract.paid_amount) + Number(amount);
+        let updateErr: { message: string } | null = null;
+        // OLD (DISABLED - FINAL)
+        // const { error: updateErr } = await supabase
+        //   .from("contractor_contracts")
+        //   .update({ paid_amount: Number(contract.paid_amount) + Number(amount) })
+        //   .eq("id", contractId);
+        try {
+          await apiClient<{ id?: string; paid_amount?: string }>(`/api/contractor/payment/${contractId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ paid_amount: nextPaidAmount }),
+          });
+          console.log("API WRITE USED - PHASE 2 COMPLETE");
+        } catch (err) {
+          updateErr = { message: err instanceof Error ? err.message : "Request failed" };
+        }
         if (updateErr) {
           setSaving(false);
           setMsg(`পেমেন্ট সংরক্ষিত হয়েছে, কিন্তু চুক্তি আপডেট ব্যর্থ: ${updateErr.message}`);
@@ -418,11 +489,32 @@ export function ContractorView() {
     const { type, id } = deleteTarget;
     let error: { message: string } | null = null;
     if (type === "contractor") {
-      ({ error } = await supabase.from("contractors").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("contractors").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/contractor/contractors/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     } else if (type === "contract") {
-      ({ error } = await supabase.from("contractor_contracts").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("contractor_contracts").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/contractor/contractor_contracts/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     } else if (type === "payment") {
-      ({ error } = await supabase.from("contractor_payments").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("contractor_payments").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/contractor/contractor_payments/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     }
     if (error) {
       setDeleteError(error.message);

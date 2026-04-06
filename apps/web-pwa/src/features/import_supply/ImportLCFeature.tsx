@@ -1,3 +1,4 @@
+// MODULE LOCKED: FULL API MODE (NO SUPABASE WRITE)
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -7,6 +8,7 @@ import { ClipboardList, Loader2, Plus, RefreshCw, Trash2, X } from "lucide-react
 import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiClient } from "@/lib/apiClient";
 import { createClient } from "@/lib/supabase/client";
 
 type LCStatus = "open" | "processing" | "shipped" | "cleared" | "closed";
@@ -111,15 +113,34 @@ export function ImportLCFeature() {
       return;
     }
     setSaving(true);
-    const { error: dbErr } = await supabase.from("lc_records").insert({
-      supplier_name: form.supplier_name.trim(),
-      lc_number: form.lc_number.trim(),
-      currency: form.currency,
-      amount: parseFloat(form.amount),
-      expected_arrival: form.expected_arrival,
-      status: form.status,
-      created_by: null,
-    });
+    let dbErr: Error | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error: dbErr } = await supabase.from("lc_records").insert({
+    //   supplier_name: form.supplier_name.trim(),
+    //   lc_number: form.lc_number.trim(),
+    //   currency: form.currency,
+    //   amount: parseFloat(form.amount),
+    //   expected_arrival: form.expected_arrival,
+    //   status: form.status,
+    //   created_by: null,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/import-supply/lc-records", {
+        method: "POST",
+        body: JSON.stringify({
+          supplier_name: form.supplier_name.trim(),
+          lc_number: form.lc_number.trim(),
+          currency: form.currency,
+          amount: parseFloat(form.amount),
+          expected_arrival: form.expected_arrival,
+          status: form.status,
+          created_by: null,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (IMPORT)");
+    } catch (err) {
+      dbErr = err as Error;
+    }
     setSaving(false);
     if (dbErr) { setError(dbErr.message); return; }
     saveTags({
@@ -135,7 +156,10 @@ export function ImportLCFeature() {
   };
 
   const deleteRecord = async (id: string) => {
-    await supabase.from("lc_records").delete().eq("id", id);
+    // OLD (DISABLED - FINAL)
+    // await supabase.from("lc_records").delete().eq("id", id);
+    await apiClient<{}>(`/api/import-supply/lc-records/${id}`, { method: "DELETE" });
+    console.log("API WRITE USED - PHASE 2 COMPLETE");
     setRecords((prev) => prev.filter((r) => r.id !== id));
   };
 
@@ -150,7 +174,13 @@ export function ImportLCFeature() {
   };
 
   const updateStatus = async (id: string, status: LCStatus) => {
-    await supabase.from("lc_records").update({ status }).eq("id", id);
+    // OLD (DISABLED - SAFE)
+    // await supabase.from("lc_records").update({ status }).eq("id", id);
+    await apiClient<{ id?: string; status?: LCStatus }>(`/api/import-supply/lc-records/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    console.log("API WRITE USED - SAFE MODE (IMPORT)");
     setRecords((prev) => prev.map((item) => (item.id === id ? { ...item, status } : item)));
   };
 

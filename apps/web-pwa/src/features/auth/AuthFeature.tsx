@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-import { supabase } from "@/lib/supabase";
+import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 
 type RoleLabel = "Super Admin" | "Owner" | "Worker";

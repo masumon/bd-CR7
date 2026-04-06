@@ -1,3 +1,5 @@
+// MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
+// ONLY MANUAL VERIFIED CHANGES PERMITTED
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

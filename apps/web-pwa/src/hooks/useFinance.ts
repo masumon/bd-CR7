@@ -1,6 +1,8 @@
+// MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
+// ONLY MANUAL VERIFIED CHANGES PERMITTED
 import { useState } from "react";
 
-import { supabase } from "@/lib/supabase";
+import { safeSupabase as supabase } from "@/lib/safeSupabase";
 
 type FundPayload = {
   account_id: string;
@@ -34,6 +36,13 @@ export function useFinance(): UseFinanceReturn {
       if (!supabase) throw new Error("Supabase is not configured");
       const { error } = await supabase.from("fund_transfers").insert(payload);
       if (error) throw error;
+
+      // OLD (DISABLED - SAFE)
+      // await apiClient<{ id?: string }>("/api/others/fund_transfers", {
+      //   method: "POST",
+      //   body: JSON.stringify(payload),
+      // });
+      // console.log("API WRITE USED - SAFE MODE");
       setMessage("Fund saved");
       return true;
     } catch (err) {
@@ -50,6 +59,13 @@ export function useFinance(): UseFinanceReturn {
       if (!supabase) throw new Error("Supabase is not configured");
       const { error } = await supabase.from("expenses").insert(payload);
       if (error) throw error;
+
+      // OLD (DISABLED - SAFE)
+      // await apiClient<{ id?: string }>("/api/others/expenses", {
+      //   method: "POST",
+      //   body: JSON.stringify(payload),
+      // });
+      // console.log("API WRITE USED - SAFE MODE");
       setMessage("Expense saved");
       return true;
     } catch (err) {

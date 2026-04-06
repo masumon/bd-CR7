@@ -29,7 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
-import { supabase } from "@/lib/supabase";
+import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { cn } from "@/lib/utils";
 import useOfflineQueue from "@/store/offlineQueue";
 import { useAuthStore } from "@/store/authStore";

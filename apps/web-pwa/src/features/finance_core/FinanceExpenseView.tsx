@@ -1,3 +1,5 @@
+// MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
+// ONLY MANUAL VERIFIED CHANGES PERMITTED
 "use client";
 
 import { ArrowDownUp, BadgeDollarSign, MoreHorizontal } from "lucide-react";

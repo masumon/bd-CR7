@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FileUploadEngine } from "@/components/ui/FileUploadEngine";
 import { FloatingChat } from "@/features/sumonix_ai_ui/FloatingChat";
-import { supabase } from "@/lib/supabase";
+import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 
 /** Derive ERP module name from current path */

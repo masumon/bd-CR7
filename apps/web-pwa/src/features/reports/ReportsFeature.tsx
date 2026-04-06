@@ -1,3 +1,4 @@
+// MODULE LOCKED: REPORTS (SAFE PARTIAL REFACTOR)
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";

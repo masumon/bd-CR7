@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { supabase } from "@/lib/supabase";
+import { safeSupabase as supabase } from "@/lib/safeSupabase";
 
 type RoleJoin = { name?: string } | Array<{ name?: string }> | null | undefined;
 

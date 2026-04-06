@@ -1,3 +1,5 @@
+// MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
+// ONLY MANUAL VERIFIED CHANGES PERMITTED
 import { useState } from "react";
 
 import { apiRequest } from "@/lib/api";

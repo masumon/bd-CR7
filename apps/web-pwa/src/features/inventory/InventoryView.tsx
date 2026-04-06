@@ -1,3 +1,4 @@
+// MODULE LOCKED: FULL API MODE (NO SUPABASE WRITE)
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -15,6 +16,7 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { apiClient } from "@/lib/apiClient";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -121,13 +123,30 @@ function AddProductForm({
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from("products").insert({
-      name: name.trim(),
-      barcode: barcode.trim(),
-      purchase_price: Number(purchasePrice),
-      sell_price: Number(sellPrice),
-      stock_qty: Number(stockQty),
-    });
+    let error: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error } = await supabase.from("products").insert({
+    //   name: name.trim(),
+    //   barcode: barcode.trim(),
+    //   purchase_price: Number(purchasePrice),
+    //   sell_price: Number(sellPrice),
+    //   stock_qty: Number(stockQty),
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/inventory/products", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          barcode: barcode.trim(),
+          purchase_price: Number(purchasePrice),
+          sell_price: Number(sellPrice),
+          stock_qty: Number(stockQty),
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     setSaving(false);
     if (error) { setMsg(error.message); return; }
     setMsg("পণ্য সংরক্ষিত হয়েছে।");
@@ -170,12 +189,28 @@ function AddWarehouseForm({
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from("warehouses").insert({
-      name: name.trim(),
-      location: location.trim() || null,
-      manager: manager.trim() || null,
-      notes: notes.trim() || null,
-    });
+    let error: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error } = await supabase.from("warehouses").insert({
+    //   name: name.trim(),
+    //   location: location.trim() || null,
+    //   manager: manager.trim() || null,
+    //   notes: notes.trim() || null,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/inventory/warehouses", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          location: location.trim() || null,
+          manager: manager.trim() || null,
+          notes: notes.trim() || null,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     setSaving(false);
     if (error) { setMsg(error.message); return; }
     setMsg("গুদাম সংরক্ষিত হয়েছে।");
@@ -225,15 +260,34 @@ function AddAdjustmentForm({
     e.preventDefault();
     if (!productId) { setMsg("পণ্য নির্বাচন করুন।"); return; }
     setSaving(true);
-    const { error: adjErr } = await supabase.from("stock_adjustments").insert({
-      product_id: productId,
-      warehouse_id: warehouseId || null,
-      adjustment_type: adjType,
-      quantity: Number(quantity),
-      reference: reference.trim() || null,
-      notes: notes.trim() || null,
-      adjustment_date: date,
-    });
+    let adjErr: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error: adjErr } = await supabase.from("stock_adjustments").insert({
+    //   product_id: productId,
+    //   warehouse_id: warehouseId || null,
+    //   adjustment_type: adjType,
+    //   quantity: Number(quantity),
+    //   reference: reference.trim() || null,
+    //   notes: notes.trim() || null,
+    //   adjustment_date: date,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/inventory/stock_adjustments", {
+        method: "POST",
+        body: JSON.stringify({
+          product_id: productId,
+          warehouse_id: warehouseId || null,
+          adjustment_type: adjType,
+          quantity: Number(quantity),
+          reference: reference.trim() || null,
+          notes: notes.trim() || null,
+          adjustment_date: date,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      adjErr = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     if (adjErr) { setSaving(false); setMsg(adjErr.message); return; }
 
     // Update stock_qty on the products table based on adjustment type.
@@ -243,10 +297,22 @@ function AddAdjustmentForm({
     const product = products.find((p) => p.id === productId);
     if (product && adjType !== "transfer") {
       const delta = adjType === "out" ? -Number(quantity) : Number(quantity);
-      const { error: stockErr } = await supabase
-        .from("products")
-        .update({ stock_qty: Math.max(0, Number(product.stock_qty) + delta) })
-        .eq("id", productId);
+      const nextStockQty = Math.max(0, Number(product.stock_qty) + delta);
+      let stockErr: { message: string } | null = null;
+      // OLD (DISABLED - FINAL)
+      // const { error: stockErr } = await supabase
+      //   .from("products")
+      //   .update({ stock_qty: Math.max(0, Number(product.stock_qty) + delta) })
+      //   .eq("id", productId);
+      try {
+        await apiClient<{ id?: string; stock_qty?: string }>(`/api/inventory/stock/${productId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ stock_qty: nextStockQty }),
+        });
+        console.log("API WRITE USED - PHASE 2 COMPLETE");
+      } catch (err) {
+        stockErr = { message: err instanceof Error ? err.message : "Request failed" };
+      }
       if (stockErr) {
         setSaving(false);
         setMsg(`সমন্বয় সংরক্ষিত হয়েছে, কিন্তু স্টক আপডেট ব্যর্থ: ${stockErr.message}`);
@@ -385,11 +451,32 @@ export function InventoryView() {
     const { type, id } = deleteTarget;
     let error: { message: string } | null = null;
     if (type === "product") {
-      ({ error } = await supabase.from("products").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("products").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/inventory/products/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     } else if (type === "warehouse") {
-      ({ error } = await supabase.from("warehouses").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("warehouses").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/inventory/warehouses/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     } else if (type === "adjustment") {
-      ({ error } = await supabase.from("stock_adjustments").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("stock_adjustments").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/inventory/stock_adjustments/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     }
     if (error) { setDeleteError(error.message); setDeleteTarget(null); return; }
     setDeleteTarget(null);

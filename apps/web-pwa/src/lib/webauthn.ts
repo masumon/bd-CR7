@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { safeSupabase as supabase } from "@/lib/safeSupabase";
 
 /**
  * Always use same-origin relative paths so that the Next.js API proxy

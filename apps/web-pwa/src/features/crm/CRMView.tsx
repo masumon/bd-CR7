@@ -1,3 +1,4 @@
+// MODULE LOCKED: CRM (SAFE PARTIAL REFACTOR)
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -15,6 +16,7 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
+import { apiClient } from "@/lib/apiClient";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -124,11 +126,26 @@ function AddCustomerForm({
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from("customers").insert({
-      name: name.trim(),
-      phone: phone.trim() || null,
-      email: email.trim() || null,
-    });
+    let error: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error } = await supabase.from("customers").insert({
+    //   name: name.trim(),
+    //   phone: phone.trim() || null,
+    //   email: email.trim() || null,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/crm/customers", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim() || null,
+          email: email.trim() || null,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     setSaving(false);
     if (error) { setMsg(error.message); return; }
     setMsg("কাস্টমার সংরক্ষিত হয়েছে।");
@@ -174,17 +191,38 @@ function AddLeadForm({
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from("crm_leads").insert({
-      name: name.trim(),
-      phone: phone.trim() || null,
-      email: email.trim() || null,
-      company: company.trim() || null,
-      source: source || null,
-      stage,
-      estimated_value: estimatedValue ? Number(estimatedValue) : null,
-      assigned_to: assignedTo.trim() || null,
-      notes: notes.trim() || null,
-    });
+    let error: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error } = await supabase.from("crm_leads").insert({
+    //   name: name.trim(),
+    //   phone: phone.trim() || null,
+    //   email: email.trim() || null,
+    //   company: company.trim() || null,
+    //   source: source || null,
+    //   stage,
+    //   estimated_value: estimatedValue ? Number(estimatedValue) : null,
+    //   assigned_to: assignedTo.trim() || null,
+    //   notes: notes.trim() || null,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/crm/crm_leads", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim() || null,
+          email: email.trim() || null,
+          company: company.trim() || null,
+          source: source || null,
+          stage,
+          estimated_value: estimatedValue ? Number(estimatedValue) : null,
+          assigned_to: assignedTo.trim() || null,
+          notes: notes.trim() || null,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     setSaving(false);
     if (error) { setMsg(error.message); return; }
     setMsg("লিড সংরক্ষিত হয়েছে।");
@@ -242,14 +280,32 @@ function AddInteractionForm({
     e.preventDefault();
     if (!customerId && !leadId) { setMsg("কাস্টমার বা লিড নির্বাচন করুন।"); return; }
     setSaving(true);
-    const { error } = await supabase.from("crm_interactions").insert({
-      customer_id: customerId || null,
-      lead_id: leadId || null,
-      type,
-      summary: summary.trim(),
-      next_action: nextAction.trim() || null,
-      interaction_date: date,
-    });
+    let error: { message: string } | null = null;
+    // OLD (DISABLED - SAFE)
+    // const { error } = await supabase.from("crm_interactions").insert({
+    //   customer_id: customerId || null,
+    //   lead_id: leadId || null,
+    //   type,
+    //   summary: summary.trim(),
+    //   next_action: nextAction.trim() || null,
+    //   interaction_date: date,
+    // });
+    try {
+      await apiClient<{ id?: string }>("/api/crm/crm_interactions", {
+        method: "POST",
+        body: JSON.stringify({
+          customer_id: customerId || null,
+          lead_id: leadId || null,
+          type,
+          summary: summary.trim(),
+          next_action: nextAction.trim() || null,
+          interaction_date: date,
+        }),
+      });
+      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : "Request failed" };
+    }
     setSaving(false);
     if (error) { setMsg(error.message); return; }
     setMsg("ইন্টারঅ্যাকশন সংরক্ষিত হয়েছে।");
@@ -323,11 +379,32 @@ export function CRMView() {
     const { type, id } = deleteTarget;
     let error: { message: string } | null = null;
     if (type === "customer") {
-      ({ error } = await supabase.from("customers").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("customers").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/crm/customers/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     } else if (type === "lead") {
-      ({ error } = await supabase.from("crm_leads").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("crm_leads").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/crm/crm_leads/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     } else if (type === "interaction") {
-      ({ error } = await supabase.from("crm_interactions").delete().eq("id", id));
+      // OLD (DISABLED - SAFE)
+      // ({ error } = await supabase.from("crm_interactions").delete().eq("id", id));
+      try {
+        await apiClient<{}>(`/api/crm/crm_interactions/${id}`, { method: "DELETE" });
+        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Request failed" };
+      }
     }
     if (error) { setDeleteError(error.message); setDeleteTarget(null); return; }
     setDeleteTarget(null);

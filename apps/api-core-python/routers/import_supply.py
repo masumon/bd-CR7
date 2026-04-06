@@ -48,6 +48,15 @@ async def update_lc_status(lc_id: str, payload: LCStatusUpdate, user: UserContex
     return {"id": lc_id, "status": payload.status}
 
 
+@router.delete("/lc-records/{lc_id}")
+async def delete_lc_record(lc_id: str, user: UserContext = Depends(require_roles("admin", "maker"))):
+    client = _require_supabase()
+    deleted = client.table("lc_records").delete().eq("id", lc_id).execute()
+    if not deleted.data:
+        raise HTTPException(status_code=404, detail="LC record not found")
+    return {"id": lc_id, "deleted": True}
+
+
 @router.post("/landed-costs")
 async def calculate_landed_cost(payload: LandedCostInput, user: UserContext = Depends(require_roles("admin", "maker"))):
     client = _require_supabase()

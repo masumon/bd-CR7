@@ -1,3 +1,5 @@
+// MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
+// ONLY MANUAL VERIFIED CHANGES PERMITTED
 import { apiClient } from "@/lib/apiClient";
 import type { ExpenseEditForm, ExpenseRow } from "@/features/finance_core/types";
 
