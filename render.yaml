@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: bdcr7-api
+    runtime: python
+    pythonVersion: 3.11.9
+    buildCommand: pip install --prefer-binary -r apps/api-core-python/requirements.txt
+    startCommand: uvicorn main:app --app-dir apps/api-core-python --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: CARGO_HOME
+        value: /tmp/.cargo
+      - key: PYTHON_VERSION
+        value: "3.11.9"
