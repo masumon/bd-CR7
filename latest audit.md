@@ -472,6 +472,17 @@ SITE_MAX_RADIUS_KM=0.5  # Attendance geofence radius
 | Low Severity | 3 | 1 ✅ | 2 ⚠️ |
 | **Total** | **12** | **8** | **4** |
 
-**Auto-applied fixes:** `db_reader.py`, `hr.py`, `users.py`, `auth.py` (logout + WebAuthn memory leak), `approval_intelligence.py`
+**Auto-applied fixes (commit 832e905):** `db_reader.py`, `hr.py`, `users.py`, `auth.py` (logout + WebAuthn memory leak), `approval_intelligence.py`
 
-**Production readiness:** ⚠️ NEAR-READY — Apply 4 manual DB changes before scaling to multi-worker.
+**Manual fixes (commit 3c1815e):** Attendance UNIQUE constraint migration, WebAuthn DB-backed challenge store, Material stock atomic RPC, Dashboard 5-query → single RPC
+
+**Production readiness:** ✅ ALL AUDIT ISSUES RESOLVED — সব bug fix + manual action সম্পন্ন।
+
+### এখন করণীয় (Next Steps)
+
+| Priority | কাজ | কারণ |
+| -------- | --- | ----- |
+| P1 | Test coverage বাড়ান (~5% → 60%+) | Critical paths (auth, finance, approval) কোনো test নেই |
+| P2 | Structured JSON logging | Production debug করা যায় না plain text-এ |
+| P3 | Financial audit trail | Compliance — কে কখন কত approve করল log নেই |
+| P4 | `.env.example` আপডেট | `SITE_LAT`, `SITE_LNG`, `SITE_MAX_RADIUS_KM` document করুন |
