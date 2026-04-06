@@ -10,10 +10,10 @@ const buildUrl = (path: string) => {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const base = appConfig.apiBaseUrl;
   if (!base) return path;
-  // In production (or when running in a browser outside dev), never forward
-  // requests to a localhost address — it is unreachable from the internet.
-  // The Next.js API proxy (/api/*) handles server-to-Python routing instead.
-  if (LOCALHOST_URL_PATTERN.test(base) && typeof window !== "undefined" && IS_PRODUCTION) {
+  // Never forward requests to a localhost address in production — it is
+  // unreachable from the internet. Fall back to same-origin /api/* routing so
+  // the Next.js API proxy handles the actual server-to-Python forwarding.
+  if (IS_PRODUCTION && LOCALHOST_URL_PATTERN.test(base)) {
     return path;
   }
   return `${base}${path}`;

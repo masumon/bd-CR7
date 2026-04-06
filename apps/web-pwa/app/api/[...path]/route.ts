@@ -28,7 +28,7 @@ import { LOCALHOST_URL_PATTERN } from "@/core/config";
 // deployments that already have it set keep working automatically.
 // In production, ignore localhost/127.0.0.1 values from NEXT_PUBLIC_API_URL
 // because the browser cannot reach those addresses from the internet.
-const _rawApiUrl = (
+const rawApiUrl = (
   process.env.PYTHON_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   ""
@@ -40,10 +40,13 @@ const _rawApiUrl = (
 //   VERCEL_ENV  — set automatically by the Vercel platform ("production" | "preview" | "development")
 //               — takes precedence; "preview" must not be treated as production.
 //   APP_ENV     — set manually for non-Vercel deployments (e.g. Railway, Fly.io)
+//               — server-side only, not available in browser bundles (no NEXT_PUBLIC_ prefix).
 //   NODE_ENV    — standard Node.js fallback ("production" in compiled/bundled builds)
 // When VERCEL_ENV is present we rely on it exclusively so that Vercel preview
 // deployments (where NODE_ENV is also "production") are NOT treated as production.
-const _isProduction = process.env.VERCEL_ENV
+// APP_ENV is checked here (server-side route handler) but not in IS_PRODUCTION
+// (config.ts) because it is a server-side-only variable unavailable in the browser.
+const isProduction = process.env.VERCEL_ENV
   ? process.env.VERCEL_ENV === "production"
   : (process.env.APP_ENV || process.env.NODE_ENV) === "production";
 
@@ -52,7 +55,7 @@ const _isProduction = process.env.VERCEL_ENV
 // 503 rather than an unreachable-host error. This applies regardless of which
 // env var (PYTHON_API_URL or NEXT_PUBLIC_API_URL) provided the localhost value.
 const PYTHON_API =
-  _isProduction && LOCALHOST_URL_PATTERN.test(_rawApiUrl) ? "" : _rawApiUrl;
+  isProduction && LOCALHOST_URL_PATTERN.test(rawApiUrl) ? "" : rawApiUrl;
 
 // Proxy request timeout in milliseconds.
 // Chosen to stay within Vercel's default serverless function limits (10s on
@@ -124,7 +127,12 @@ async function proxyRequest(
     });
   } catch (fetchError) {
     clearTimeout(timeoutId);
-    const isTimeout = (fetchError as Error).name === "AbortError";
+    // DOMException with name 'AbortError' is thrown when AbortController fires.
+    // Check both the constructor name and the .name property for compatibility
+    // across Node.js versions and runtimes (Node ≥18, Edge, etc.).
+    const isTimeout =
+      (fetchError instanceof DOMException && fetchError.name === "AbortError") ||
+      (fetchError instanceof Error && fetchError.name === "AbortError");
     return NextResponse.json(
       {
         success: false,
