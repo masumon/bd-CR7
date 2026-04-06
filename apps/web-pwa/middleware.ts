@@ -67,8 +67,7 @@ export async function middleware(request: NextRequest) {
 
     const allowed = ROLE_ACCESS[roleFromClaims] ?? ROLE_ACCESS.viewer;
     if (!isPathAllowed(pathname, allowed)) {
-      const fallback = allowed.find((route) => route !== "/dashboard") || "/dashboard";
-      return NextResponse.redirect(new URL(fallback, request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     return response;

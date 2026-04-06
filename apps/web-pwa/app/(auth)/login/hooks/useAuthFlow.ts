@@ -24,14 +24,27 @@ export function useAuthFlow(router: RouterLike) {
   useEffect(() => {
     let splashTimer: ReturnType<typeof setTimeout> | undefined;
     const run = async () => {
-      if (persistedTokenRef.current && supabase) {
+      if (supabase) {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
           router.replace("/dashboard");
           return;
         }
       }
-      splashTimer = setTimeout(() => setView("landing"), 800);
+
+      const splashAlreadyShown =
+        typeof window !== "undefined" && window.sessionStorage.getItem("bdcr7-login-splash-shown") === "1";
+      if (splashAlreadyShown) {
+        setView("landing");
+        return;
+      }
+
+      splashTimer = setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("bdcr7-login-splash-shown", "1");
+        }
+        setView("landing");
+      }, 800);
     };
     void run();
     return () => clearTimeout(splashTimer);
@@ -40,6 +53,13 @@ export function useAuthFlow(router: RouterLike) {
   useEffect(() => {
     const stored = localStorage.getItem("bdcr7-theme");
     document.documentElement.classList.toggle("dark", stored !== "light");
+
+    const remembered = localStorage.getItem("bdcr7-remember-me") === "1";
+    const rememberedEmail = localStorage.getItem("bdcr7-remember-email") || "";
+    setSiRemember(remembered);
+    if (rememberedEmail) {
+      setSiEmail(rememberedEmail);
+    }
   }, []);
 
   const [siEmail, setSiEmail] = useState("");
@@ -56,6 +76,13 @@ export function useAuthFlow(router: RouterLike) {
     setShowOverlay(true);
     try {
       await login(siEmail, siPassword);
+      if (siRemember) {
+        localStorage.setItem("bdcr7-remember-me", "1");
+        localStorage.setItem("bdcr7-remember-email", siEmail.trim());
+      } else {
+        localStorage.removeItem("bdcr7-remember-me");
+        localStorage.removeItem("bdcr7-remember-email");
+      }
       setAuthDone(true);
     } catch (err) {
       setSiError((err as Error).message);
@@ -110,8 +137,9 @@ export function useAuthFlow(router: RouterLike) {
   }, [otpResendTimer]);
 
   const handleSendOtp = async () => {
-    if (!otpContact.trim()) {
-      setOtpError("Enter your phone number");
+    const contact = otpContact.trim();
+    if (!contact) {
+      setOtpError("Enter your phone or email");
       return;
     }
     if (!supabase) {
@@ -120,7 +148,13 @@ export function useAuthFlow(router: RouterLike) {
     }
     setOtpLoading(true);
     setOtpError("");
-    const { error } = await supabase.auth.signInWithOtp({ phone: otpContact.trim() });
+    const isEmail = contact.includes("@");
+    const { error } = isEmail
+      ? await supabase.auth.signInWithOtp({
+          email: contact,
+          options: { shouldCreateUser: false },
+        })
+      : await supabase.auth.signInWithOtp({ phone: contact });
     setOtpLoading(false);
     if (error) {
       setOtpError(error.message);
@@ -143,11 +177,20 @@ export function useAuthFlow(router: RouterLike) {
     }
     setOtpLoading(true);
     setOtpError("");
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: otpContact.trim(),
-      token,
-      type: "sms",
-    });
+    const contact = otpContact.trim();
+    const isEmail = contact.includes("@");
+
+    const { data, error } = isEmail
+      ? await supabase.auth.verifyOtp({
+          email: contact,
+          token,
+          type: "email",
+        })
+      : await supabase.auth.verifyOtp({
+          phone: contact,
+          token,
+          type: "sms",
+        });
     if (error || !data.session || !data.user) {
       setOtpLoading(false);
       setOtpError(error?.message || "OTP verification failed. Please try again.");

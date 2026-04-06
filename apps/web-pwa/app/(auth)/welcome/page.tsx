@@ -18,9 +18,15 @@ export default function WelcomePage() {
         if (result?.data.session) {
           router.replace("/dashboard");
         } else {
+          if (typeof window !== "undefined") {
+            window.sessionStorage.setItem("bdcr7-login-splash-shown", "1");
+          }
           router.replace("/login");
         }
       } catch {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("bdcr7-login-splash-shown", "1");
+        }
         router.replace("/login");
       }
     }, SPLASH_DURATION_MS);
