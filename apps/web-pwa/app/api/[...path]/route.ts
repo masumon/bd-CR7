@@ -61,8 +61,9 @@ const PYTHON_API =
 // Default is conservative (9s) to stay within Vercel Hobby's 10s limit.
 // Override via PROXY_TIMEOUT_MS env var for Pro/Enterprise plans where longer
 // AI/DB queries may require more time (e.g. set to 30000 on Vercel Pro).
-const _rawTimeout = Number(process.env.PROXY_TIMEOUT_MS);
-const PROXY_TIMEOUT_MS = Number.isFinite(_rawTimeout) && _rawTimeout > 0 ? _rawTimeout : 9_000;
+const parsedTimeout = Number(process.env.PROXY_TIMEOUT_MS);
+const PROXY_TIMEOUT_MS = Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 9_000;
+const PROXY_TIMEOUT_SECONDS = PROXY_TIMEOUT_MS / 1000;
 
 /** Returns a 503 JSON response indicating the backend API is not configured. */
 const createNotConfiguredResponse = () =>
@@ -138,7 +139,7 @@ async function proxyRequest(
         success: false,
         data: null,
         error: isTimeout
-          ? `Backend request timed out after ${PROXY_TIMEOUT_MS / 1000}s. The Python API at ${PYTHON_API} is not responding.`
+          ? `Backend request timed out after ${PROXY_TIMEOUT_SECONDS}s. The Python API at ${PYTHON_API} is not responding.`
           : `Backend unreachable at ${PYTHON_API}. Check PYTHON_API_URL. (${(fetchError as Error).message})`,
       },
       { status: isTimeout ? 504 : 503 },
