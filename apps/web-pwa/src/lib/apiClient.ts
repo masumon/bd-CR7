@@ -55,6 +55,12 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
     resolvedToken = sessionData?.session?.access_token ?? undefined;
   }
 
+  // Diagnostic: log token status in development to help trace auth issues.
+  if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.log(`[apiClient] TOKEN_STATUS: ${resolvedToken ? "OK" : "NULL"} — ${path}`);
+  }
+
   const headers = new Headers(init.headers || {});
   if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");
   if (resolvedToken) headers.set("Authorization", `Bearer ${resolvedToken}`);

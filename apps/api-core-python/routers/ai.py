@@ -1,4 +1,5 @@
 import json
+import logging
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,6 +11,8 @@ from schemas.ai import ChatMessage, MemoryCreate
 from services.ai_engine import process_message
 from services.risk import dashboard_metrics, financial_anomalies, operational_alerts
 from services.system_monitor import run_system_scan
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -177,7 +180,24 @@ async def ai_chat(payload: ChatMessage, user: UserContext = Depends(get_current_
     """
     message = payload.message.strip()
 
-    result = process_message(message=message, role=user.role, user_id=user.user_id)
+    try:
+        result = process_message(message=message, role=user.role, user_id=user.user_id)
+    except Exception as exc:  # noqa: BLE001
+        # Broad catch is intentional: process_message calls DB, Supabase,
+        # external APIs (exchange rate, weather), and NLP libraries — any of
+        # which may raise diverse exception types.  We want the AI chat
+        # endpoint to stay responsive in degraded-mode even when a dependency
+        # is temporarily unreachable, rather than surfacing a 500 to the UI.
+        logger.error("ai_engine process_message failed: %s", exc, exc_info=True)
+        result = {
+            "reply": (
+                "SUMONIX AI is temporarily unavailable due to a backend issue. "
+                "Please try again in a moment."
+            ),
+            "intent": "error",
+            "lang": "en",
+            "translated_input": None,
+        }
 
     _log_ai_interaction(
         user_id=user.user_id,
