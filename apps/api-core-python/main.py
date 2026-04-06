@@ -170,6 +170,10 @@ def create_app() -> Any:
     async def favicon() -> Response:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    @app.get("/health")
+    async def health_check() -> dict[str, str]:
+        return {"status": "ok"}
+
     @app.get("/api/health")
     async def health() -> dict[str, str]:
         return {"status": "ok", "env": settings.env}
