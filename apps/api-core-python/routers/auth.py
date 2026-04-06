@@ -178,6 +178,14 @@ async def login(payload: LoginRequest):
 
 @router.post("/logout")
 async def logout(user: UserContext = Depends(get_current_user)):
+    # Revoke ALL active sessions for this user via the service-role client.
+    # Without this call the bearer token remained valid until its natural expiry.
+    if supabase_service is not None:
+        try:
+            supabase_service.auth.admin.sign_out(user.user_id)
+        except Exception:  # noqa: BLE001
+            # Non-fatal: local state is cleared on the client side regardless.
+            pass
     return {"message": f"Logged out {user.user_id}"}
 
 
@@ -228,7 +236,12 @@ async def create_webauthn_challenge(request: Request, user: UserContext = Depend
         )
 
     challenge = secrets.token_urlsafe(32)
-    _WEBAUTHN_CHALLENGES[user.user_id] = (challenge, time.time() + WEBAUTHN_CHALLENGE_TTL_SECONDS)
+    now = time.time()
+    # Purge all expired challenges to prevent unbounded memory growth.
+    expired_keys = [uid for uid, (_, exp) in _WEBAUTHN_CHALLENGES.items() if exp < now]
+    for k in expired_keys:
+        _WEBAUTHN_CHALLENGES.pop(k, None)
+    _WEBAUTHN_CHALLENGES[user.user_id] = (challenge, now + WEBAUTHN_CHALLENGE_TTL_SECONDS)
 
     expected_origin, rp_id = _resolve_origin_and_rp_id(request)
     return {

@@ -63,26 +63,20 @@ async def mark_attendance(payload: AttendanceMark, user: UserContext = Depends(r
         raise HTTPException(status_code=400, detail="Attendance outside site geofence")
 
     attendance_date = date.today().isoformat()
-    existing = client.table("attendance").select("id").eq("worker_id", payload.worker_id).eq("attendance_date", attendance_date).limit(1).execute()
-    if existing.data:
-        client.table("attendance").update(
-            {
-                "latitude": payload.latitude,
-                "longitude": payload.longitude,
-                "marked_by": user.user_id,
-            }
-        ).eq("id", existing.data[0]["id"]).execute()
-    else:
-        client.table("attendance").insert(
-            {
-                "id": str(uuid4()),
-                "worker_id": payload.worker_id,
-                "attendance_date": attendance_date,
-                "latitude": payload.latitude,
-                "longitude": payload.longitude,
-                "marked_by": user.user_id,
-            }
-        ).execute()
+    # Use upsert to eliminate the SELECT + INSERT/UPDATE race condition.
+    # Requires UNIQUE(worker_id, attendance_date) constraint on the attendance table.
+    client.table("attendance").upsert(
+        {
+            "id": str(uuid4()),
+            "worker_id": payload.worker_id,
+            "attendance_date": attendance_date,
+            "latitude": payload.latitude,
+            "longitude": payload.longitude,
+            "marked_by": user.user_id,
+        },
+        on_conflict="worker_id,attendance_date",
+        ignore_duplicates=False,
+    ).execute()
     return {"message": "attendance marked", "distance_km": round(dist, 3)}
 
 

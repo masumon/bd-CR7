@@ -62,16 +62,15 @@ async def update_my_preferences(payload: WorkspacePreferencesPatch, user: UserCo
 async def list_users(user: UserContext = Depends(require_roles("admin", "checker", "super_admin"))):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    rows = supabase_service.table("users").select("id,email,full_name,is_active,role_id,created_at").limit(500).execute()
-    roles = supabase_service.table("roles").select("id,name").execute()
-    role_map = {str(r["id"]): str(r["name"]).lower() for r in (roles.data or [])}
+    # Single query with JOIN — eliminates the previous N+1 (two separate round-trips).
+    rows = supabase_service.table("users").select("id,email,full_name,is_active,created_at,roles(name)").limit(500).execute()
     return [
         {
             "id": r["id"],
             "email": r.get("email"),
             "full_name": r.get("full_name"),
             "is_active": r.get("is_active", True),
-            "role": role_map.get(str(r.get("role_id"))),
+            "role": (r.get("roles") or {}).get("name", "") or None,
             "created_at": r.get("created_at"),
         }
         for r in (rows.data or [])

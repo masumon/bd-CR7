@@ -4,11 +4,19 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from core.auth import UserContext, get_current_user, require_roles
 from core.supabase import supabase_service
 
 router = APIRouter()
+
+
+class DecisionRuleUpsert(BaseModel):
+    label: str | None = None
+    is_enabled: bool = True
+    risk_threshold: int = Field(default=80, ge=0, le=100)
+    payload: dict = Field(default_factory=dict)
 
 
 def _require_supabase() -> Any:
@@ -27,22 +35,19 @@ async def list_decision_rules(user: UserContext = Depends(require_roles("admin",
 @router.put("/rules/{rule_key}")
 async def upsert_decision_rule(
     rule_key: str,
-    payload: dict,
+    payload: DecisionRuleUpsert,
     user: UserContext = Depends(require_roles("admin")),
 ):
     client = _require_supabase()
 
     row = {
         "rule_key": rule_key,
-        "label": str(payload.get("label") or rule_key.replace("_", " ").title()),
-        "is_enabled": bool(payload.get("is_enabled", True)),
-        "risk_threshold": int(payload.get("risk_threshold", 80)),
-        "payload": payload.get("payload") or {},
+        "label": payload.label or rule_key.replace("_", " ").title(),
+        "is_enabled": payload.is_enabled,
+        "risk_threshold": payload.risk_threshold,
+        "payload": payload.payload,
         "created_by": user.user_id,
     }
-
-    if row["risk_threshold"] < 0 or row["risk_threshold"] > 100:
-        raise HTTPException(status_code=400, detail="risk_threshold must be between 0 and 100")
 
     res = client.table("decision_rules").upsert(row, on_conflict="rule_key").execute()
     return (res.data or [row])[0]
