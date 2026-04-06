@@ -450,17 +450,18 @@ export async function exportToPDF(opts: ExportPDFOptions): Promise<void> {
   }
 
   const fileName = `${opts.moduleName.toLowerCase().replace(/\s+/g, "-")}-report.pdf`;
+  const opt: any = {
+    margin: 10,
+    filename: fileName,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["css", "legacy"] },
+  };
 
   try {
     await html2pdf()
-      .set({
-        margin: [8, 8, 8, 8],
-        filename: fileName,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] },
-      })
+      .set(opt)
       .from(page)
       .save();
   } finally {

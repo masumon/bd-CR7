@@ -20,7 +20,7 @@
 
 import { useRef, useState } from "react";
 import { AlertTriangle, Camera, CheckCircle2, FileUp, Loader2, Paperclip, ShieldAlert, X } from "lucide-react";
-import { uploadToCloudinary } from "@bdcr7/media-engine";
+import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { FilePreviewInline, detectFileType } from "@/components/ui/FilePreviewInline";
 import { useProjectFiles, type InsertProjectFile } from "@/hooks/useProjectFiles";
 
@@ -72,9 +72,6 @@ export function EvidenceGate({
   const [savedFileUrl, setSavedFileUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
-  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
-
   const handleSelect = (f: File) => {
     setFile(f);
     setPreview(URL.createObjectURL(f));
@@ -95,15 +92,11 @@ export function EvidenceGate({
 
   const upload = async () => {
     if (!file) return;
-    if (!cloudName || !uploadPreset) {
-      setError("Upload service is not configured. Please set Cloudinary environment variables.");
-      return;
-    }
     setUploading(true);
     setError(null);
 
     try {
-      const fileUrl = await uploadToCloudinary({ cloudName, uploadPreset, file });
+      const fileUrl = await uploadToCloudinary(file);
       const fileType = detectFileType(file.name);
 
       const payload: InsertProjectFile = {
@@ -266,6 +259,7 @@ export function EvidenceGate({
         ref={cameraRef}
         type="file"
         accept={CAMERA_ACCEPTED}
+        capture="environment"
         aria-label="Capture proof with camera"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSelect(f); }}

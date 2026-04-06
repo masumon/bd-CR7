@@ -77,6 +77,7 @@ export function ProfileTab({
               <p className="mb-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">Profile Image</p>
               <div className="flex items-center gap-3">
                 {profileImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={profileImageUrl} alt="Profile" className="h-16 w-16 rounded-full object-cover" />
                 ) : (
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -89,6 +90,7 @@ export function ProfileTab({
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     className="hidden"
                     disabled={uploadingImage}
                     onChange={(e) => {

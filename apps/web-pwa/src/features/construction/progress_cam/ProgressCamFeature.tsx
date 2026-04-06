@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { uploadToCloudinary } from "@bdcr7/media-engine";
+import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
 
@@ -73,11 +73,7 @@ export function ProgressCamFeature() {
     }
 
     try {
-      const mediaUrl = await uploadToCloudinary({
-        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "",
-        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "",
-        file,
-      });
+      const mediaUrl = await uploadToCloudinary(file);
 
       // Save to Supabase progress_cam table
       await supabase.from("progress_cam").insert({
@@ -113,20 +109,41 @@ export function ProgressCamFeature() {
         <p className="mt-1 text-sm text-muted-foreground">Upload image or video evidence by phase category with a clearer visual log.</p>
       </div>
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
-        <input
-          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none md:col-span-2"
-          type="file"
-          title="Photo or video upload"
-          accept="image/*,video/*"
-          onChange={(e) => {
-            const next = e.target.files?.[0] || null;
-            setFile(next);
-            if (previewUrl) {
-              URL.revokeObjectURL(previewUrl);
-            }
-            setPreviewUrl(next ? URL.createObjectURL(next) : null);
-          }}
-        />
+        <div className="md:col-span-2">
+          <input
+            className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+            type="file"
+            title="Photo or video upload"
+            accept="image/*,video/*"
+            onChange={(e) => {
+              const next = e.target.files?.[0] || null;
+              setFile(next);
+              if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+              }
+              setPreviewUrl(next ? URL.createObjectURL(next) : null);
+            }}
+          />
+          <input
+            id="progress-cam-capture"
+            className="hidden"
+            type="file"
+            title="Capture from camera"
+            accept="image/*,video/*"
+            capture="environment"
+            onChange={(e) => {
+              const next = e.target.files?.[0] || null;
+              setFile(next);
+              if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+              }
+              setPreviewUrl(next ? URL.createObjectURL(next) : null);
+            }}
+          />
+          <label htmlFor="progress-cam-capture" className="mt-2 inline-flex cursor-pointer items-center rounded-xl border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
+            Open Camera
+          </label>
+        </div>
         <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Phase category" value={phaseCategory} onChange={(e) => setPhaseCategory(e.target.value)}>
           {PHASES.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>

@@ -21,8 +21,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
-import { uploadToCloudinary } from "@bdcr7/media-engine";
 import { apiRequest } from "@/lib/api";
+import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
 
@@ -311,11 +311,7 @@ export function ProjectsFeature() {
     setAttachmentSaving(true);
     setDetailsError(null);
     try {
-      const fileUrl = await uploadToCloudinary({
-        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "",
-        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "",
-        file: attachmentFile,
-      });
+      const fileUrl = await uploadToCloudinary(attachmentFile);
 
       let attachmentError: Error | null = null;
       try {

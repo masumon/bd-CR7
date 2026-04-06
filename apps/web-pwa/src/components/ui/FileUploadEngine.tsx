@@ -11,7 +11,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { Camera, FileUp, Loader2, Paperclip, X } from "lucide-react";
-import { uploadToCloudinary } from "@bdcr7/media-engine";
+import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { Button } from "@/components/ui/button";
 import { FilePreviewInline, detectFileType } from "@/components/ui/FilePreviewInline";
 import { useProjectFiles, type InsertProjectFile } from "@/hooks/useProjectFiles";
@@ -50,9 +50,6 @@ export function FileUploadEngine({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
-  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
-
   const handleFileSelect = (f: File) => {
     setFile(f);
     setPreview(URL.createObjectURL(f));
@@ -70,15 +67,11 @@ export function FileUploadEngine({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!file) { setError("Please select a file."); return; }
-    if (!cloudName || !uploadPreset) {
-      setError("Upload service is not configured. Please set Cloudinary environment variables.");
-      return;
-    }
     setUploading(true);
     setError(null);
 
     try {
-      const fileUrl = await uploadToCloudinary({ cloudName, uploadPreset, file });
+      const fileUrl = await uploadToCloudinary(file);
       const fileType = detectFileType(file.name);
 
       const payload: InsertProjectFile = {
@@ -173,6 +166,7 @@ export function FileUploadEngine({
         ref={cameraRef}
         type="file"
         accept={CAMERA_ACCEPTED}
+        capture="environment"
         aria-label="Capture a photo or video"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}

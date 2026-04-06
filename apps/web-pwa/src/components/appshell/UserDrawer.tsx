@@ -118,6 +118,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
               {/* Avatar + Name */}
               <div className="flex flex-col items-center gap-3 border-b border-border px-4 py-6">
                 {profile?.profile_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={profile.profile_image_url} alt="Profile" className="h-16 w-16 rounded-full object-cover shadow-lg" />
                 ) : (
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary text-xl font-bold text-primary-foreground shadow-lg">

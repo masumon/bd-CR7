@@ -3,8 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-import { uploadToCloudinary } from "@bdcr7/media-engine";
 import { apiClient } from "@/lib/apiClient";
+import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { useAuthStore } from "@/store/authStore";
 import {
   DEFAULT_SETTING_ITEMS,
@@ -156,17 +156,11 @@ export function SettingsFeature() {
   }, [token, userId]);
 
   const handleUploadImage = useCallback(async (file: File) => {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
-    if (!cloudName || !uploadPreset) {
-      setError("Upload service is not configured.");
-      return;
-    }
     setUploadingImage(true);
     setError("");
     setMessage("");
     try {
-      const fileUrl = await uploadToCloudinary({ cloudName, uploadPreset, file });
+      const fileUrl = await uploadToCloudinary(file);
       setProfileImageUrl(fileUrl);
       setMessage("Profile photo uploaded. Click Save Profile to apply.");
     } catch (uploadError) {
