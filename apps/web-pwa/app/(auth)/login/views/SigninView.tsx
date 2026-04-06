@@ -55,8 +55,8 @@ export function SigninView({
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>লগইন</h1>
-            <div className="secure-badge mt-0.5"><Shield className="h-3 w-3" />নিরাপদ লগইন</div>
+            <h1 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>Welcome Back</h1>
+            <div className="secure-badge mt-0.5"><Shield className="h-3 w-3" />Secure Sign In</div>
           </div>
         </header>
 
@@ -68,34 +68,34 @@ export function SigninView({
           <form onSubmit={onSubmit} className="space-y-3">
             <div className="bdcr7-input-wrap" data-filled={Boolean(email)}>
               <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
-              <label className="bdcr7-input-label">Email / ইমেইল</label>
+              <label className="bdcr7-input-label">Email</label>
               <input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} className="bdcr7-input" required aria-label="Email address" />
             </div>
 
             <div className="bdcr7-input-wrap" data-filled={Boolean(password)} data-error={Boolean(error) && !password}>
               <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
-              <label className="bdcr7-input-label">Password / পাসওয়ার্ড</label>
+              <label className="bdcr7-input-label">Password</label>
               <input type={showPass ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => setCapsLock(e.getModifierState("CapsLock"))} className="bdcr7-input pr-8" required aria-label="Password" />
-              <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"} className="shrink-0 text-white/40 hover:text-white/80 transition-colors" style={{ minHeight: "unset" }}>
+              <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Hide password" : "Show password"} className="shrink-0 text-white/40 hover:text-white/80 transition-colors" style={{ minHeight: "unset" }}>
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
 
-            {capsLock && <p className="text-[11px]" style={{ color: "rgba(251,189,35,0.8)" }}>⚠ Caps Lock চালু আছে</p>}
+            {capsLock && <p className="text-[11px]" style={{ color: "rgba(251,189,35,0.8)" }}>⚠ Caps Lock is on</p>}
 
             <div className="flex items-center justify-between">
               <label className="flex cursor-pointer items-center gap-2 text-[12px] text-white/60">
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 rounded accent-amber-400" style={{ minHeight: "unset" }} />
-                আমাকে মনে রাখুন
+                Remember me
               </label>
               <a href="/forgot-password" className="text-[11px] font-medium transition-colors hover:underline" style={{ color: "rgba(251,189,35,0.85)" }}>
-                পাসওয়ার্ড ভুলে গেছেন?
+                Forgot password?
               </a>
             </div>
 
             <button type="submit" disabled={loading} className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl">
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "লগইন হচ্ছে..." : "অ্যাকাউন্টে প্রবেশ করুন"}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
@@ -103,12 +103,12 @@ export function SigninView({
 
           <button type="button" onClick={onOtp} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] transition-colors hover:text-amber-300" style={{ color: "rgba(255,255,255,0.45)" }}>
             <MessageSquare className="h-3.5 w-3.5" />
-            বিকল্পভাবে ওটিপি দিয়ে লগইন করুন
+            Sign in with OTP instead
           </button>
         </div>
 
         <p className="mt-3 pb-2 text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-          অ্যাকাউন্ট নেই? <button type="button" onClick={onSignup} style={{ color: "rgba(251,189,35,0.9)" }} className="font-semibold hover:underline">নতুন একাউন্ট খুলুন</button>
+          No account? <button type="button" onClick={onSignup} style={{ color: "rgba(251,189,35,0.9)" }} className="font-semibold hover:underline">Create one</button>
         </p>
       </div>
       <DevFooter />

@@ -106,7 +106,11 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
       <Sidebar items={navItems} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
 
       <main className="page-enter px-3 pb-[calc(56px+env(safe-area-inset-bottom)+0.5rem)] pt-[calc(56px+10px)] lg:ml-16 lg:px-5 lg:pb-5 lg:pt-[calc(56px+14px)]">
-        <div className="mx-auto max-w-6xl rounded-[1.75rem] border border-border/45 bg-card/12 p-2.5 backdrop-blur-[2px] lg:p-3.5">{children}</div>
+        <div className="mx-auto max-w-6xl">
+          <div className="h-[calc(100dvh-56px-76px-env(safe-area-inset-bottom))] overflow-y-auto rounded-[1.75rem] border border-border/45 bg-[linear-gradient(180deg,rgba(16,24,39,0.22),rgba(16,24,39,0.08))] p-2.5 shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur-[3px] lg:h-[calc(100dvh-56px-28px)] lg:p-3.5">
+            {children}
+          </div>
+        </div>
       </main>
 
       <BottomNav items={bottomItems} />

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
 import { NON_CORE_DASHBOARD_PREFIXES } from "@/lib/dashboardPolicy";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
@@ -24,37 +23,100 @@ function isPathAllowed(pathname: string, allowed: string[]): boolean {
   });
 }
 
+function decodeBase64Url(value: string): string | null {
+  try {
+    const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    if (typeof atob === "function") {
+      const binary = atob(padded);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+    if (typeof Buffer !== "undefined") {
+      return Buffer.from(padded, "base64").toString("utf8");
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function extractAccessToken(rawCookieValue: string): string | null {
+  const decodedValue = decodeURIComponent(rawCookieValue);
+
+  const tryAsJsonObject = (candidate: string): string | null => {
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      if (parsed && typeof parsed === "object") {
+        const token = (parsed as { access_token?: unknown }).access_token;
+        if (typeof token === "string" && token.split(".").length === 3) {
+          return token;
+        }
+      }
+    } catch {
+      // Not JSON.
+    }
+    return null;
+  };
+
+  if (decodedValue.startsWith("base64-")) {
+    const unpacked = decodeBase64Url(decodedValue.slice(7));
+    if (unpacked) {
+      const fromJson = tryAsJsonObject(unpacked);
+      if (fromJson) return fromJson;
+    }
+  }
+
+  const fromJson = tryAsJsonObject(decodedValue);
+  if (fromJson) return fromJson;
+
+  const jwtMatch = decodedValue.match(/[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+  if (jwtMatch) return jwtMatch[0];
+
+  return null;
+}
+
+function parseJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const decoded = decodeBase64Url(parts[1]);
+  if (!decoded) return null;
+  try {
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function resolveRoleFromPayload(payload: Record<string, unknown> | null): string {
+  if (!payload) return normalizeRoleName(null);
+
+  const appMeta = payload.app_metadata as Record<string, unknown> | undefined;
+  const userMeta = payload.user_metadata as Record<string, unknown> | undefined;
+
+  return normalizeRoleName(
+    (typeof appMeta?.role === "string" ? appMeta.role : null) ||
+      (typeof appMeta?.role_name === "string" ? appMeta.role_name : null) ||
+      (typeof userMeta?.role === "string" ? userMeta.role : null) ||
+      (typeof userMeta?.role_name === "string" ? userMeta.role_name : null) ||
+      null,
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/dashboard")) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const authCookie = request.cookies
+      .getAll()
+      .find((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"));
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.next();
-    }
+    const accessToken = authCookie ? extractAccessToken(authCookie.value) : null;
+    const payload = accessToken ? parseJwtPayload(accessToken) : null;
+    const exp = typeof payload?.exp === "number" ? payload.exp : null;
+    const isExpired = exp ? Date.now() >= exp * 1000 : false;
 
-    let response = NextResponse.next({ request });
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          response = NextResponse.next({ request });
-          for (const cookie of cookiesToSet) {
-            response.cookies.set(cookie.name, cookie.value, cookie.options);
-          }
-        },
-      },
-    });
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
+    if (!accessToken || !payload || isExpired) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("returnTo", pathname);
       return NextResponse.redirect(loginUrl);
@@ -64,20 +126,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
-    const roleFromClaims = normalizeRoleName(
-      (session.user.app_metadata?.role as string | undefined) ||
-        (session.user.app_metadata?.role_name as string | undefined) ||
-        (session.user.user_metadata?.role as string | undefined) ||
-        (session.user.user_metadata?.role_name as string | undefined) ||
-        null,
-    );
+    const roleFromClaims = resolveRoleFromPayload(payload);
 
     const allowed = ROLE_ACCESS[roleFromClaims] ?? ROLE_ACCESS.viewer;
     if (!isPathAllowed(pathname, allowed)) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
-    return response;
+    return NextResponse.next();
   }
 
   return NextResponse.next();
