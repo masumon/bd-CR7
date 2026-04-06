@@ -102,3 +102,56 @@ Workspace and task orchestration:
   - `git status -sb`
 
 If this document is updated after architectural changes, keep sections 3, 4, and 5 synchronized first.
+
+## 10. Visual Architecture Map (Mermaid)
+```mermaid
+flowchart TD
+  U[User Browser] --> FW[Web PWA Frontend<br/>apps/web-pwa]
+
+  subgraph Frontend[Frontend Layer - Next.js]
+    FW --> Auth[Auth Category<br/>app/(auth)]
+    FW --> Dash[Dashboard Category<br/>app/(dashboard)]
+    FW --> Shell[Mobile Shell + App Shell<br/>src/components/layout + src/components/appshell]
+    FW --> Governance[RBAC + Policy + Middleware<br/>src/lib/rbac.ts + src/lib/dashboardPolicy.ts + middleware.ts]
+    FW --> Proxy[API Proxy Route<br/>app/api/[...path]/route.ts]
+  end
+
+  Proxy --> BE[FastAPI Backend<br/>apps/api-core-python/main.py]
+
+  subgraph Backend[Backend Layer - FastAPI Routers]
+    BE --> RAuth[Auth Router]
+    BE --> RFin[Finance Router]
+    BE --> RHr[Construction/HR Router]
+    BE --> RCon[Contractor Router]
+    BE --> RProj[Project Management Router]
+    BE --> RAi[AI Router]
+    BE --> RApproval[Approval Intelligence Router]
+    BE --> RUsers[Users Router]
+  end
+
+  Backend --> SB[(Supabase)]
+
+  subgraph CoreModules[Core Dashboard Modules]
+    M1[Dashboard]
+    M2[Projects]
+    M3[Finance]
+    M4[Workforce]
+    M5[Materials]
+    M6[Evidence]
+    M7[Reports]
+    M8[SUMONIX AI]
+    M9[Audit]
+    M10[Contractor]
+    M11[Settings]
+  end
+
+  Governance -.allows only.-> CoreModules
+
+  subgraph Deploy[Deployment]
+    V[Vercel Frontend]
+    R[Render Backend]
+  end
+
+  FW --> V
+  BE --> R
+```
