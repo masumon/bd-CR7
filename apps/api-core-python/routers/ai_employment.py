@@ -396,29 +396,24 @@ async def confirm_auto_insertion(
             base_data["maker_id"] = user.user_id
 
         try:
-            res = svc.table(target_table).insert(base_data).execute()
-            if res.data:
-                # Update stock for material inbound
-                if target_table == "material_movements":
-                    mat_name = base_data.get("material_name", "")
-                    qty = float(base_data.get("quantity", 0))
-                    unit = base_data.get("unit", "Pcs")
-                    if base_data.get("movement_type") == "in" and mat_name:
-                        existing_stock = svc.table("materials_stock").select(
-                            "id,current_qty"
-                        ).eq("material_name", mat_name).execute()
-                        if existing_stock.data:
-                            new_qty = float(existing_stock.data[0]["current_qty"]) + qty
-                            svc.table("materials_stock").update(
-                                {"current_qty": new_qty}
-                            ).eq("id", existing_stock.data[0]["id"]).execute()
-                        else:
-                            svc.table("materials_stock").insert({
-                                "material_name": mat_name,
-                                "unit": unit,
-                                "current_qty": qty,
-                                "low_stock_threshold": 5,
-                            }).execute()
+            if target_table == "material_movements":
+                svc.rpc(
+                    "record_material_movement_atomic",
+                    {
+                        "p_project_id": base_data.get("project_id"),
+                        "p_material_name": base_data.get("material_name"),
+                        "p_quantity": base_data.get("quantity"),
+                        "p_unit": base_data.get("unit") or "Pcs",
+                        "p_unit_price": base_data.get("unit_price") or base_data.get("unit_cost") or 0,
+                        "p_supplier": base_data.get("supplier"),
+                        "p_notes": base_data.get("notes"),
+                        "p_movement_type": base_data.get("movement_type") or "in",
+                        "p_proof_file_id": base_data.get("proof_file_id"),
+                        "p_actor_user_id": user.user_id,
+                    },
+                ).execute()
+            else:
+                svc.table(target_table).insert(base_data).execute()
         except Exception as exc:
             insert_error = str(exc)
 

@@ -83,18 +83,21 @@ async def mark_attendance(payload: AttendanceMark, user: UserContext = Depends(r
 @router.post("/materials")
 async def material_movement(payload: MaterialMovement, user: UserContext = Depends(require_roles("admin", "maker"))):
     client = _require_supabase()
-    movement_id = str(uuid4())
-    signed_qty = Decimal(payload.quantity) if payload.movement_type == "in" else (Decimal(payload.quantity) * Decimal("-1"))
-    client.table("material_movements").insert(
+    rpc = client.rpc(
+        "record_material_movement_atomic",
         {
-            "id": movement_id,
-            "project_id": payload.project_id,
-            "material_name": payload.material_name,
-            "quantity": str(signed_qty),
-            "unit_cost": str(Decimal(payload.unit_cost)),
-            "movement_type": payload.movement_type,
-            "created_by": user.user_id,
-        }
+            "p_project_id": payload.project_id,
+            "p_material_name": payload.material_name,
+            "p_quantity": str(Decimal(payload.quantity)),
+            "p_unit": "Pcs",
+            "p_unit_price": str(Decimal(payload.unit_cost)),
+            "p_supplier": None,
+            "p_notes": None,
+            "p_movement_type": payload.movement_type,
+            "p_proof_file_id": None,
+            "p_actor_user_id": user.user_id,
+        },
     ).execute()
 
-    return {"id": movement_id}
+    row = (rpc.data or [{}])[0]
+    return {"id": row.get("movement_id")}

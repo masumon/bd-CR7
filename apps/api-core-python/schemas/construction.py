@@ -21,7 +21,7 @@ class MaterialMovement(BaseModel):
     material_name: str = Field(min_length=2, max_length=120)
     quantity: Decimal = Field(gt=0)
     unit_cost: Decimal = Field(ge=0)
-    movement_type: str = Field(pattern="^(in|out)$")
+    movement_type: str = Field(pattern="^(in|out|adjust)$")
 
 
 class ProjectTimelineEventCreate(BaseModel):

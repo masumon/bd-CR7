@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import secrets
-import time
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
@@ -18,7 +18,64 @@ router = APIRouter()
 
 SELF_SERVICE_ROLE = "viewer"
 WEBAUTHN_CHALLENGE_TTL_SECONDS = 120
-_WEBAUTHN_CHALLENGES: dict[str, tuple[str, float]] = {}
+
+
+def _parse_timestamp(raw: str | None) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def _store_webauthn_challenge(user_id: str, challenge: str) -> None:
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    expires_at = datetime.now(timezone.utc).timestamp() + WEBAUTHN_CHALLENGE_TTL_SECONDS
+    expires_at_iso = datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat()
+
+    supabase_service.table("webauthn_challenges").upsert(
+        {
+            "user_id": user_id,
+            "challenge": challenge,
+            "expires_at": expires_at_iso,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        },
+        on_conflict="user_id",
+    ).execute()
+
+
+def _load_webauthn_challenge(user_id: str) -> tuple[str, datetime] | None:
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    row_res = (
+        supabase_service.table("webauthn_challenges")
+        .select("challenge,expires_at")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if not row_res.data:
+        return None
+
+    row = row_res.data[0]
+    challenge = str(row.get("challenge") or "").strip()
+    expires_at = _parse_timestamp(row.get("expires_at"))
+    if not challenge or expires_at is None:
+        return None
+    return challenge, expires_at
+
+
+def _clear_webauthn_challenge(user_id: str) -> None:
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    supabase_service.table("webauthn_challenges").delete().eq("user_id", user_id).execute()
 
 
 def _extract_joined_role_name(user_row: dict) -> str:
@@ -236,12 +293,8 @@ async def create_webauthn_challenge(request: Request, user: UserContext = Depend
         )
 
     challenge = secrets.token_urlsafe(32)
-    now = time.time()
-    # Purge all expired challenges to prevent unbounded memory growth.
-    expired_keys = [uid for uid, (_, exp) in _WEBAUTHN_CHALLENGES.items() if exp < now]
-    for k in expired_keys:
-        _WEBAUTHN_CHALLENGES.pop(k, None)
-    _WEBAUTHN_CHALLENGES[user.user_id] = (challenge, now + WEBAUTHN_CHALLENGE_TTL_SECONDS)
+    # Store challenge in DB to support multi-worker deployments.
+    _store_webauthn_challenge(user.user_id, challenge)
 
     expected_origin, rp_id = _resolve_origin_and_rp_id(request)
     return {
@@ -259,13 +312,13 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
-    challenge_state = _WEBAUTHN_CHALLENGES.get(user.user_id)
+    challenge_state = _load_webauthn_challenge(user.user_id)
     if not challenge_state:
         raise HTTPException(status_code=400, detail="WebAuthn challenge is missing or expired")
 
     expected_challenge, expires_at = challenge_state
-    if time.time() > expires_at:
-        _WEBAUTHN_CHALLENGES.pop(user.user_id, None)
+    if datetime.now(timezone.utc) > expires_at:
+        _clear_webauthn_challenge(user.user_id)
         raise HTTPException(status_code=400, detail="WebAuthn challenge expired")
 
     credential_id = str(payload.get("credential_id") or "").strip()
@@ -321,7 +374,7 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=401, detail="Biometric cryptographic verification failed") from exc
     finally:
-        _WEBAUTHN_CHALLENGES.pop(user.user_id, None)
+        _clear_webauthn_challenge(user.user_id)
 
     supabase_service.table("biometric_credentials").update({"sign_count": int(verification.new_sign_count)}).eq(
         "user_id", user.user_id

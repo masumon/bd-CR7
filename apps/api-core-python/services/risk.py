@@ -113,6 +113,26 @@ def dashboard_metrics() -> dict:
             "recent_expenses": [],
         }
 
+    try:
+        rpc = supabase_service.rpc("dashboard_metrics").execute()
+        payload = rpc.data
+        if isinstance(payload, list):
+            payload = payload[0] if payload else None
+        if isinstance(payload, dict):
+            return {
+                "total_balance": Decimal(str(payload.get("total_balance") or 0)),
+                "fund_balance": Decimal(str(payload.get("fund_balance") or 0)),
+                "monthly_sales": Decimal(str(payload.get("monthly_sales") or 0)),
+                "total_expenses": Decimal(str(payload.get("total_expenses") or 0)),
+                "pending_expenses": int(payload.get("pending_expenses") or 0),
+                "total_workers": int(payload.get("total_workers") or 0),
+                "total_projects": int(payload.get("total_projects") or 0),
+                "recent_expenses": payload.get("recent_expenses") or [],
+            }
+    except Exception:
+        # Backward-compatible fallback while the new migration is rolling out.
+        pass
+
     accounts = supabase_service.table("fund_accounts").select("balance").limit(1000).execute()
     sales = supabase_service.table("sales").select("total_amount,created_at").limit(1000).execute()
     workers = supabase_service.table("workers").select("id").limit(1000).execute()

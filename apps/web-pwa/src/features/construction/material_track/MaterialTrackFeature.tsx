@@ -120,32 +120,19 @@ export function MaterialTrackFeature() {
     }
 
     const qty = Number(quantity);
-    const { error } = await supabase.from("material_movements").insert({
-      material_name: materialName,
-      movement_type: movementType,
-      quantity:      qty,
-      unit,
-      unit_price:    Number(unitPrice),
-      total_cost:    qty * Number(unitPrice),
-      supplier:      supplier.trim() || null,
-      notes:         notes.trim() || null,
-      proof_file_id: proofFileId || null,
+    const { error } = await supabase.rpc("record_material_movement_atomic", {
+      p_project_id: null,
+      p_material_name: materialName,
+      p_quantity: movementType === "adjust" ? qty : Math.abs(qty),
+      p_unit: unit,
+      p_unit_price: Number(unitPrice),
+      p_supplier: supplier.trim() || null,
+      p_notes: notes.trim() || null,
+      p_movement_type: movementType,
+      p_proof_file_id: proofFileId || null,
+      p_actor_user_id: null,
     });
     if (error) { setMessage(error.message); return; }
-
-    if (movementType === "in") {
-      const existing = stockList.find((s) => s.material_name === materialName);
-      if (existing) {
-        await supabase.from("materials_stock").update({ current_qty: existing.current_qty + qty }).eq("id", existing.id);
-      } else {
-        await supabase.from("materials_stock").insert({ material_name: materialName, unit, current_qty: qty, low_stock_threshold: 5 });
-      }
-    } else if (movementType === "out") {
-      const existing = stockList.find((s) => s.material_name === materialName);
-      if (existing) {
-        await supabase.from("materials_stock").update({ current_qty: Math.max(0, existing.current_qty - qty) }).eq("id", existing.id);
-      }
-    }
 
     setMessage("✅ Movement saved.");
     setMaterialName(""); setQuantity("0"); setUnitPrice("0"); setSupplier(""); setNotes("");
