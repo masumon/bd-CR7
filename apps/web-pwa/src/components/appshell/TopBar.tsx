@@ -24,8 +24,8 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
   const initials = role ? role.slice(0, 2).toUpperCase() : "U";
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-border/60 bg-background/90 px-2 backdrop-blur-md">
-      <div className="mx-auto flex h-full max-w-7xl items-center gap-1">
+    <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-border/65 bg-background/88 px-2 backdrop-blur-xl">
+      <div className="mx-auto flex h-full max-w-7xl items-center gap-1.5">
         {/* Mobile hamburger */}
         <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label="Open menu">
           <Menu className="h-4 w-4" />
@@ -37,21 +37,19 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
         </div>
 
         {/* Project selector / branding */}
-        <button
-          className="flex min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 py-1.5 transition hover:bg-muted/50"
-          aria-label="Select project"
+        <div
+          className="surface-panel flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-2.5 py-1.5"
+          aria-label="Current workspace"
         >
           <div className="flex min-w-0 flex-col text-left">
             <p className="truncate font-display text-sm font-semibold text-foreground leading-tight">{title}</p>
-            <p className={cn(
-              "text-[10px] uppercase tracking-[0.12em] leading-tight",
-              online ? "text-emerald-400" : "text-rose-400"
-            )}>
-              {online ? "● online" : "○ offline"}
+            <p className={cn("text-[10px] uppercase tracking-[0.12em] leading-tight", online ? "text-emerald-400" : "text-rose-400")}>
+              {online ? "System Online" : "System Offline"}
             </p>
           </div>
-          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-        </button>
+          <span className={cn("h-2 w-2 shrink-0 rounded-full", online ? "bg-emerald-400" : "bg-rose-500")} aria-hidden="true" />
+          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+        </div>
 
         {/* Theme toggle */}
         <Button variant="ghost" className="h-11 w-11 p-0" onClick={onToggleTheme} aria-label="Toggle theme">
@@ -60,7 +58,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
 
         {/* Language toggle */}
         <button
-          className="flex h-9 items-center justify-center gap-1 rounded-full border border-border/60 bg-muted/50 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+          className="flex h-9 items-center justify-center gap-1 rounded-full border border-border/60 bg-muted/55 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground transition hover:border-primary/40 hover:text-primary focus-visible:outline-none"
           onClick={onToggleLanguage}
           aria-label="Toggle language"
         >
@@ -83,7 +81,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
           className={cn(
             "flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold",
             "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm",
-            "transition hover:opacity-90 active:scale-95 animate-gold-glow"
+            "transition hover:opacity-90 active:scale-95"
           )}
           onClick={onOpenUserDrawer}
           aria-label="Open user profile"

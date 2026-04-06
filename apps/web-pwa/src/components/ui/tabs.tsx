@@ -10,15 +10,18 @@ type TabsProps = {
 
 export function Tabs({ tabs, value, onChange }: TabsProps) {
   return (
-    <div className="inline-flex w-full flex-wrap rounded-xl border border-border bg-card/90 p-1 sm:w-auto">
+    <div className="inline-flex w-full flex-wrap rounded-2xl border border-border/70 bg-card/90 p-1.5 sm:w-auto">
       {tabs.map((tab) => (
         <button
           key={tab}
           type="button"
           onClick={() => onChange(tab)}
+          aria-pressed={value === tab}
           className={cn(
-            "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition sm:flex-none",
-            value === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            "flex-1 rounded-xl px-3 py-2 text-xs font-medium transition sm:flex-none",
+            value === tab
+              ? "bg-primary text-primary-foreground shadow-[0_10px_20px_rgba(13,148,136,0.28)]"
+              : "text-muted-foreground hover:bg-muted/55 hover:text-foreground"
           )}
         >
           {tab}

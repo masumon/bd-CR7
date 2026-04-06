@@ -52,7 +52,10 @@ body {
   min-height: 100dvh;
   overflow-x: clip;
   font-family: var(--font-body), var(--font-bengali), "Segoe UI", sans-serif;
-  background: hsl(var(--background));
+  background:
+    radial-gradient(circle at 12% -6%, hsl(186 64% 22% / 0.28) 0%, transparent 34%),
+    radial-gradient(circle at 88% 102%, hsl(40 72% 50% / 0.16) 0%, transparent 30%),
+    hsl(var(--background));
   @apply text-foreground antialiased;
 }
 
@@ -220,6 +223,23 @@ a:focus-visible {
     radial-gradient(ellipse at 20% 0%, hsl(167 60% 18% / 0.35) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 100%, hsl(40 80% 50% / 0.12) 0%, transparent 50%),
     hsl(var(--background));
+}
+
+.surface-panel {
+  border: 1px solid hsl(var(--border) / 0.65);
+  background: linear-gradient(180deg, hsl(var(--card) / 0.94), hsl(var(--card) / 0.82));
+  box-shadow: 0 14px 28px hsl(0 0% 0% / 0.18), inset 0 1px 0 hsl(var(--foreground) / 0.05);
+}
+
+.section-label {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.page-enter {
+  animation: slideUp 0.32s ease-out;
 }
 
 .text-balance { overflow-wrap: anywhere; }

@@ -15,7 +15,7 @@ export function BottomNav({ items }: BottomNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
       <div className="grid h-14 grid-cols-5">
         {items.slice(0, 5).map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -28,17 +28,18 @@ export function BottomNav({ items }: BottomNavProps) {
                 "relative flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
+              aria-current={active ? "page" : undefined}
             >
               {active && (
-                <span className="absolute top-1 h-0.5 w-6 rounded-full bg-primary" />
+                <span className="absolute top-1 h-0.5 w-7 rounded-full bg-primary" />
               )}
               <span className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
-                active ? "bg-primary/15 text-primary" : ""
+                active ? "bg-primary/18 text-primary shadow-[0_8px_18px_rgba(20,184,166,0.22)]" : ""
               )}>
                 <Icon className="h-4 w-4" />
               </span>
-              <span className="truncate px-1">{item.label}</span>
+              <span className="max-w-[4.6rem] truncate px-1">{item.label}</span>
             </Link>
           );
         })}

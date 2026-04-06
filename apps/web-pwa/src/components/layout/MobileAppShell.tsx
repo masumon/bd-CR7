@@ -109,25 +109,39 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
     () => (
       <div className="space-y-2">
         {notifications.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No notifications</p>
+          <p className="rounded-xl border border-dashed border-border/70 bg-card/45 px-3 py-4 text-center text-xs text-muted-foreground">
+            {language === "bn" ? "কোনো নোটিফিকেশন নেই" : "No notifications"}
+          </p>
         ) : (
           notifications.map((item) => (
-            <div key={item.id} className="rounded-md border border-border bg-card px-2 py-2">
-              <p className="text-xs font-medium text-foreground">{item.title}</p>
+            <div key={item.id} className="rounded-xl border border-border/70 bg-card/80 px-3 py-2.5">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-foreground">{item.title}</p>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
               <p className="text-xs text-muted-foreground">{item.body}</p>
             </div>
           ))
         )}
         <Button variant="outline" className="w-full" onClick={() => setNotifications([])}>
-          Clear
+          {language === "bn" ? "সব ক্লিয়ার করুন" : "Clear all"}
         </Button>
       </div>
     ),
-    [notifications]
+    [language, notifications]
   );
 
   if (!hydrated || loading) {
-    return <div className="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">Loading...</div>;
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background p-4 text-sm text-muted-foreground">
+        <div className="w-full max-w-xs rounded-2xl border border-border/70 bg-card/75 p-4 text-center shadow-soft">
+          <div className="mx-auto mb-3 h-9 w-9 animate-pulse rounded-full bg-primary/25" />
+          {language === "bn" ? "ড্যাশবোর্ড প্রস্তুত হচ্ছে..." : "Preparing your dashboard..."}
+        </div>
+      </div>
+    );
   }
 
   if (!userId) {
@@ -163,7 +177,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
         aria-label="Upload evidence file"
         title="Upload Evidence / File"
         onClick={() => setUploadOpen(true)}
-        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+12px)] right-20 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/50 active:scale-95 transition-transform lg:bottom-6 lg:right-20"
+        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+12px)] right-20 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/50 transition-transform hover:scale-[1.02] active:scale-95 lg:bottom-6 lg:right-20"
       >
         <Camera className="h-5 w-5 text-white" />
       </button>

@@ -1,18 +1,38 @@
 # BD CR7 Ultra Enterprise
 
-Production-grade monorepo ERP platform for construction, finance, import supply, POS, reporting, and AI-assisted operations.
+Core-only production ERP monorepo with mobile-first PWA UX, FastAPI backend, and SUMONIX AI assistance.
 
-## Live Deployment
-- Production URL: https://bd-cr7.vercel.app
+## Live
+- Production: https://bd-cr7.vercel.app
 
-## Core Capabilities
-- Next.js PWA frontend for web + mobile install
-- FastAPI backend API for business logic and AI endpoints
-- Supabase PostgreSQL for transactional data and auth-linked entities
-- Role-aware module visibility in dashboard navigation
-- SUMONIX AI assistant with real dashboard/anomaly integrations
+## Current Core Scope
+Core module surface is intentionally narrowed to:
+- Dashboard
+- Projects
+- Finance
+- Workforce
+- Materials
+- Evidence
+- Reports
+- SUMONIX AI
+- Audit
+- Contractor
+- Settings
 
-## Monorepo Structure
+Non-core routes are blocked in middleware for safety.
+
+## Architecture Snapshot
+- Frontend: Next.js 15 PWA in `apps/web-pwa`
+- Backend: FastAPI in `apps/api-core-python`
+- DB/Auth: Supabase PostgreSQL + RLS
+- Monorepo: PNPM workspaces + Turborepo
+- Entrypoint bridge: `api/main.py`
+- Deploy targets: Vercel (frontend) + Render config available for backend
+
+Reference architecture document:
+- `CURRENT_ARCHITECTURE.md`
+
+## Monorepo Layout
 ```text
 apps/
   api-core-python/      FastAPI backend
@@ -26,29 +46,30 @@ supabase/
   migrations/           SQL migrations
 api/
   main.py               Vercel python entrypoint shim
-  requirements.txt      Vercel python dependency manifest
 ```
 
-## Tech Stack
-- Frontend: Next.js 15, React 18, TypeScript, Tailwind, Zustand, Supabase JS
-- Backend: FastAPI, Pydantic v2, SQLAlchemy, Supabase Python client
-- Database: Supabase PostgreSQL + RLS policies
-- Monorepo: PNPM workspaces + Turborepo
-- Deployment: Vercel
+## Recent UX Upgrade Highlights
+- Cleaner app shell hierarchy (top bar, sidebar, bottom nav)
+- Improved spacing, readability, and active-state feedback
+- Better dialog clarity and notification readability
+- Smooth page/surface polish while preserving existing functionality
+- Mobile-safe interactions with consistent touch targets
 
 ## Prerequisites
 - Node.js 20+
 - PNPM 10+
 - Python 3.11+
 
-## Environment Setup
-Copy .env.example to .env and provide at least:
-- SUPABASE_URL
-- SUPABASE_ANON_KEY
-- SUPABASE_SERVICE_ROLE_KEY
-- NEXT_PUBLIC_SUPABASE_URL
-- NEXT_PUBLIC_SUPABASE_ANON_KEY
-- NEXT_PUBLIC_API_URL
+## Environment
+Create `.env` from `.env.example` and provide at least:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+- `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`
 
 ## Install
 ```bash
@@ -59,90 +80,55 @@ python -m pip install -r requirements.txt
 python -m pip install pytest
 ```
 
-## Development Commands
-### Full workspace
+## Local Development
+### Workspace
 ```bash
 pnpm dev
+pnpm type-check
 pnpm lint
 pnpm build
-pnpm type-check
 ```
 
-### Frontend only
+### Frontend Only
 ```bash
-pnpm --filter web-pwa dev
-pnpm --filter web-pwa lint
-pnpm --filter web-pwa build
-pnpm --filter web-pwa type-check
+pnpm --filter ./apps/web-pwa dev
+pnpm --filter ./apps/web-pwa type-check
+pnpm --filter ./apps/web-pwa lint
+pnpm --filter ./apps/web-pwa build
 ```
 
-### Backend only
+### Backend Only
 ```bash
-cd apps/api-core-python
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+& ".venv\Scripts\python.exe" -m uvicorn main:app --app-dir "apps/api-core-python" --host 127.0.0.1 --port 8000 --reload
 ```
 
-### Backend tests
+### Backend Tests
 ```bash
-cd ../..
-.venv\Scripts\python.exe -m pytest apps\api-core-python\tests -q
+& ".venv\Scripts\python.exe" -m pytest apps/api-core-python/tests -q
 ```
 
-## Role-Based Module Visibility
-Dashboard modules are filtered by user role:
+## Verified Quality Status (Latest Local Run)
+- Frontend type-check: pass
+- Frontend lint: pass
+- Frontend production build: pass
+- Backend tests: pass (`239 passed`, `32 subtests passed`)
+- Backend runtime smoke: `/health` returns `200` with `{"status":"ok"}`
 
-- admin:
-Dashboard, Construction, Finance, Import, POS, Projects, Reports, Settings
+## Database Migration Notes
+- Migrations live under `supabase/migrations`
+- Use additive/idempotent migrations where possible
+- Do not re-run destructive cleanup migrations unless confirmed missing from migration history
 
-- maker:
-Dashboard, Construction, Finance, Import, POS, Projects, Reports, Settings
-
-- checker:
-Dashboard, Finance, Reports, Settings
-
-- viewer:
-Dashboard, Reports, Settings
-
-- worker:
-Dashboard, Construction, POS, Settings
-
-## UI and UX Notes
-- Mobile footer modules are rendered as a horizontal row with scroll to prevent overlap in PWA/browser.
-- Login page includes animated circular Fingerprint and Face Scan controls.
-- Dashboard pages include safe-area spacing for installed mobile PWA mode.
-
-## Database Migrations
-All SQL migration files are under supabase/migrations.
-
-Guidelines:
-- Prefer additive, idempotent migrations
-- Avoid destructive changes in normal production flow
-- Review RLS impact for each table change
-
-## Deployment (Vercel)
-Repository contains vercel.json for monorepo build + Python API rewrites.
-
-Important:
-- .vercelignore is configured to exclude local venv, caches, and build artifacts to keep serverless bundle within Vercel limits.
-- Push to main triggers deployment if auto-deploy is enabled.
-
-Manual deploy:
-```bash
-vercel --prod --yes
-```
-
-## User Documentation
-Bangla user guide:
-- USER_GUIDE_BN.md
-
-Latest surgical audit report:
-- PROJECT_SURGICAL_AUDIT_REPORT_2026-04-03.txt
+## Documentation
+- Bangla user guide: `USER_GUIDE_BN.md`
+- Bangla surgical audit (latest): `surgical_audit_report_last.bn.md`
+- Architecture: `CURRENT_ARCHITECTURE.md`
 
 ## Security and Conventions
 - Never commit secrets
-- Keep FastAPI request/response models explicit
-- Keep Zustand state typed
-- Commit only .env.example, not real .env values
+- Keep request/response models explicit in FastAPI
+- Keep Zustand state typed (avoid `any`)
+- Commit only `.env.example`, never real `.env`
 
 ## License
 Private/Internal project.
