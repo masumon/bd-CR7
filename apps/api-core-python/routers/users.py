@@ -2,6 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from core.audit import audit_log
 from core.auth import UserContext, get_current_user, require_roles
 from core.supabase import supabase_service
 from schemas.users import UserCreate, UserProfileUpdate, UserUpdate, WorkspacePreferencesPatch
@@ -114,7 +115,10 @@ async def create_user(payload: UserCreate, user: UserContext = Depends(require_r
         on_conflict="id",
     ).execute()
 
-    return {"id": str(created.user.id), "email": payload.email, "role": role_row["name"]}
+    new_id = str(created.user.id)
+    audit_log(user_id=user.user_id, action="user.create", entity_type="user", entity_id=new_id,
+              meta={"email": payload.email, "role": role_row["name"]})
+    return {"id": new_id, "email": payload.email, "role": role_row["name"]}
 
 
 @router.get("/{user_id}")
@@ -164,7 +168,8 @@ async def update_user(user_id: str, payload: UserUpdate, user: UserContext = Dep
         update_payload["is_active"] = payload.is_active
 
     supabase_service.table("users").update(update_payload).eq("id", user_id).execute()
-
+    audit_log(user_id=user.user_id, action="user.update", entity_type="user", entity_id=user_id,
+              meta={k: str(v) for k, v in update_payload.items()})
     return {"message": "user updated"}
 
 
@@ -179,6 +184,7 @@ async def delete_user(user_id: str, user: UserContext = Depends(require_roles("a
     deleted = supabase_service.table("users").delete().eq("id", user_id).execute()
     if not deleted.data:
         raise HTTPException(status_code=404, detail="User not found")
+    audit_log(user_id=user.user_id, action="user.delete", entity_type="user", entity_id=user_id)
 
     # Keep operation resilient even if Supabase admin deletion fails.
     if supabase_service is not None:

@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from core.audit import audit_log
 from core.auth import UserContext, get_current_user
 from core.config import settings
 from core.supabase import supabase_anon, supabase_service
@@ -178,6 +179,7 @@ async def register(payload: RegisterRequest):
     if not login_result.session:
         raise HTTPException(status_code=500, detail="Registration succeeded but session creation failed")
 
+    audit_log(user_id=user_id, action="auth.register", meta={"email": payload.email, "role": role_row["name"]})
     return AuthResponse(access_token=login_result.session.access_token, user_id=user_id, role=role_row["name"])
 
 
@@ -225,7 +227,7 @@ async def login(payload: LoginRequest):
         role_name = _extract_joined_role_name(local_user.data[0])
 
     _sync_auth_role_metadata(str(auth_result.user.id), str(role_name))
-
+    audit_log(user_id=str(auth_result.user.id), action="auth.login", meta={"role": str(role_name)})
     return AuthResponse(
         access_token=auth_result.session.access_token,
         user_id=str(auth_result.user.id),
@@ -243,6 +245,7 @@ async def logout(user: UserContext = Depends(get_current_user)):
         except Exception:  # noqa: BLE001
             # Non-fatal: local state is cleared on the client side regardless.
             pass
+    audit_log(user_id=user.user_id, action="auth.logout")
     return {"message": f"Logged out {user.user_id}"}
 
 

@@ -46,7 +46,7 @@ def create_app() -> Any:
     from core.supabase import supabase_service
     from routers import ai, ai_employment, approval_intelligence, auth, finance, hr, import_supply, pos, project_management, users
 
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, env=settings.env)
 
     # Disable interactive API docs in production — schema is still available via /openapi.json
     # for internal tooling, but the browsable UI should not be publicly exposed.
@@ -75,6 +75,16 @@ def create_app() -> Any:
         redis_url=settings.redis_url or None,
         fail_closed_without_redis=settings.is_production and settings.require_redis_in_production,
     )
+
+    @app.middleware("http")
+    async def request_id_middleware(request: Request, call_next):
+        import uuid
+        from core.logging import set_request_id
+        rid = request.headers.get("X-Request-Id") or str(uuid.uuid4())[:8]
+        set_request_id(rid)
+        response = await call_next(request)
+        response.headers["X-Request-Id"] = rid
+        return response
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
@@ -118,7 +128,13 @@ def create_app() -> Any:
         else:
             normalized = {"success": True, "data": payload}
 
-        return JSONResponse(status_code=response.status_code, content=normalized)
+        new_response = JSONResponse(status_code=response.status_code, content=normalized)
+        # Forward custom headers set by inner middlewares (security, request-id, etc.)
+        _SKIP = {"content-length", "content-type"}
+        for key, value in response.headers.items():
+            if key.lower() not in _SKIP:
+                new_response.headers[key] = value
+        return new_response
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):

@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from core.audit import audit_log
 from core.auth import UserContext, get_current_user, require_roles
 from core.supabase import supabase_service
 from schemas.finance import ApprovalAction, ExpenseCreate, ExpenseUpdate, FundEntryCreate, FundTransfer, ManualExpenseCreate
@@ -30,7 +31,13 @@ async def list_accounts(user: UserContext = Depends(get_current_user)):
 @router.post("/transfer")
 async def transfer_funds(payload: FundTransfer, user: UserContext = Depends(require_roles("admin", "maker"))):
     try:
-        return transfer_funds_atomic(payload, user)
+        result = transfer_funds_atomic(payload, user)
+        audit_log(
+            user_id=user.user_id, action="fund.transfer",
+            entity_type="fund_transaction", entity_id=str(result.get("transaction_id") or ""),
+            meta={"from": payload.from_account_id, "to": payload.to_account_id, "amount": str(payload.amount)},
+        )
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
@@ -80,7 +87,13 @@ async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depend
 @router.post("/expenses")
 async def create_expense(payload: ExpenseCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
     try:
-        return create_expense_atomic(payload, user)
+        result = create_expense_atomic(payload, user)
+        audit_log(
+            user_id=user.user_id, action="expense.create",
+            entity_type="expense", entity_id=str(result.get("id") or ""),
+            meta={"amount": str(payload.amount), "account_id": payload.account_id, "risk": result.get("risk")},
+        )
+        return result
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -140,7 +153,13 @@ async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext 
 @router.post("/expenses/{expense_id}/approve")
 async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserContext = Depends(require_roles("admin", "checker"))):
     try:
-        return approve_expense_atomic(expense_id, payload, user)
+        result = approve_expense_atomic(expense_id, payload, user)
+        audit_log(
+            user_id=user.user_id, action="expense.approve",
+            entity_type="expense", entity_id=expense_id,
+            meta={"decision": payload.decision, "note": payload.note},
+        )
+        return result
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -245,7 +264,10 @@ async def delete_expense(expense_id: str, user: UserContext = Depends(require_ro
 
     supabase_service.table("approvals").delete().eq("entity_type", "expense").eq("entity_id", expense_id).execute()
     supabase_service.table("expenses").delete().eq("id", expense_id).execute()
-
+    audit_log(
+        user_id=user.user_id, action="expense.delete",
+        entity_type="expense", entity_id=expense_id,
+    )
     return {"message": "expense deleted"}
 
 

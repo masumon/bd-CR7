@@ -15,7 +15,9 @@ class AIEmbedding(Base):
 
 	id = Column(Integer, primary_key=True)
 	embedding = Column(Vector(1536))
-	metadata = Column(JSON)
+	# Column renamed from 'metadata' → 'meta' to avoid conflict with
+	# SQLAlchemy DeclarativeBase reserved attribute 'metadata'.
+	meta = Column("metadata", JSON)
 
 
 class AgentEngine:
@@ -42,7 +44,7 @@ class AgentEngine:
 		if len(embedding) != 1536:
 			raise ValueError("embedding size must be 1536")
 		with self._session() as session:
-			new_embedding = AIEmbedding(embedding=embedding, metadata=metadata)
+			new_embedding = AIEmbedding(embedding=embedding, meta=metadata)
 			session.add(new_embedding)
 
 	def query_similar(self, vector: list[float], top_k: int = 5):
@@ -55,4 +57,4 @@ class AgentEngine:
 				.limit(max(1, min(top_k, 50)))
 				.all()
 			)
-			return [{"id": row.id, "metadata": row.metadata} for row in results]
+			return [{"id": row.id, "metadata": row.meta} for row in results]
