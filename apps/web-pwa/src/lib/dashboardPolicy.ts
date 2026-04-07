@@ -6,7 +6,6 @@ export const CORE_MAIN_DASHBOARD_PATHS = [
   "/dashboard/materials",
   "/dashboard/evidence",
   "/dashboard/reports",
-  "/dashboard/ai",
   "/dashboard/audit",
   "/dashboard/contractor",
   "/dashboard/settings",

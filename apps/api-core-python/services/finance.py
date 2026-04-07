@@ -1,5 +1,6 @@
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -167,34 +168,54 @@ def dashboard_metrics() -> dict:
     except Exception:
         pass
 
-    accounts = supabase_service.table("fund_accounts").select("balance").limit(1000).execute()
-    sales = supabase_service.table("sales").select("total_amount,created_at").limit(1000).execute()
-    workers = supabase_service.table("workers").select("id").limit(1000).execute()
-    projects = supabase_service.table("projects").select("id").limit(1000).execute()
-    expenses = (
-        supabase_service.table("expenses")
-        .select("id,amount,description,status,created_at")
-        .order("created_at", desc=True)
-        .limit(200)
-        .execute()
-    )
-    now = datetime.now(timezone.utc)
-    monthly_sales = Decimal("0")
-    for row in (sales.data or []):
-        dt = _parse_dt(row.get("created_at"))
-        if dt and dt >= now - timedelta(days=30):
-            monthly_sales += Decimal(str(row["total_amount"]))
-    pending_expenses = sum(1 for row in (expenses.data or []) if row.get("status") == "pending")
-    total_balance = sum(Decimal(str(row["balance"])) for row in (accounts.data or []))
-    total_expenses = sum(Decimal(str(row["amount"])) for row in (expenses.data or []))
-
-    return {
-        "total_balance": total_balance,
-        "fund_balance": total_balance,
-        "monthly_sales": monthly_sales,
-        "total_expenses": total_expenses,
-        "pending_expenses": pending_expenses,
-        "total_workers": len(workers.data or []),
-        "total_projects": len(projects.data or []),
-        "recent_expenses": (expenses.data or [])[:10],
+    _FALLBACK_ZERO = {
+        "total_balance": Decimal("0"),
+        "fund_balance": Decimal("0"),
+        "monthly_sales": Decimal("0"),
+        "total_expenses": Decimal("0"),
+        "pending_expenses": 0,
+        "total_workers": 0,
+        "total_projects": 0,
+        "recent_expenses": [],
     }
+
+    def _fallback_queries() -> dict:
+        _svc = supabase_service  # local ref, already checked non-None above
+        accounts = _svc.table("fund_accounts").select("balance").limit(1000).execute()
+        sales = _svc.table("sales").select("total_amount,created_at").limit(1000).execute()
+        workers = _svc.table("workers").select("id").limit(1000).execute()
+        projects = _svc.table("projects").select("id").limit(1000).execute()
+        expenses = (
+            _svc.table("expenses")
+            .select("id,amount,description,status,created_at")
+            .order("created_at", desc=True)
+            .limit(200)
+            .execute()
+        )
+        now = datetime.now(timezone.utc)
+        monthly_sales = Decimal("0")
+        for row in (sales.data or []):
+            dt = _parse_dt(row.get("created_at"))
+            if dt and dt >= now - timedelta(days=30):
+                monthly_sales += Decimal(str(row["total_amount"]))
+        pending_expenses = sum(1 for row in (expenses.data or []) if row.get("status") == "pending")
+        total_balance = sum(Decimal(str(row["balance"])) for row in (accounts.data or []))
+        total_expenses = sum(Decimal(str(row["amount"])) for row in (expenses.data or []))
+        return {
+            "total_balance": total_balance,
+            "fund_balance": total_balance,
+            "monthly_sales": monthly_sales,
+            "total_expenses": total_expenses,
+            "pending_expenses": pending_expenses,
+            "total_workers": len(workers.data or []),
+            "total_projects": len(projects.data or []),
+            "recent_expenses": (expenses.data or [])[:10],
+        }
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_fallback_queries)
+            return future.result(timeout=5)
+    except (FuturesTimeoutError, Exception):
+        logger.warning("dashboard_metrics fallback timed out or failed; returning zeros")
+        return _FALLBACK_ZERO

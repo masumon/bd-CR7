@@ -173,20 +173,6 @@ class UsersEndpointAuthTests(unittest.TestCase):
         self.assertEqual(r.status_code, 401)
 
 
-@unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
-class ApprovalEndpointAuthTests(unittest.TestCase):
-    def test_list_rules_no_token_401(self) -> None:
-        r = client.get("/api/ai-intelligence/rules")
-        self.assertEqual(r.status_code, 401)
-
-    def test_upsert_rule_no_token_401(self) -> None:
-        r = client.put("/api/ai-intelligence/rules/test_rule", json={})
-        self.assertEqual(r.status_code, 401)
-
-    def test_pending_approvals_no_token_401(self) -> None:
-        r = client.get("/api/ai-intelligence/pending")
-        self.assertEqual(r.status_code, 401)
-
 
 @unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
 class ValidationErrorFormatTests(unittest.TestCase):

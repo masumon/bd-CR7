@@ -64,10 +64,6 @@ const parseJsonBody = (body: BodyInit | null | undefined): Record<string, unknow
 };
 
 export async function apiClient<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
-  if (path.startsWith("/api/ai-employ")) {
-    throw new Error("SUMONIX automation endpoints are disabled. Use chatbot features instead.");
-  }
-
   if (!appConfig.apiBaseUrl && path.startsWith("/api/")) {
     // Keep same-origin behavior, but provide a clearer path for debugging in production.
     // Some deployments rely on reverse-proxy rewriting /api/* to the Python API.

@@ -126,17 +126,50 @@ async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depend
     if user.role not in ("admin", "checker") and str(account.data[0].get("owner_user_id")) != user.user_id:
         raise HTTPException(status_code=403, detail="Insufficient role")
 
+    amount = Decimal(payload.amount)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero")
+
     transaction_id = str(uuid4())
+    try:
+        # Credit the account balance atomically via RPC, then record the transaction.
+        # This ensures the balance update and the transaction log are consistent.
+        supabase_service.rpc(
+            "credit_fund_account",
+            {
+                "p_account_id": payload.account_id,
+                "p_amount": str(amount),
+                "p_actor_user_id": user.user_id,
+            },
+        ).execute()
+    except Exception as exc:  # noqa: BLE001
+        # Fallback: update balance directly if RPC is not yet deployed
+        existing_account = (
+            supabase_service.table("fund_accounts")
+            .select("balance")
+            .eq("id", payload.account_id)
+            .limit(1)
+            .execute()
+        )
+        if not existing_account.data:
+            raise HTTPException(status_code=404, detail="Account not found") from exc
+        current_balance = Decimal(str(existing_account.data[0].get("balance") or 0))
+        new_balance = current_balance + amount
+        supabase_service.table("fund_accounts").update(
+            {"balance": str(new_balance)}
+        ).eq("id", payload.account_id).execute()
+
     supabase_service.table("fund_transactions").insert(
         {
             "id": transaction_id,
-            "from_account_id": payload.account_id,
+            "from_account_id": None,
             "to_account_id": payload.account_id,
-            "amount": str(payload.amount),
+            "amount": str(amount),
             "reference": payload.reference,
             "created_by": user.user_id,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "metadata": {
+                "entry_type": "credit",
                 "description": payload.description,
                 "receipt_url": payload.receipt_url,
                 "transaction_date": payload.transaction_date,
@@ -146,6 +179,13 @@ async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depend
         }
     ).execute()
 
+    audit_log(
+        user_id=user.user_id,
+        action="fund.entry.create",
+        entity_type="fund_transaction",
+        entity_id=transaction_id,
+        meta={"account_id": payload.account_id, "amount": str(amount)},
+    )
     return {"id": transaction_id, "message": "fund entry created"}
 
 
@@ -216,7 +256,25 @@ async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext 
 
 
 @router.post("/expenses/{expense_id}/approve")
-async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserContext = Depends(require_roles("admin"))):
+async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserContext = Depends(require_roles("admin", "checker"))):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    expense_check = (
+        supabase_service.table("expenses")
+        .select("id,maker_id,status")
+        .eq("id", expense_id)
+        .limit(1)
+        .execute()
+    )
+    if not expense_check.data:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    expense_row = expense_check.data[0]
+    if str(expense_row.get("maker_id") or "") == user.user_id:
+        raise HTTPException(status_code=403, detail="Self-approval is not permitted")
+    if str(expense_row.get("status") or "") != "pending":
+        raise HTTPException(status_code=400, detail="Only pending expenses can be approved or rejected")
+
     try:
         result = approve_expense_atomic(expense_id, payload, user)
         audit_log(

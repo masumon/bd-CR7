@@ -30,8 +30,7 @@ async function flushQueueOnce(): Promise<void> {
     const maxBatch = 50;
 
     for (let i = 0; i < maxBatch; i += 1) {
-      const state = useOfflineQueue.getState();
-      const item = state.dequeue();
+      const item = useOfflineQueue.getState().dequeue();
       if (!item) {
         break;
       }
@@ -52,12 +51,12 @@ async function flushQueueOnce(): Promise<void> {
 
         const attempts = (item.attempts || 0) + 1;
         if (attempts < MAX_ATTEMPTS) {
-          state.requeue({ ...item, attempts, lastError: `HTTP ${response.status}` });
+          useOfflineQueue.getState().requeue({ ...item, attempts, lastError: `HTTP ${response.status}` });
         }
       } catch (error) {
         const attempts = (item.attempts || 0) + 1;
         if (attempts < MAX_ATTEMPTS) {
-          state.requeue({ ...item, attempts, lastError: (error as Error).message });
+          useOfflineQueue.getState().requeue({ ...item, attempts, lastError: (error as Error).message });
         }
       }
     }
@@ -74,8 +73,8 @@ export function setupOfflineSync(): () => void {
   };
 
   if (typeof window !== 'undefined') {
-    // Fast replay keeps the app feeling instant after reconnect.
-    timer = setInterval(trigger, 3000);
+    // Poll every 30 s to avoid excessive background traffic; online event gives instant replay.
+    timer = setInterval(trigger, 30000);
     window.addEventListener('online', trigger);
     window.addEventListener('bdcr7:sync', trigger as EventListener);
   }
