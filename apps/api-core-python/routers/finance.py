@@ -8,7 +8,7 @@ from core.audit import audit_log
 from core.auth import UserContext, get_current_user, require_roles
 from core.supabase import supabase_service
 from schemas.finance import ApprovalAction, ExpenseCreate, ExpenseUpdate, FundEntryCreate, FundTransfer, ManualExpenseCreate
-from services.finance import approve_expense_atomic, create_expense_atomic, score_risk, transfer_funds_atomic
+from services.finance import approve_expense_atomic, create_expense_atomic, dashboard_metrics, score_risk, transfer_funds_atomic
 
 router = APIRouter()
 
@@ -387,6 +387,12 @@ async def delete_expense(expense_id: str, user: UserContext = Depends(require_ro
         entity_type="expense", entity_id=expense_id,
     )
     return {"message": "expense deleted"}
+
+
+@router.get("/dashboard")
+async def get_dashboard(user: UserContext = Depends(get_current_user)):
+    """ERP KPI summary — fund balance, expenses, workers, projects."""
+    return dashboard_metrics()
 
 
 @router.get("/balance/{account_id}")

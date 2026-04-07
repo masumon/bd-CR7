@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { FloatingChat } from "@/features/sumonix_ai_ui/FloatingChat";
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 
@@ -157,8 +156,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
         {notificationContent}
       </Dialog>
 
-      {/* ── Global Floating AI (SUMONIX) ────────────────────────────────── */}
-      <FloatingChat />
+
     </>
   );
 }

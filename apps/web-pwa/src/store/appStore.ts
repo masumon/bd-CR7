@@ -35,7 +35,7 @@ type AppState = {
 };
 
 async function fetchDashboard(token?: string): Promise<Dashboard> {
-  const payload = await apiClient<DashboardPayload>("/api/ai/dashboard", { method: "GET" }, token);
+  const payload = await apiClient<DashboardPayload>("/api/finance/dashboard", { method: "GET" }, token);
   return normalizeDashboard({
     total_balance: payload.total_balance || 0,
     monthly_sales: payload.monthly_sales || 0,
