@@ -193,9 +193,12 @@ a:focus-visible {
 /* ─── PHASE 11: Screen orientation fallback (CSS-level portrait enforcement) ─── */
 @media screen and (orientation: landscape) and (max-height: 500px) {
   body {
-    /* Prompt users to rotate back to portrait on mobile. Desktop is exempt. */
+    /* Prevent scrolling on unexpected landscape rotation on mobile devices.
+       screen.orientation.lock() is called in JS; this is the CSS safety net. */
     overflow: hidden;
   }
+  /* .landscape-overlay — apply to a fixed overlay element if you want to show
+     a "Please rotate your device" message. Hidden by default (display: none). */
   .landscape-overlay {
     display: flex;
   }
