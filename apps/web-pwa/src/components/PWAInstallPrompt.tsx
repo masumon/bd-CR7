@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 
+const APP_NAME = "BD CR7";
+
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -49,7 +51,7 @@ export default function PWAInstallPrompt() {
     >
       <Download className="h-5 w-5 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground">Install BD CR7</p>
+        <p className="text-sm font-medium text-foreground">Install {APP_NAME}</p>
         <p className="text-xs text-muted-foreground">Add to home screen for offline access</p>
       </div>
       <button

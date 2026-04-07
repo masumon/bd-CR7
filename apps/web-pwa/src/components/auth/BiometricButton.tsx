@@ -51,6 +51,8 @@ export function BiometricButton({
     try {
       if (token) {
         await verifyBiometricAssertion(token);
+      } else {
+        throw new Error("No authentication token available. Please sign in first.");
       }
       setScanState("success");
       onSuccess?.();
