@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import ServiceWorkerRegistration from "../src/components/ServiceWorkerRegistration";
+import PWAInstallPrompt from "../src/components/PWAInstallPrompt";
 import { ToastContainer } from "@/components/ui/toast";
 import "./globals.css";
 
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="screen-shell">
         <ServiceWorkerRegistration />
         {children}
+        <PWAInstallPrompt />
         <ToastContainer />
       </body>
     </html>

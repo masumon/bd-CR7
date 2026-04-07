@@ -7,7 +7,7 @@
   "background_color": "#0f141d",
   "theme_color": "#0f141d",
   "description": "BD CR7 production ERP mobile workspace",
-  "orientation": "any",
+  "orientation": "portrait",
   "categories": ["business", "productivity", "finance"],
   "prefer_related_applications": false,
   "icons": [

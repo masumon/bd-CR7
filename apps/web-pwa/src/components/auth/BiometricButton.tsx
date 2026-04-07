@@ -2,20 +2,32 @@
 
 import { Fingerprint } from "lucide-react";
 import { useEffect, useState } from "react";
+import { isWebAuthnSupported, verifyBiometricAssertion } from "@/lib/webauthn";
 
 interface BiometricButtonProps {
+  token?: string;
   onBiometricAttempt?: () => void;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
   disabled?: boolean;
   size?: "sm" | "md" | "lg";
 }
 
 export function BiometricButton({ 
+  token,
   onBiometricAttempt, 
+  onSuccess,
+  onError,
   disabled = false,
   size = "md" 
 }: BiometricButtonProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [scanState, setScanState] = useState<"idle" | "scanning" | "success" | "error">("idle");
+  const [supported, setSupported] = useState(true);
+
+  useEffect(() => {
+    setSupported(isWebAuthnSupported());
+  }, []);
 
   const sizeClasses = {
     sm: "w-16 h-16",
@@ -30,25 +42,25 @@ export function BiometricButton({
   };
 
   const handleBiometric = async () => {
-    if (disabled || isScanning) return;
+    if (disabled || isScanning || !supported) return;
 
     setIsScanning(true);
     setScanState("scanning");
+    onBiometricAttempt?.();
 
     try {
-      // Simulate biometric scanning (real implementation would use WebAuthn)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
+      if (token) {
+        await verifyBiometricAssertion(token);
+      }
       setScanState("success");
-      onBiometricAttempt?.();
-
-      // Reset after success
+      onSuccess?.();
       setTimeout(() => {
         setIsScanning(false);
         setScanState("idle");
       }, 1500);
-    } catch (error) {
+    } catch (err) {
       setScanState("error");
+      onError?.(err instanceof Error ? err : new Error("Biometric verification failed"));
       setTimeout(() => {
         setIsScanning(false);
         setScanState("idle");
@@ -60,7 +72,7 @@ export function BiometricButton({
     <div className="flex flex-col items-center gap-2">
       <button
         onClick={handleBiometric}
-        disabled={disabled || isScanning}
+        disabled={disabled || isScanning || !supported}
         className={`
           ${sizeClasses[size]}
           relative rounded-full
@@ -69,35 +81,21 @@ export function BiometricButton({
           cursor-pointer
           group
           disabled:opacity-60 disabled:cursor-not-allowed
-          
-          /* Glass effect */
           border border-white/30
           backdrop-blur-lg
-          -webkit-backdrop-filter: blur(18px)
           bg-white/[0.08]
-          
-          /* Shadow */
           shadow-lg
-          
-          /* Hover state */
           hover:bg-white/[0.12]
           hover:border-white/40
           hover:shadow-xl
-          
-          /* Active state */
           active:scale-95
-          
-          /* Responsive sizing */
-          md:${sizeClasses["lg"]}
         `}
-        title="Biometric Login (Face ID / Fingerprint)"
+        title={supported ? "Biometric Login (Face ID / Fingerprint)" : "Biometric not supported on this device"}
       >
-        {/* Pulse animation when idle */}
         {scanState === "idle" && (
           <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse" />
         )}
 
-        {/* Scanning animation */}
         {scanState === "scanning" && (
           <>
             <div className="absolute inset-0 rounded-full border-2 border-primary animate-spin" />
@@ -105,12 +103,10 @@ export function BiometricButton({
           </>
         )}
 
-        {/* Success animation */}
         {scanState === "success" && (
           <div className="absolute inset-0 rounded-full bg-green-500/20 animate-pulse border border-green-500/50" />
         )}
 
-        {/* Icon */}
         <Fingerprint 
           className={`
             ${iconSizeClasses[size]}
@@ -122,13 +118,14 @@ export function BiometricButton({
         />
       </button>
 
-      {/* Status text - responsive */}
       <span
         className={`
           text-xs font-medium
           transition-all duration-200
           ${
-            scanState === "scanning"
+            !supported
+              ? "text-muted-foreground"
+              : scanState === "scanning"
               ? "text-primary animate-pulse"
               : scanState === "success"
               ? "text-green-600"
@@ -138,10 +135,11 @@ export function BiometricButton({
           }
         `}
       >
-        {scanState === "idle" && "Face ID / Fingerprint"}
-        {scanState === "scanning" && "Scanning..."}
-        {scanState === "success" && "Success ✓"}
-        {scanState === "error" && "Try again"}
+        {!supported && "Not available"}
+        {supported && scanState === "idle" && "Face ID / Fingerprint"}
+        {supported && scanState === "scanning" && "Scanning..."}
+        {supported && scanState === "success" && "Success ✓"}
+        {supported && scanState === "error" && "Try again"}
       </span>
     </div>
   );
