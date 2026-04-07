@@ -1,4 +1,4 @@
-export type Role = "admin" | "maker" | "checker" | "viewer";
+export type Role = "super_admin" | "admin" | "maker" | "checker" | "viewer" | "worker";
 
 export type ApprovalRecord = {
   createdBy: string;

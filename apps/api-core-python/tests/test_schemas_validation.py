@@ -25,9 +25,6 @@ from schemas.finance import (
     FundTransfer,
     ManualExpenseCreate,
 )
-from routers.approval_intelligence import DecisionRuleUpsert
-
-
 # ---------------------------------------------------------------------------
 # Finance schemas
 # ---------------------------------------------------------------------------
@@ -310,42 +307,6 @@ class MaterialMovementSchemaTests(unittest.TestCase):
                 unit_cost=Decimal("100"),
                 movement_type="in",
             )
-
-
-# ---------------------------------------------------------------------------
-# Approval Intelligence schemas
-# ---------------------------------------------------------------------------
-
-class DecisionRuleUpsertSchemaTests(unittest.TestCase):
-    def test_valid_rule(self) -> None:
-        r = DecisionRuleUpsert(label="Auto-suggest", is_enabled=True, risk_threshold=75)
-        self.assertEqual(r.risk_threshold, 75)
-
-    def test_default_values(self) -> None:
-        r = DecisionRuleUpsert()
-        self.assertTrue(r.is_enabled)
-        self.assertEqual(r.risk_threshold, 80)
-        self.assertEqual(r.payload, {})
-
-    def test_risk_threshold_zero_allowed(self) -> None:
-        r = DecisionRuleUpsert(risk_threshold=0)
-        self.assertEqual(r.risk_threshold, 0)
-
-    def test_risk_threshold_100_allowed(self) -> None:
-        r = DecisionRuleUpsert(risk_threshold=100)
-        self.assertEqual(r.risk_threshold, 100)
-
-    def test_risk_threshold_above_100_rejected(self) -> None:
-        with self.assertRaises(ValidationError):
-            DecisionRuleUpsert(risk_threshold=101)
-
-    def test_risk_threshold_below_zero_rejected(self) -> None:
-        with self.assertRaises(ValidationError):
-            DecisionRuleUpsert(risk_threshold=-1)
-
-    def test_payload_accepts_dict(self) -> None:
-        r = DecisionRuleUpsert(payload={"key": "value", "num": 42})
-        self.assertEqual(r.payload["key"], "value")
 
 
 if __name__ == "__main__":

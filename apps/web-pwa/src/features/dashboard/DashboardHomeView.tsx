@@ -6,11 +6,9 @@ import {
   AlertCircle,
   ArrowRight,
   BadgeDollarSign,
-  Bot,
   Building2,
   ClipboardList,
   HardHat,
-  Plus,
   TrendingUp,
   Upload,
   Users,
@@ -56,7 +54,7 @@ function KpiSkeleton() {
 const T = {
   en: {
     welcome: "Welcome to BD CR7 ERP",
-    subtitle: "Construction · Finance · AI-Powered",
+    subtitle: "Construction · Finance · Operations",
     budget: "Total Budget",
     cost: "Total Cost",
     balance: "Balance",
@@ -76,13 +74,11 @@ const T = {
     expense: "Expense",
     approval: "Approval",
     activity: "Activity Feed",
-    aiPanel: "SUMONIX AI",
-    aiPrompt: "Ask anything about your project...",
     noActivity: "No recent activity",
   },
   bn: {
     welcome: "BD CR7 ERP-তে স্বাগতম",
-    subtitle: "নির্মাণ · অর্থায়ন · AI-চালিত",
+    subtitle: "নির্মাণ · অর্থায়ন · পরিচালনা",
     budget: "মোট বাজেট",
     cost: "মোট ব্যয়",
     balance: "ব্যালেন্স",
@@ -102,8 +98,6 @@ const T = {
     expense: "ব্যয়",
     approval: "অনুমোদন",
     activity: "কার্যক্রম ফিড",
-    aiPanel: "SUMONIX AI",
-    aiPrompt: "আপনার প্রজেক্ট সম্পর্কে যেকোনো প্রশ্ন করুন...",
     noActivity: "কোনো সাম্প্রতিক কার্যক্রম নেই",
   },
 } as const;
@@ -359,49 +353,20 @@ export function DashboardHomeView() {
         </div>
       </div>
 
-      {/* Activity Feed + AI Panel */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {/* Activity Feed */}
-        <div className="glass rounded-2xl">
-          <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
-            <p className="text-[14px] font-semibold text-foreground">{t.activity}</p>
-            <Zap className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <ul className="divide-y divide-border/40">
-            {activityItems.slice(0, 5).map((item, i) => (
-              <li key={i} className="flex items-start gap-3 px-4 py-3">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                <span className="text-[13px] text-foreground leading-snug">{item}</span>
-              </li>
-            ))}
-          </ul>
+      {/* Activity Feed */}
+      <div className="glass rounded-2xl">
+        <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
+          <p className="text-[14px] font-semibold text-foreground">{t.activity}</p>
+          <Zap className="h-3.5 w-3.5 text-primary" />
         </div>
-
-        {/* AI Panel — honest label, rule-based system */}
-        <div className="glass rounded-2xl">
-          <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
-            <Bot className="h-4 w-4 text-primary" />
-            <p className="text-[14px] font-semibold text-foreground">{t.aiPanel}</p>
-            <span className="ml-auto rounded-full bg-blue-400/15 px-2 py-0.5 text-[10px] font-medium text-blue-400">
-              {lang === "bn" ? "বিশ্লেষণ" : "Analytics"}
-            </span>
-          </div>
-          <div className="p-4">
-            <p className="mb-3 text-[12px] text-muted-foreground leading-relaxed">
-              {lang === "bn"
-                ? "AI আপনার প্রজেক্টের ডেটা বিশ্লেষণ করে insights দিচ্ছে।"
-                : "Analyzes your project data and surfaces finance, risk, and operational insights."}
-            </p>
-            <Link
-              href="/dashboard/ai"
-              className="btn-gold flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
-            >
-              <Bot className="h-4 w-4" />
-              {lang === "bn" ? "AI চ্যাট খুলুন" : "Open AI Chat"}
-              <Plus className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
+        <ul className="divide-y divide-border/40">
+          {activityItems.slice(0, 5).map((item, i) => (
+            <li key={i} className="flex items-start gap-3 px-4 py-3">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              <span className="text-[13px] text-foreground leading-snug">{item}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

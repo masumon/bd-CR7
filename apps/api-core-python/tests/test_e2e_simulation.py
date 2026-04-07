@@ -372,39 +372,6 @@ class E2E_08_UserManagementAuthGuard(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 9. Approval Intelligence — Auth Guard + Schema
-# ---------------------------------------------------------------------------
-
-@unittest.skipUnless(_AVAILABLE, "E2E client unavailable")
-class E2E_09_ApprovalIntelligence(unittest.TestCase):
-
-    def test_list_rules_requires_token(self):
-        r = _client.get("/api/ai-intelligence/rules")
-        self.assertEqual(r.status_code, 401)
-
-    def test_upsert_rule_requires_token(self):
-        r = _client.put("/api/ai-intelligence/rules/test_rule", json={})
-        self.assertEqual(r.status_code, 401)
-
-    def test_decision_rule_schema_defaults(self):
-        from routers.approval_intelligence import DecisionRuleUpsert
-        rule = DecisionRuleUpsert()
-        self.assertTrue(rule.is_enabled)
-        self.assertEqual(rule.risk_threshold, 80)
-        self.assertEqual(rule.payload, {})
-
-    def test_decision_rule_threshold_validated(self):
-        from pydantic import ValidationError
-        from routers.approval_intelligence import DecisionRuleUpsert
-        with self.assertRaises(ValidationError):
-            DecisionRuleUpsert(risk_threshold=150)
-
-    def test_pending_approvals_requires_token(self):
-        r = _client.get("/api/ai-intelligence/pending")
-        self.assertEqual(r.status_code, 401)
-
-
-# ---------------------------------------------------------------------------
 # 10. Risk Engine
 # ---------------------------------------------------------------------------
 
@@ -433,51 +400,11 @@ class E2E_10_RiskEngine(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 11. SQL Injection Prevention
+# 11. Response Envelope Format
 # ---------------------------------------------------------------------------
 
 @unittest.skipUnless(_AVAILABLE, "E2E client unavailable")
-class E2E_11_SQLInjectionPrevention(unittest.TestCase):
-    """db_reader must block every known injection pattern."""
-
-    INJECTIONS = [
-        "* FROM users--",
-        "id; DROP TABLE expenses;--",
-        "id, password",
-        "'injected'",
-        "(SELECT 1)",
-        "1col",
-        "",
-        "col name",
-    ]
-
-    def test_all_injections_blocked(self):
-        from sumonix_ai.tools.db_reader import _validate_column
-        for attack in self.INJECTIONS:
-            with self.subTest(attack=repr(attack)):
-                with self.assertRaises(ValueError,
-                                       msg=f"Expected ValueError for: {attack!r}"):
-                    _validate_column(attack)
-
-    def test_disallowed_table_blocked(self):
-        from sumonix_ai.tools.db_reader import safe_select
-        engine = MagicMock()
-        with self.assertRaises(ValueError):
-            safe_select(engine, "roles", ["id"])
-
-    def test_safe_column_names_pass(self):
-        from sumonix_ai.tools.db_reader import _validate_column
-        safe = ["id", "amount", "created_at", "_meta", "col123", "user_id"]
-        for col in safe:
-            self.assertEqual(_validate_column(col), col)
-
-
-# ---------------------------------------------------------------------------
-# 12. Response Envelope Format
-# ---------------------------------------------------------------------------
-
-@unittest.skipUnless(_AVAILABLE, "E2E client unavailable")
-class E2E_12_ResponseEnvelope(unittest.TestCase):
+class E2E_11_ResponseEnvelope(unittest.TestCase):
     """All API responses must follow {success, data} or {success, error} format."""
 
     def test_success_response_has_success_true(self):

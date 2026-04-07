@@ -3,13 +3,13 @@ import { z } from "zod";
 
 export const OfflineQueueItemSchema = z.object({
   id: z.string().uuid(),
-  endpoint: z.string().url(),
+  endpoint: z.string().min(1).startsWith("/"),
   payload: z.record(z.unknown()),
   method: z.enum(["POST", "PUT", "PATCH", "DELETE"]),
   createdAt: z.number().int().positive(),
 });
 
-export const ExpenorseCreateSchema = z.object({
+export const ExpenseCreateSchema = z.object({
   description: z.string().min(1).max(100),
   amount: z.number().positive(),
   account_id: z.string().uuid(),
@@ -36,6 +36,7 @@ export const SaleCreateSchema = z.object({
 });
 
 export type OfflineQueueItem = z.infer<typeof OfflineQueueItemSchema>;
-export type ExpenseCreate = z.infer<typeof ExpenorseCreateSchema>;
+export type ExpenseCreate = z.infer<typeof ExpenseCreateSchema>;
 export type FundTransfer = z.infer<typeof FundTransferSchema>;
 export type SaleCreate = z.infer<typeof SaleCreateSchema>;
+

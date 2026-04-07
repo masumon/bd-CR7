@@ -88,22 +88,42 @@ async def update_my_preferences(payload: WorkspacePreferencesPatch, user: UserCo
 
 
 @router.get("")
-async def list_users(user: UserContext = Depends(require_roles("admin", "checker", "super_admin"))):
+async def list_users(
+    user: UserContext = Depends(require_roles("admin", "checker", "super_admin")),
+    limit: int = 50,
+    offset: int = 0,
+):
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    # Single query with JOIN — eliminates the previous N+1 (two separate round-trips).
-    rows = supabase_service.table("users").select("id,email,full_name,is_active,created_at,roles(name)").limit(500).execute()
-    return [
-        {
-            "id": r["id"],
-            "email": r.get("email"),
-            "full_name": r.get("full_name"),
-            "is_active": r.get("is_active", True),
-            "role": (r.get("roles") or {}).get("name", "") or None,
-            "created_at": r.get("created_at"),
-        }
-        for r in (rows.data or [])
-    ]
+    if limit <= 0 or limit > 200:
+        limit = 50
+    if offset < 0:
+        offset = 0
+    rows = (
+        supabase_service.table("users")
+        .select("id,email,full_name,is_active,created_at,roles(name)")
+        .order("created_at", desc=True)
+        .limit(limit + 1)
+        .offset(offset)
+        .execute()
+    )
+    data = rows.data or []
+    has_more = len(data) > limit
+    return {
+        "users": [
+            {
+                "id": r["id"],
+                "email": r.get("email"),
+                "full_name": r.get("full_name"),
+                "is_active": r.get("is_active", True),
+                "role": (r.get("roles") or {}).get("name", "") or None,
+                "created_at": r.get("created_at"),
+            }
+            for r in data[:limit]
+        ],
+        "has_more": has_more,
+        "next_offset": offset + limit if has_more else None,
+    }
 
 
 @router.post("")
@@ -159,23 +179,19 @@ async def get_user(user_id: str, actor: UserContext = Depends(get_current_user))
 
     row = (
         supabase_service.table("users")
-        .select("id,email,full_name,phone,user_code,profile_image_url,is_active,role_id,created_at,updated_at")
+        .select("id,email,full_name,phone,user_code,profile_image_url,is_active,created_at,updated_at,roles(name)")
         .eq("id", user_id)
         .limit(1)
         .execute()
     )
     if not row.data:
         raise HTTPException(status_code=404, detail="User not found")
-    role_id = row.data[0].get("role_id")
-    if role_id is None:
-        raise HTTPException(status_code=500, detail="User role_id is null (data corruption)")
-    role_res = supabase_service.table("roles").select("name").eq("id", row.data[0].get("role_id")).limit(1).execute()
-    if not role_res.data:
-        raise HTTPException(status_code=500, detail="User role mapping is invalid")
-    role_name = str(role_res.data[0]["name"]).lower()
     profile = dict(row.data[0])
-    profile["role"] = role_name
-    profile.pop("role_id", None)
+    role_obj = profile.pop("roles", None)
+    role_name = (role_obj or {}).get("name") if isinstance(role_obj, dict) else None
+    if not role_name:
+        raise HTTPException(status_code=500, detail="User role mapping is invalid")
+    profile["role"] = str(role_name).lower()
     return profile
 
 
@@ -215,17 +231,19 @@ async def delete_user(user_id: str, user: UserContext = Depends(require_roles("a
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
-    deleted = supabase_service.table("users").delete().eq("id", user_id).execute()
-    if not deleted.data:
+    # Verify user exists before any deletion
+    existing = supabase_service.table("users").select("id").eq("id", user_id).limit(1).execute()
+    if not existing.data:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Delete auth account FIRST — if this fails, the profile is still intact (no orphan)
+    try:
+        supabase_service.auth.admin.delete_user(user_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("users_delete_auth_failed user_id=%s", user_id)
+        raise HTTPException(status_code=502, detail="Auth account deletion failed; profile preserved") from exc
+
+    # Auth deleted — now remove the profile row
+    supabase_service.table("users").delete().eq("id", user_id).execute()
     audit_log(user_id=user.user_id, action="user.delete", entity_type="user", entity_id=user_id)
-
-    # Keep operation resilient even if Supabase admin deletion fails.
-    if supabase_service is not None:
-        try:
-            supabase_service.auth.admin.delete_user(user_id)
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("users_delete_auth_cleanup_failed user_id=%s", user_id)
-            raise HTTPException(status_code=502, detail="User deleted from profile but auth cleanup failed") from exc
-
     return {"message": "user deleted"}
