@@ -14,7 +14,6 @@ const STAT_COLORS = [
 ];
 
 export function WorkspaceHero({ badge, stats, className }: WorkspaceHeroProps) {
-  const progressByIndex = [84, 72, 61, 78];
   return (
     <div className={cn("space-y-3", className)}>
       <div className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
@@ -23,7 +22,6 @@ export function WorkspaceHero({ badge, stats, className }: WorkspaceHeroProps) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {stats.map((item, i) => {
           const c = STAT_COLORS[i % STAT_COLORS.length];
-          const progress = progressByIndex[i % progressByIndex.length];
           return (
             <div key={item.label} className={cn("glass rounded-2xl border p-4 shadow-[0_10px_24px_rgba(0,0,0,0.15)]", c.border)}>
               <div className="flex items-center justify-between gap-2">
@@ -33,9 +31,6 @@ export function WorkspaceHero({ badge, stats, className }: WorkspaceHeroProps) {
                 </span>
               </div>
               <p className={cn("mt-1.5 text-2xl font-bold", c.text)}>{item.value}</p>
-              <div className="mt-2 h-1.5 rounded-full bg-muted/70">
-                <div className={cn("h-full rounded-full", c.bg)} style={{ width: `${progress}%` }} />
-              </div>
             </div>
           );
         })}

@@ -162,13 +162,24 @@ export function SettingsFeature() {
     try {
       const fileUrl = await uploadToCloudinary(file);
       setProfileImageUrl(fileUrl);
-      setMessage("Profile photo uploaded. Click Save Profile to apply.");
+      // Auto-persist to DB immediately — no separate Save click required
+      if (token) {
+        await apiClient(
+          "/api/users/me/profile",
+          { method: "PATCH", body: JSON.stringify({ profile_image_url: fileUrl }) },
+          token,
+        );
+        setMessage("Profile photo updated successfully.");
+        void loadProfile();
+      } else {
+        setMessage("Profile photo uploaded. Click Save Profile to apply.");
+      }
     } catch (uploadError) {
       setError((uploadError as Error).message || "Image upload failed.");
     } finally {
       setUploadingImage(false);
     }
-  }, []);
+  }, [token, loadProfile]);
 
   useEffect(() => {
     void loadProfile();

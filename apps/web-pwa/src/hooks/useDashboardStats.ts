@@ -84,7 +84,8 @@ export function useDashboardStats(): DashboardStats {
       });
 
       const now = new Date();
-      const monthlySeries = Array.from({ length: 6 }, (_, i) => {
+      // Compute per-month expense totals for the last 6 months
+      const monthlyExpenses = Array.from({ length: 6 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
         const y = d.getFullYear();
         const m = d.getMonth();
@@ -95,7 +96,20 @@ export function useDashboardStats(): DashboardStats {
             return rd.getFullYear() === y && rd.getMonth() === m;
           })
           .reduce((sum, row) => sum + Number(row.amount || 0), 0);
-        return { name: MONTHS[m], fund: 0, expense };
+        return { name: MONTHS[m], expense };
+      });
+      // Distribute total funds received proportionally across months with expense data
+      // so the Progress line chart (cumExpense/cumFund) shows a meaningful ratio.
+      const totalMonthlyExpense = monthlyExpenses.reduce((s, m) => s + m.expense, 0);
+      const totalFundsReceived = Number(dashboard.monthly_sales || 0);
+      const monthlySeries = monthlyExpenses.map((m) => {
+        // Allocate fund for this month proportional to its share of total expense;
+        // fall back to even distribution when there are no expenses yet.
+        const fund =
+          totalMonthlyExpense > 0
+            ? Math.round((m.expense / totalMonthlyExpense) * totalFundsReceived)
+            : Math.round(totalFundsReceived / monthlyExpenses.length);
+        return { name: m.name, fund, expense: m.expense };
       });
 
       const categoryTotals: Record<string, number> = {};
