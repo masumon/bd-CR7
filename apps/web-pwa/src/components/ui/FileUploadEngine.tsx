@@ -5,7 +5,8 @@
  * Unified file upload component used across all ERP modules.
  * - Supports image / video / pdf / audio / docx / xlsx
  * - Mobile camera capture support
- * - Saves to project_files (Supabase) after Cloudinary upload
+ * - Uploads file to Cloudinary (cloud storage) — NOT Supabase Storage
+ * - After upload, records the Cloudinary URL in the project_files table (Supabase DB) for metadata tracking
  * - Triggers AI classification via SUMONIX AI API
  */
 

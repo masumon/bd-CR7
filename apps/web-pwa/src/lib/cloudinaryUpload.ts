@@ -1,6 +1,15 @@
 /**
  * Upload a file to Cloudinary.
  *
+ * All document, image, video and audio uploads in this project go through
+ * Cloudinary — NOT Supabase Storage. Supabase is only used as a relational
+ * database to store file metadata (URL, name, module, etc.) after the file
+ * has been uploaded here.
+ *
+ * Required Vercel / .env environment variables:
+ *   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME   – your Cloudinary cloud name
+ *   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET – unsigned upload preset name
+ *
  * Returns the public secure_url on success.
  * Throws a descriptive error on failure (network, env config, or API rejection).
  */
