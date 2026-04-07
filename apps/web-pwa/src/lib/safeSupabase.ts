@@ -27,7 +27,7 @@ function wrapQuery<T extends object>(query: T): T {
             enableWriteSafeMode();
           }
           const fn = (target as Record<string, (...innerArgs: unknown[]) => unknown>)[op];
-          return fn(...args);
+          return fn.apply(target, args);
         };
       }
 
