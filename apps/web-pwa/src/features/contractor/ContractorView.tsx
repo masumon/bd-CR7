@@ -191,7 +191,6 @@ function AddContractorForm({
           notes: notes.trim() || null,
         }),
       });
-      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
     } catch (err) {
       error = { message: err instanceof Error ? err.message : "Request failed" };
     }
@@ -275,7 +274,6 @@ function AddContractForm({
           description: description.trim() || null,
         }),
       });
-      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
     } catch (err) {
       error = { message: err instanceof Error ? err.message : "Request failed" };
     }
@@ -366,7 +364,6 @@ function AddPaymentForm({
           notes: notes.trim() || null,
         }),
       });
-      console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
     } catch (err) {
       payErr = { message: err instanceof Error ? err.message : "Request failed" };
     }
@@ -388,7 +385,6 @@ function AddPaymentForm({
             method: "PATCH",
             body: JSON.stringify({ paid_amount: nextPaidAmount }),
           });
-          console.log("API WRITE USED - PHASE 2 COMPLETE");
         } catch (err) {
           updateErr = { message: err instanceof Error ? err.message : "Request failed" };
         }
@@ -493,7 +489,6 @@ export function ContractorView() {
       // ({ error } = await supabase.from("contractors").delete().eq("id", id));
       try {
         await apiClient<{}>(`/api/contractor/contractors/${id}`, { method: "DELETE" });
-        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
       } catch (err) {
         error = { message: err instanceof Error ? err.message : "Request failed" };
       }
@@ -502,7 +497,6 @@ export function ContractorView() {
       // ({ error } = await supabase.from("contractor_contracts").delete().eq("id", id));
       try {
         await apiClient<{}>(`/api/contractor/contractor_contracts/${id}`, { method: "DELETE" });
-        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
       } catch (err) {
         error = { message: err instanceof Error ? err.message : "Request failed" };
       }
@@ -511,7 +505,6 @@ export function ContractorView() {
       // ({ error } = await supabase.from("contractor_payments").delete().eq("id", id));
       try {
         await apiClient<{}>(`/api/contractor/contractor_payments/${id}`, { method: "DELETE" });
-        console.log("API WRITE USED - SAFE MODE (MEDIUM MODULE)");
       } catch (err) {
         error = { message: err instanceof Error ? err.message : "Request failed" };
       }

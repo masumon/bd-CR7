@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { safeSupabase as supabase } from "@/lib/safeSupabase";
+import { supabase } from "@/lib/supabase";
+import useOfflineQueue from "@/store/offlineQueue";
 
 type RoleJoin = { name?: string } | Array<{ name?: string }> | null | undefined;
 
@@ -187,6 +188,9 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: () => {
         void supabase?.auth.signOut();
+        // Clear persisted offline queue so a subsequent user on the same device
+        // cannot view or replay the previous user's queued financial operations.
+        useOfflineQueue.getState().clearQueue();
         set({ token: null, role: null, userId: null, loading: false, hydrated: true, error: null });
       },
     }),

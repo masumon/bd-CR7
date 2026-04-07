@@ -252,6 +252,14 @@ async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext 
     }
     supabase_service.table("expenses").insert(row).execute()
 
+    audit_log(
+        user_id=user.user_id,
+        action="expense.create",
+        entity_type="expense",
+        entity_id=expense_id,
+        meta={"amount": str(payload.amount), "account_id": payload.account_id,
+              "status": payload.status, "source": "manual"},
+    )
     return {"id": expense_id, "status": payload.status, "risk": risk}
 
 

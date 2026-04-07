@@ -90,6 +90,9 @@ async def create_project_attachment(
     if supabase_service is None:
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
 
+    if not payload.file_url.startswith("https://res.cloudinary.com/"):
+        raise HTTPException(status_code=400, detail="file_url must be a Cloudinary URL")
+
     attachment_id = str(uuid4())
     try:
         insert_res = supabase_service.table("project_attachments").insert(
