@@ -90,7 +90,6 @@ export function ProfileTab({
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     disabled={uploadingImage}
                     onChange={(e) => {
