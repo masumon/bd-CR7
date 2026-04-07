@@ -38,7 +38,10 @@ async def update_my_profile(payload: UserProfileUpdate, user: UserContext = Depe
     if payload.phone is not None:
         patch["phone"] = payload.phone.strip() if payload.phone else None
     if payload.profile_image_url is not None:
-        patch["profile_image_url"] = payload.profile_image_url.strip() if payload.profile_image_url else None
+        url = payload.profile_image_url.strip() if payload.profile_image_url else None
+        if url and not url.startswith("https://res.cloudinary.com/"):
+            raise HTTPException(status_code=400, detail="profile_image_url must be a Cloudinary URL")
+        patch["profile_image_url"] = url
 
     if payload.user_code is not None:
         normalized_code = payload.user_code.strip().lower() if payload.user_code else None
@@ -89,7 +92,7 @@ async def update_my_preferences(payload: WorkspacePreferencesPatch, user: UserCo
 
 @router.get("")
 async def list_users(
-    user: UserContext = Depends(require_roles("admin", "checker", "super_admin")),
+    user: UserContext = Depends(require_roles("admin", "super_admin")),
     limit: int = 50,
     offset: int = 0,
 ):

@@ -28,9 +28,6 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      # Shared secret used by cron-safe internal governance refresh endpoint.
-      - key: GOVERNANCE_REFRESH_SECRET
-        sync: false
       # Comma-separated allowed CORS origins (non-secret).
       - key: CORS_ORIGINS
         value: https://bd-cr7.vercel.app
