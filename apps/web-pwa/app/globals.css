@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Font Variables (system fonts — no external network dependency) ─── */
+:root {
+  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Poppins", "Trebuchet MS", system-ui, -apple-system, sans-serif;
+  --font-bengali: "Noto Sans Bengali", "Hind Siliguri", "SolaimanLipi", sans-serif;
+  --font-outfit: "Outfit", "Inter", system-ui, sans-serif;
+  --font-hind: "Hind Siliguri", "Noto Sans Bengali", "SolaimanLipi", sans-serif;
+}
+
 /* ─── Design Tokens ─── */
 :root {
   --background: 220 16% 9%;
@@ -180,6 +189,17 @@ a:focus-visible {
 
 /* ─── Utility classes ─── */
 .screen-shell { min-height: 100dvh; }
+
+/* ─── PHASE 11: Screen orientation fallback (CSS-level portrait enforcement) ─── */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  body {
+    /* Prompt users to rotate back to portrait on mobile. Desktop is exempt. */
+    overflow: hidden;
+  }
+  .landscape-overlay {
+    display: flex;
+  }
+}
 
 /* Glassmorphism card */
 .glass {

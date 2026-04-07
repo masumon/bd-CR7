@@ -16,6 +16,26 @@ type DashboardNotification = {
   createdAt: string;
 };
 
+/** Resolve initial dark mode: stored preference → system preference → dark */
+function resolveInitialDark(): boolean {
+  if (typeof window === "undefined") return true;
+  const stored = window.localStorage.getItem("bdcr7-theme");
+  if (stored === "dark") return true;
+  if (stored === "light") return false;
+  // "system" or unset → follow OS preference
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+/** Lock screen to portrait if the Screen Orientation API is available. */
+function lockPortrait() {
+  if (typeof screen === "undefined" || !screen.orientation) return;
+  const so = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+  if (typeof so.lock !== "function") return;
+  so.lock("portrait-primary").catch(() => {
+    // Best-effort — some browsers/desktop environments reject this.
+  });
+}
+
 export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const initialize = useAuthStore((state) => state.initialize);
   const hydrated = useAuthStore((state) => state.hydrated);
@@ -36,18 +56,33 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
     void initialize();
   }, [initialize]);
 
+  // PHASE 10 — Theme: stored preference or system preference
   useEffect(() => {
-    const storedTheme = window.localStorage.getItem("bdcr7-theme");
     const storedLanguage = window.localStorage.getItem("bdcr7-language");
-    setDark(storedTheme ? storedTheme === "dark" : true);
+    setDark(resolveInitialDark());
     if (storedLanguage === "bn" || storedLanguage === "en") {
       setLanguage(storedLanguage);
     }
+
+    // Listen for OS-level theme changes when preference is "system"
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemTheme = (e: MediaQueryListEvent) => {
+      const stored = window.localStorage.getItem("bdcr7-theme");
+      if (!stored || stored === "system") {
+        setDark(e.matches);
+      }
+    };
+    mq.addEventListener("change", onSystemTheme);
+    return () => mq.removeEventListener("change", onSystemTheme);
   }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    window.localStorage.setItem("bdcr7-theme", dark ? "dark" : "light");
+    // Preserve existing stored preference key; only update if not "system"
+    const stored = window.localStorage.getItem("bdcr7-theme");
+    if (stored !== "system") {
+      window.localStorage.setItem("bdcr7-theme", dark ? "dark" : "light");
+    }
   }, [dark]);
 
   useEffect(() => {
@@ -67,6 +102,11 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // PHASE 11 — Lock screen orientation to portrait
+  useEffect(() => {
+    lockPortrait();
+  }, []);
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -84,8 +124,8 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
 
     const channel = client
       .channel(`bdcr7-mobile-notify-${userId || "anonymous"}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "approvals" }, () => push("Approval / অনুমোদন", "নতুন অনুমোদন কিউ-তে যোগ হয়েছে"))
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "expenses" }, () => push("Expense / খরচ", "নতুন খরচ যুক্ত হয়েছে"))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "approvals" }, () => push("Approval / অনুমোদন", "নতুন অনুমোদন কিউ-তে যোগ হয়েছে"))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "expenses" }, () => push("Expense / খরচ", "নতুন খরচ যুক্ত হয়েছে"))
       .subscribe();
 
     return () => {
@@ -114,7 +154,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
           ))
         )}
         <Button variant="outline" className="w-full" onClick={() => setNotifications([])}>
-          {language === "bn" ? "সব ক্লিয়ার করুন" : "Clear all"}
+          {language === "bn" ? "সব ক্লিয়ার করুন" : "Clear all"}
         </Button>
       </div>
     ),
@@ -155,8 +195,6 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       <Dialog open={openNotifications} onClose={() => setOpenNotifications(false)} title={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
         {notificationContent}
       </Dialog>
-
-
     </>
   );
 }
