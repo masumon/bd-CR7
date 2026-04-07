@@ -408,3 +408,55 @@ async def me(user: UserContext = Depends(get_current_user)):
         "full_name": profile_row.get("full_name"),
         "role": role_name,
     }
+
+
+@router.get("/biometric/credentials")
+async def list_biometric_credentials(user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    rows = (
+        supabase_service.table("biometric_credentials")
+        .select("id,credential_id,device_name,transports,is_active,sign_count,created_at,updated_at")
+        .eq("user_id", user.user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return rows.data or []
+
+
+@router.post("/biometric/credentials")
+async def register_biometric_credential_mgmt(payload: dict, user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    credential_id = str(payload.get("credential_id") or "").strip()
+    if not credential_id:
+        raise HTTPException(status_code=400, detail="credential_id is required")
+
+    import uuid as _uuid
+    row = {
+        "id": str(_uuid.uuid4()),
+        "user_id": user.user_id,
+        "credential_id": credential_id,
+        "device_name": str(payload.get("device_name") or "This device"),
+        "transports": payload.get("transports") or [],
+        "is_active": True,
+        "sign_count": int(payload.get("sign_count") or 0),
+    }
+    res = supabase_service.table("biometric_credentials").upsert(row, on_conflict="user_id,credential_id").execute()
+    return (res.data or [row])[0]
+
+
+@router.delete("/biometric/credentials/{credential_id}")
+async def deactivate_biometric_credential(credential_id: str, user: UserContext = Depends(get_current_user)):
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    res = (
+        supabase_service.table("biometric_credentials")
+        .update({"is_active": False})
+        .eq("user_id", user.user_id)
+        .eq("credential_id", credential_id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Credential not found")
+    return {"ok": True}

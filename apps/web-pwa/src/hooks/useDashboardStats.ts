@@ -69,7 +69,7 @@ export function useDashboardStats(): DashboardStats {
   async function fetchAll(authToken: string) {
     try {
       const [dashboard, expensesResp] = await Promise.all([
-        apiClient<DashboardApi>("/api/ai/dashboard", { method: "GET" }, authToken),
+        apiClient<DashboardApi>("/api/finance/dashboard", { method: "GET" }, authToken),
         apiClient<ExpensesResponse>("/api/finance/expenses?limit=200&offset=0", { method: "GET" }, authToken),
       ]);
 

@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from core.auth import UserContext
@@ -119,3 +120,81 @@ def approve_expense_atomic(expense_id: str, payload: ApprovalAction, user: UserC
         raise RuntimeError("Expense approval failed") from exc
 
     return {"message": f"expense {payload.decision}"}
+
+
+def _parse_dt(raw: str | None) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def dashboard_metrics() -> dict:
+    """Cross-module KPI summary for the ERP dashboard."""
+    if supabase_service is None:
+        return {
+            "total_balance": 0,
+            "fund_balance": 0,
+            "monthly_sales": 0,
+            "total_expenses": 0,
+            "pending_expenses": 0,
+            "total_workers": 0,
+            "total_projects": 0,
+            "recent_expenses": [],
+        }
+
+    try:
+        rpc = supabase_service.rpc("dashboard_metrics").execute()
+        payload = rpc.data
+        if isinstance(payload, list):
+            payload = payload[0] if payload else None
+        if isinstance(payload, dict):
+            return {
+                "total_balance": Decimal(str(payload.get("total_balance") or 0)),
+                "fund_balance": Decimal(str(payload.get("fund_balance") or 0)),
+                "monthly_sales": Decimal(str(payload.get("monthly_sales") or 0)),
+                "total_expenses": Decimal(str(payload.get("total_expenses") or 0)),
+                "pending_expenses": int(payload.get("pending_expenses") or 0),
+                "total_workers": int(payload.get("total_workers") or 0),
+                "total_projects": int(payload.get("total_projects") or 0),
+                "recent_expenses": payload.get("recent_expenses") or [],
+            }
+    except Exception:
+        pass
+
+    accounts = supabase_service.table("fund_accounts").select("balance").limit(1000).execute()
+    sales = supabase_service.table("sales").select("total_amount,created_at").limit(1000).execute()
+    workers = supabase_service.table("workers").select("id").limit(1000).execute()
+    projects = supabase_service.table("projects").select("id").limit(1000).execute()
+    expenses = (
+        supabase_service.table("expenses")
+        .select("id,amount,description,status,created_at")
+        .order("created_at", desc=True)
+        .limit(200)
+        .execute()
+    )
+    now = datetime.now(timezone.utc)
+    monthly_sales = Decimal("0")
+    for row in (sales.data or []):
+        dt = _parse_dt(row.get("created_at"))
+        if dt and dt >= now - timedelta(days=30):
+            monthly_sales += Decimal(str(row["total_amount"]))
+    pending_expenses = sum(1 for row in (expenses.data or []) if row.get("status") == "pending")
+    total_balance = sum(Decimal(str(row["balance"])) for row in (accounts.data or []))
+    total_expenses = sum(Decimal(str(row["amount"])) for row in (expenses.data or []))
+
+    return {
+        "total_balance": total_balance,
+        "fund_balance": total_balance,
+        "monthly_sales": monthly_sales,
+        "total_expenses": total_expenses,
+        "pending_expenses": pending_expenses,
+        "total_workers": len(workers.data or []),
+        "total_projects": len(projects.data or []),
+        "recent_expenses": (expenses.data or [])[:10],
+    }
