@@ -122,6 +122,7 @@ export function ProjectsFeature() {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentCaption, setAttachmentCaption] = useState("");
   const [attachmentSaving, setAttachmentSaving] = useState(false);
+  const [coverPhotoUploading, setCoverPhotoUploading] = useState(false);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -710,7 +711,53 @@ export function ProjectsFeature() {
 
                 <div className="grid grid-cols-2 gap-3">
                   {field("budget", "Budget (৳)", "number")}
-                  {field("cover_photo_url", "Cover Photo URL")}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Cover Photo</label>
+                  {form.cover_photo_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={form.cover_photo_url}
+                      alt="Cover preview"
+                      className="h-28 w-full rounded-xl object-cover border border-border"
+                    />
+                  )}
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-foreground hover:bg-muted/60">
+                    {coverPhotoUploading
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <FileImage className="h-3.5 w-3.5" />}
+                    {coverPhotoUploading ? "Uploading..." : "Upload Cover Photo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={coverPhotoUploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        e.currentTarget.value = "";
+                        setCoverPhotoUploading(true);
+                        try {
+                          const url = await uploadToCloudinary(file);
+                          setForm((f) => ({ ...f, cover_photo_url: url }));
+                        } catch (uploadErr) {
+                          setError((uploadErr as Error).message || "Cover photo upload failed.");
+                        } finally {
+                          setCoverPhotoUploading(false);
+                        }
+                      }}
+                    />
+                  </label>
+                  {/* Fallback: allow pasting a URL directly */}
+                  <input
+                    type="url"
+                    value={form.cover_photo_url}
+                    onChange={(e) => setForm((f) => ({ ...f, cover_photo_url: e.target.value }))}
+                    title="Cover Photo URL"
+                    placeholder="Or paste an image URL"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
                 </div>
 
                 <div className="space-y-1">
