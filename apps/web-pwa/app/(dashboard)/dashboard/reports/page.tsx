@@ -1,5 +1,5 @@
-import { ReportsFeature } from "@/features/reports/ReportsFeature";
+import { ReportsCompactPage } from "@/features/reports/ReportsCompactPage";
 
 export default function ReportsPage() {
-  return <ReportsFeature />;
+  return <ReportsCompactPage />;
 }

@@ -1,5 +1,5 @@
-import { FinanceExpenseView } from "@/features/finance_core/FinanceExpenseView";
+import { FinanceCompactPage } from "@/features/finance_core/FinanceCompactPage";
 
 export default function FinancePage() {
-  return <FinanceExpenseView />;
+  return <FinanceCompactPage />;
 }
