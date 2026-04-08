@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { NON_CORE_DASHBOARD_PREFIXES } from "@/lib/dashboardPolicy";
-import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 
 /**
  * Edge middleware — protects /dashboard/* routes.
@@ -13,15 +12,11 @@ import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
  *
  * If no session cookie is found the user is redirected to /login with a
  * `returnTo` search-param so we can deep-link them back after sign-in.
+ *
+ * Note: Role-based access is NOT enforced here because role lives in the DB
+ * (users → roles join), not in the JWT. RBAC is handled by the frontend
+ * (AppShell/Sidebar) and by individual API route handlers.
  */
-function isPathAllowed(pathname: string, allowed: string[]): boolean {
-  return allowed.some((base) => {
-    if (base === "/dashboard") {
-      return pathname === "/dashboard";
-    }
-    return pathname === base || pathname.startsWith(`${base}/`);
-  });
-}
 
 function decodeBase64Url(value: string): string | null {
   try {
@@ -88,20 +83,6 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-function resolveRoleFromPayload(payload: Record<string, unknown> | null): string {
-  if (!payload) return normalizeRoleName(null);
-
-  const appMeta = payload.app_metadata as Record<string, unknown> | undefined;
-  const userMeta = payload.user_metadata as Record<string, unknown> | undefined;
-
-  return normalizeRoleName(
-    (typeof appMeta?.role === "string" ? appMeta.role : null) ||
-      (typeof appMeta?.role_name === "string" ? appMeta.role_name : null) ||
-      (typeof userMeta?.role === "string" ? userMeta.role : null) ||
-      (typeof userMeta?.role_name === "string" ? userMeta.role_name : null) ||
-      null,
-  );
-}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -126,13 +107,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
-    const roleFromClaims = resolveRoleFromPayload(payload);
-
-    const allowed = ROLE_ACCESS[roleFromClaims] ?? ROLE_ACCESS.viewer;
-    if (!isPathAllowed(pathname, allowed)) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-
+    // Note: Role is stored in the `users → roles` DB table, not in the JWT.
+    // We cannot reliably enforce RBAC here without a DB round-trip.
+    // Frontend RBAC (ROLE_ACCESS in AppShell/Sidebar) handles nav visibility.
+    // API routes enforce access at the handler level.
     return NextResponse.next();
   }
 
