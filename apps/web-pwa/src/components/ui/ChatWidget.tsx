@@ -4,6 +4,7 @@
  * ChatWidget — Floating, draggable AI chat widget.
  * Features: Bangla+English, Flirt Mode, typing indicator,
  * auto-scroll, message history, framer-motion animations.
+ * v7 — offline-aware, expanded AI context.
  */
 
 import {
@@ -22,6 +23,7 @@ import {
   ChevronDown,
   Trash2,
   GripVertical,
+  WifiOff,
 } from "lucide-react";
 
 import { generateReply, type ChatMode } from "@/lib/localChatEngine";
@@ -55,11 +57,25 @@ export function ChatWidget() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [lang, setLang] = useState<"bn" | "en">("bn");
+  const [online, setOnline] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragControls = useDragControls();
   const constraintRef = useRef<HTMLDivElement>(null);
+
+  // Track online/offline status
+  useEffect(() => {
+    setOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -92,7 +108,7 @@ export function ChatWidget() {
     const delay = 300 + Math.random() * 500;
     await new Promise((r) => setTimeout(r, delay));
 
-    const reply = generateReply(text, { role, language: lang, mode });
+    const reply = generateReply(text, { role, language: lang, mode, offline: !online });
     const aiMsg: Message = {
       id: `a-${Date.now()}`,
       role: "ai",
@@ -102,7 +118,7 @@ export function ChatWidget() {
 
     setTyping(false);
     setMessages((prev) => [...prev, aiMsg]);
-  }, [input, lang, mode, role]);
+  }, [input, lang, mode, role, online]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -185,7 +201,10 @@ export function ChatWidget() {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-foreground leading-tight">SUMONIX AI</p>
             <p className="text-[10px] text-muted-foreground leading-tight">
-              {mode === "flirt" ? "😊 Flirt Mode" : "🤖 Normal Mode"}
+              {!online
+                ? <span className="flex items-center gap-0.5 text-amber-400"><WifiOff className="inline h-2.5 w-2.5" /> Offline</span>
+                : mode === "flirt" ? "😊 Flirt Mode" : "🤖 Normal Mode"
+              }
             </p>
           </div>
 
