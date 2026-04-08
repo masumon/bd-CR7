@@ -17,6 +17,7 @@ import {
 
 import { TopBar } from "@/components/appshell/TopBar";
 import { BottomNav } from "@/components/appshell/BottomNav";
+import { MoreDrawer } from "@/components/appshell/MoreDrawer";
 import { Sidebar } from "@/components/appshell/Sidebar";
 import { UserDrawer } from "@/components/appshell/UserDrawer";
 import { CORE_MAIN_DASHBOARD_PATHS } from "@/lib/dashboardPolicy";
@@ -39,6 +40,7 @@ type AppShellProps = {
 export function AppShell({ children, dark, language, online, unread, role, onToggleTheme, onToggleLanguage, onOpenNotifications }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const normalizedRole = normalizeRoleName(role);
   const corePathSet = useMemo<Set<string>>(() => new Set(CORE_MAIN_DASHBOARD_PATHS), []);
   const allowedPaths = useMemo(
@@ -65,27 +67,29 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
 
   const navItems = coreItems;
 
-  // Bottom nav: Dashboard, Projects, Finance, Workforce, Reports
-  const bottomItems = useMemo<NavItem[]>(() => {
-    const preferred = [
-      "/dashboard",
-      "/dashboard/construction/projects",
-      "/dashboard/finance",
-      "/dashboard/workforce",
-      "/dashboard/reports",
-    ];
+  // Bottom nav primary slots: Dashboard, Projects, Finance, Workforce (max 4)
+  const BOTTOM_PRIMARY = [
+    "/dashboard",
+    "/dashboard/construction/projects",
+    "/dashboard/finance",
+    "/dashboard/workforce",
+  ];
 
-    const selected = preferred
+  const bottomPrimaryItems = useMemo<NavItem[]>(() => {
+    const selected = BOTTOM_PRIMARY
       .map((href) => coreItems.find((item) => item.href === href))
       .filter(Boolean) as NavItem[];
 
-    if (selected.length >= 5) {
-      return selected.slice(0, 5);
-    }
-
+    if (selected.length >= 4) return selected.slice(0, 4);
     const fallback = coreItems.filter((item) => !selected.some((s) => s.href === item.href));
-    return [...selected, ...fallback].slice(0, 5);
-  }, [coreItems]);
+    return [...selected, ...fallback].slice(0, 4);
+  }, [coreItems]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "More" drawer items: everything not in the 4 primary slots
+  const moreItems = useMemo<NavItem[]>(() => {
+    const primaryHrefs = new Set(bottomPrimaryItems.map((i) => i.href));
+    return coreItems.filter((item) => !primaryHrefs.has(item.href));
+  }, [coreItems, bottomPrimaryItems]);
 
   return (
     <div className="min-h-dvh app-gradient text-foreground">
@@ -113,7 +117,17 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
         </div>
       </main>
 
-      <BottomNav items={bottomItems} />
+      <BottomNav
+        items={bottomPrimaryItems}
+        moreItems={moreItems}
+        onOpenMore={() => setMoreOpen(true)}
+      />
+
+      <MoreDrawer
+        open={moreOpen}
+        items={moreItems}
+        onClose={() => setMoreOpen(false)}
+      />
 
       <UserDrawer
         open={userDrawerOpen}
@@ -123,3 +137,4 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
     </div>
   );
 }
+
