@@ -134,7 +134,7 @@ export default function DashboardPage() {
   const displayName = (role && ROLE_DISPLAY[role.toLowerCase()]) ?? role ?? "ম্যানেজার";
 
   return (
-    <div className="min-h-dvh flex flex-col gap-3 overflow-x-hidden bg-[#0B1A13] p-3 pb-6">
+    <div className="min-h-dvh flex flex-col gap-3 overflow-x-hidden bg-background p-3 pb-6">
       {/* ── 1. HEADER ─────────────────────────────────────────────────────── */}
       <div className="erp-card p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
