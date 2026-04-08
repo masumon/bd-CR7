@@ -1,5 +1,5 @@
-import { WorkforceCompactPage } from "@/features/construction/WorkforceCompactPage";
+import { WorkforceView } from "@/features/construction/WorkforceView";
 
 export default function WorkforcePage() {
-  return <WorkforceCompactPage />;
+  return <WorkforceView />;
 }

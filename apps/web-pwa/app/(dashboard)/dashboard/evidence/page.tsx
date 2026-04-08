@@ -1,5 +1,5 @@
-import { EvidenceCompactPage } from "@/features/construction/EvidenceCompactPage";
+import { EvidenceView } from "@/features/construction/EvidenceView";
 
 export default function EvidencePage() {
-  return <EvidenceCompactPage />;
+  return <EvidenceView />;
 }

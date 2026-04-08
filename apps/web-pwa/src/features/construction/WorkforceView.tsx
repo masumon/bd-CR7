@@ -1,14 +1,12 @@
-// MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
-// ONLY MANUAL VERIFIED CHANGES PERMITTED
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { HardHat, Pencil, Trash2, Users, Wallet } from "lucide-react";
+import { FileSpreadsheet, FileText, HardHat, Pencil, Trash2, Users, Wallet } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
-import { WorkspaceHero, SectionHeader } from "@/components/ui/workspace";
+import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -127,73 +125,72 @@ export function WorkforceView() {
 
   const tabs = ["Log Entry", "Attendance", "Payments", "Files"];
 
+  const exportActions = (
+    <>
+      <ExportPDFButton
+        onBuildOptions={() => ({
+          moduleName: "Workforce",
+          moduleNameBn: "শ্রমিক ব্যবস্থাপনা",
+          description: "Daily worker log with attendance status, wages, and payment records.",
+          descriptionBn: "প্রতিদিনের শ্রমিক লগ — উপস্থিতি, মজুরি এবং পেমেন্ট রেকর্ড।",
+          sections: [
+            {
+              title: "Workforce Overview",
+              titleBn: "শ্রমিক সারসংক্ষেপ",
+              rows: [
+                { label: "Total Workers Logged", labelBn: "মোট শ্রমিক", value: String(stats.total) },
+                { label: "Present", labelBn: "উপস্থিত", value: String(stats.present) },
+                { label: "Total Paid", labelBn: "পরিশোধিত মজুরি", value: fmt(stats.totalPaid) },
+                { label: "Total Unpaid", labelBn: "বকেয়া মজুরি", value: fmt(stats.totalUnpaid) },
+              ],
+            },
+            {
+              title: "Worker Attendance Register",
+              titleBn: "শ্রমিক উপস্থিতি রেজিস্টার",
+              rows: [],
+              tableHeaders: ["Worker Name", "Role", "Date", "Status", "Wage"],
+              tableHeadersBn: ["শ্রমিকের নাম", "পদ", "তারিখ", "উপস্থিতি", "মজুরি"],
+              tableRows: workers.slice(0, 25).map((w) => [
+                w.worker_name, w.role, w.work_date, w.attendance_status, fmt(w.daily_wage),
+              ]),
+            },
+          ],
+        })}
+      />
+      <button
+        type="button"
+        onClick={() => exportCSV("workforce-report.csv", buildExportRows())}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:bg-muted transition-colors"
+        title="Export CSV"
+      >
+        <FileSpreadsheet className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => exportHTML({ title: "Workforce Report", titleBn: "শ্রমিক রিপোর্ট", rows: buildExportRows() })}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:bg-muted transition-colors"
+        title="Export HTML"
+      >
+        <FileText className="h-3.5 w-3.5" />
+      </button>
+    </>
+  );
+
   return (
-    <div className="glass rounded-2xl space-y-4">
-      <WorkspaceHero
-        badge="Workforce"
+    <div className="space-y-4">
+      <ModulePageHeader
+        icon={HardHat}
+        title="Workforce"
+        titleBn="শ্রমিক ব্যবস্থাপনা"
+        theme="workforce"
+        actions={exportActions}
         stats={[
-          { label: "Present Today", value: String(stats.present) },
-          { label: "Total Unpaid", value: fmt(stats.totalUnpaid) },
-          { label: "Total Paid", value: fmt(stats.totalPaid) },
+          { label: "Present", labelBn: "উপস্থিত আজ", value: stats.present, color: "green" },
+          { label: "Total", labelBn: "মোট শ্রমিক", value: stats.total, color: "default" },
+          { label: "Paid", labelBn: "পরিশোধিত", value: fmt(stats.totalPaid), color: "blue" },
+          { label: "Unpaid", labelBn: "বকেয়া", value: fmt(stats.totalUnpaid), color: "rose" },
         ]}
       />
-
-      <div className="flex justify-end px-4 pb-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportPDFButton
-            onBuildOptions={() => ({
-            moduleName: "Workforce",
-            moduleNameBn: "শ্রমিক ব্যবস্থাপনা",
-            description: "Daily worker log with attendance status, wages, and payment records.",
-            descriptionBn: "প্রতিদিনের শ্রমিক লগ — উপস্থিতি, মজুরি এবং পেমেন্ট রেকর্ড।",
-            sections: [
-              {
-                title: "Workforce Overview",
-                titleBn: "শ্রমিক সারসংক্ষেপ",
-                rows: [
-                  { label: "Total Workers Logged", labelBn: "মোট শ্রমিক", value: String(stats.total) },
-                  { label: "Present", labelBn: "উপস্থিত", value: String(stats.present) },
-                  { label: "Total Paid", labelBn: "পরিশোধিত মজুরি", value: fmt(stats.totalPaid) },
-                  { label: "Total Unpaid", labelBn: "বকেয়া মজুরি", value: fmt(stats.totalUnpaid) },
-                ],
-              },
-              {
-                title: "Worker Attendance Register",
-                titleBn: "শ্রমিক উপস্থিতি রেজিস্টার",
-                rows: [],
-                tableHeaders: ["Worker Name", "Role", "Date", "Status", "Wage"],
-                tableHeadersBn: ["শ্রমিকের নাম", "পদ", "তারিখ", "উপস্থিতি", "মজুরি"],
-                tableRows: workers.slice(0, 25).map((w) => [
-                  w.worker_name,
-                  w.role,
-                  w.work_date,
-                  w.attendance_status,
-                  fmt(w.daily_wage),
-                ]),
-              },
-            ],
-            })}
-          />
-          <Button
-            variant="outline"
-            onClick={() => {
-              const rows = buildExportRows();
-              exportCSV("workforce-report.csv", rows);
-            }}
-          >
-            CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              const rows = buildExportRows();
-              exportHTML({ title: "Workforce Report", titleBn: "শ্রমিক রিপোর্ট", rows });
-            }}
-          >
-            HTML
-          </Button>
-        </div>
-      </div>
 
       <Tabs
         tabs={tabs}

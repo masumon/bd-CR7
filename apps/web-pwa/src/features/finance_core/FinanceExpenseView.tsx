@@ -1,13 +1,11 @@
-// MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
-// ONLY MANUAL VERIFIED CHANGES PERMITTED
 "use client";
 
-import { ArrowDownUp, BadgeDollarSign, MoreHorizontal } from "lucide-react";
+import { BadgeDollarSign, Download, FileSpreadsheet, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
-import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { exportCSV } from "@/lib/exportCSV";
 import { exportHTML } from "@/lib/exportHTML";
@@ -22,97 +20,96 @@ import { useFinanceExpenses } from "@/features/finance_core/hooks/useFinanceExpe
 export function FinanceExpenseView() {
   const finance = useFinanceExpenses();
 
+  const exportActions = (
+    <>
+      <Button
+        onClick={() => finance.setOpen(!finance.open)}
+        className="h-8 gap-1.5 px-3 text-xs"
+      >
+        <BadgeDollarSign className="h-3.5 w-3.5" />
+        {finance.open ? "বন্ধ করুন" : "যোগ করুন"}
+      </Button>
+      <ExportPDFButton
+        onBuildOptions={() => ({
+          moduleName: "Finance",
+          moduleNameBn: "অর্থায়ন ও ব্যয়",
+          description: "Finance ledger showing expense records, categories, and approval status.",
+          descriptionBn: "অর্থায়ন লেজার — ব্যয়ের রেকর্ড, ক্যাটাগরি এবং অনুমোদনের অবস্থা।",
+          sections: [
+            {
+              title: "Finance Overview",
+              titleBn: "আর্থিক সংক্ষিপ্ত বিবরণ",
+              rows: [
+                { label: "Pending Approvals", labelBn: "অনুমোদন বাকি", value: String(finance.pendingApprovals) },
+                { label: "Approved Today", labelBn: "আজ অনুমোদিত", value: `৳${finance.approvedToday.toLocaleString("en-BD")}` },
+                { label: "Receipts Missing", labelBn: "রসিদ নেই", value: String(finance.receiptsMissing) },
+                { label: "Total Records", labelBn: "মোট রেকর্ড", value: String(finance.rows.length) },
+              ],
+            },
+            {
+              title: "Category Breakdown",
+              titleBn: "ক্যাটাগরি বিশ্লেষণ",
+              rows: finance.categoryBreakdown.map((c) => ({
+                label: c.label, labelBn: c.label,
+                value: `৳${c.value.toLocaleString("en-BD")}`,
+              })),
+            },
+            {
+              title: "Expense Ledger",
+              titleBn: "ব্যয় লেজার",
+              rows: [],
+              tableHeaders: ["ID", "Category", "Subcategory", "Amount", "Status"],
+              tableHeadersBn: ["আইডি", "ক্যাটাগরি", "উপ-ক্যাটাগরি", "পরিমাণ", "স্ট্যাটাস"],
+              tableRows: finance.rows.slice(0, 20).map((row) => {
+                const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
+                const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
+                const category = metaCategory || row.description?.split(" ")[0] || "General";
+                const approved = String(row.status).toLowerCase() === "approved";
+                return [row.id.slice(0, 8).toUpperCase(), category, metaSubcategory, `৳${Number(row.amount || 0).toLocaleString("en-BD")}`, approved ? "✓ Approved" : "⏳ Pending"];
+              }),
+            },
+          ],
+        })}
+      />
+      <button
+        type="button"
+        onClick={() => exportCSV("finance-expenses.csv", finance.buildExportRows())}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:bg-muted transition-colors"
+        title="Export CSV"
+      >
+        <FileSpreadsheet className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows: finance.buildExportRows() })}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:bg-muted transition-colors"
+        title="Export HTML"
+      >
+        <FileText className="h-3.5 w-3.5" />
+      </button>
+    </>
+  );
+
   return (
     <div className="space-y-4">
-      <WorkspaceHero
-        badge="Finance Workspace / তহবিল ও খরচ"
+      <ModulePageHeader
+        icon={BadgeDollarSign}
+        title="Finance"
+        titleBn="অর্থ ব্যবস্থাপনা"
+        theme="finance"
+        actions={exportActions}
         stats={[
-          { label: "Pending Approvals", value: String(finance.pendingApprovals) },
-          { label: "Approved Today", value: `৳${finance.approvedToday.toLocaleString("en-BD")}` },
-          { label: "Receipts Missing", value: String(finance.receiptsMissing) },
+          { label: "Pending", labelBn: "অনুমোদন বাকি", value: finance.pendingApprovals, color: "rose" },
+          { label: "Approved Today", labelBn: "আজ অনুমোদিত", value: `৳${finance.approvedToday.toLocaleString()}`, color: "green" },
+          { label: "Missing Receipts", labelBn: "রসিদ নেই", value: finance.receiptsMissing, color: "amber" },
+          { label: "Total Records", labelBn: "মোট রেকর্ড", value: finance.rows.length, color: "default" },
         ]}
-      />
-
-      <SectionHeader
-        eyebrow="Ledger / লেজার"
-        title="Finance records with category and subcategory"
-        actions={
-          <div className="flex items-center gap-2">
-            <Button onClick={() => finance.setOpen(!finance.open)} className="w-full sm:w-auto">{finance.open ? "Close Forms" : "Add Fund / Expense"}</Button>
-            <ExportPDFButton
-              onBuildOptions={() => ({                moduleName: "Finance",
-                moduleNameBn: "অর্থায়ন ও ব্যয়",
-                description: "Finance ledger showing expense records, categories, and approval status.",
-                descriptionBn: "অর্থায়ন লেজার — ব্যয়ের রেকর্ড, ক্যাটাগরি এবং অনুমোদনের অবস্থা।",
-                sections: [
-                  {
-                    title: "Finance Overview",
-                    titleBn: "আর্থিক সংক্ষিপ্ত বিবরণ",
-                    rows: [
-                      { label: "Pending Approvals", labelBn: "অনুমোদন বাকি", value: String(finance.pendingApprovals) },
-                      { label: "Approved Today", labelBn: "আজ অনুমোদিত", value: `৳${finance.approvedToday.toLocaleString("en-BD")}` },
-                      { label: "Receipts Missing", labelBn: "রসিদ নেই", value: String(finance.receiptsMissing) },
-                      { label: "Total Records", labelBn: "মোট রেকর্ড", value: String(finance.rows.length) },
-                    ],
-                  },
-                  {
-                    title: "Category Breakdown",
-                    titleBn: "ক্যাটাগরি বিশ্লেষণ",
-                    rows: finance.categoryBreakdown.map((c) => ({
-                      label: c.label,
-                      labelBn: c.label,
-                      value: `৳${c.value.toLocaleString("en-BD")}`,
-                    })),
-                  },
-                  {
-                    title: "Expense Ledger",
-                    titleBn: "ব্যয় লেজার",
-                    rows: [],
-                    tableHeaders: ["ID", "Category", "Subcategory", "Amount", "Status"],
-                    tableHeadersBn: ["আইডি", "ক্যাটাগরি", "উপ-ক্যাটাগরি", "পরিমাণ", "স্ট্যাটাস"],
-                    tableRows: finance.rows.slice(0, 20).map((row) => {
-                      const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
-                      const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
-                      const category = metaCategory || row.description?.split(" ")[0] || "General";
-                      const approved = String(row.status).toLowerCase() === "approved";
-                      return [
-                        row.id.slice(0, 8).toUpperCase(),
-                        category,
-                        metaSubcategory,
-                        `৳${Number(row.amount || 0).toLocaleString("en-BD")}`,
-                        approved ? "✓ Approved" : "⏳ Pending",
-                      ];
-                    }),
-                  },
-                ],
-              })}
-            />
-            <Button
-              variant="outline"
-              onClick={() => {
-                const rows = finance.buildExportRows();
-                exportCSV("finance-expenses.csv", rows);
-              }}
-            >
-              CSV
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const rows = finance.buildExportRows();
-                exportHTML({ title: "Finance Expenses", titleBn: "ব্যয় লেজার", rows });
-              }}
-            >
-              HTML
-            </Button>
-          </div>
-        }
       />
 
       <div className="grid gap-4 xl:grid-cols-[1.45fr_0.55fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Expense Ledger</CardTitle>
+            <CardTitle>Expense Ledger / ব্যয় লেজার</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">Detailed finance entries with category, subcategory, and approval status.</p>
           </CardHeader>
           <CardContent>
@@ -123,7 +120,7 @@ export function FinanceExpenseView() {
         <ExpenseBreakdownCard loading={finance.loading} categoryBreakdown={finance.categoryBreakdown} subcategoryBreakdown={finance.subcategoryBreakdown} />
       </div>
 
-      <Dialog open={finance.open} onClose={() => finance.setOpen(false)} title="Finance Actions">
+      <Dialog open={finance.open} onClose={() => finance.setOpen(false)} title="Finance Actions / অর্থ কার্যক্রম">
         <div className="space-y-4">
           <FundManagerFeature onSaved={finance.loadExpenses} />
           <ExpenseEngineFeature onSaved={finance.loadExpenses} />
@@ -133,7 +130,7 @@ export function FinanceExpenseView() {
       <ProjectFilesPanel
         module="finance"
         category="invoice"
-        label="Invoice Proofs & Finance Documents"
+        label="Invoice Proofs & Finance Documents / চালান ও আর্থিক নথি"
       />
 
       <ExpenseDialogs

@@ -1,5 +1,5 @@
-import { ProjectsCompactPage } from "@/features/construction/projects/ProjectsCompactPage";
+import { ProjectsFeature } from "@/features/construction/projects/ProjectsFeature";
 
 export default function ProjectsPage() {
-  return <ProjectsCompactPage />;
+  return <ProjectsFeature />;
 }

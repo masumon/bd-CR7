@@ -1,10 +1,10 @@
-// MODULE LOCKED: FULL API MODE (NO SUPABASE WRITE)
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
   Building2,
+  FileSpreadsheet,
   FileText,
   Plus,
   Trash2,
@@ -15,9 +15,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
-import { WorkspaceHero } from "@/components/ui/workspace";
+import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
-import { Button } from "@/components/ui/button";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { apiClient } from "@/lib/apiClient";
 import { exportCSV } from "@/lib/exportCSV";
@@ -537,86 +536,79 @@ export function ContractorView() {
         </div>
       )}
 
-      <WorkspaceHero
-        badge="ঠিকাদার / Contractor"
+      <ModulePageHeader
+        icon={Briefcase}
+        title="Contractor"
+        titleBn="ঠিকাদার ব্যবস্থাপনা"
+        theme="contractor"
+        actions={
+          <>
+            <ExportPDFButton
+              onBuildOptions={() => ({
+                moduleName: "Contractor",
+                moduleNameBn: "ঠিকাদার ব্যবস্থাপনা",
+                description: "Contractor register with contracts and payment records.",
+                descriptionBn: "ঠিকাদার রেজিস্টার — চুক্তি ও পেমেন্ট রেকর্ড।",
+                sections: [
+                  {
+                    title: "Contractor Overview",
+                    titleBn: "ঠিকাদার সারসংক্ষেপ",
+                    rows: [
+                      { label: "Total Contractors", labelBn: "মোট ঠিকাদার", value: String(stats.totalContractors) },
+                      { label: "Active Contractors", labelBn: "সক্রিয় ঠিকাদার", value: String(stats.activeCount) },
+                      { label: "Total Contract Value", labelBn: "মোট চুক্তি মূল্য", value: fmt(stats.totalContractValue) },
+                      { label: "Total Payments Made", labelBn: "মোট পেমেন্ট", value: fmt(stats.totalPaid) },
+                    ],
+                  },
+                  {
+                    title: "Contractor List",
+                    titleBn: "ঠিকাদার তালিকা",
+                    rows: [],
+                    tableHeaders: ["Name", "Company", "Phone", "Specialization", "Status"],
+                    tableHeadersBn: ["নাম", "কোম্পানি", "ফোন", "বিশেষত্ব", "অবস্থা"],
+                    tableRows: contractors.slice(0, 20).map((c) => [
+                      c.name, c.company ?? "—", c.phone ?? "—", c.specialization ?? "—", c.status,
+                    ]),
+                  },
+                  {
+                    title: "Contract Register",
+                    titleBn: "চুক্তি রেজিস্টার",
+                    rows: [],
+                    tableHeaders: ["Project", "Contractor", "Amount", "Paid", "Status"],
+                    tableHeadersBn: ["প্রজেক্ট", "ঠিকাদার", "পরিমাণ", "পরিশোধিত", "অবস্থা"],
+                    tableRows: contracts.slice(0, 20).map((c) => [
+                      c.project_name, c.contractors?.name ?? "—",
+                      fmt(c.contract_amount), fmt(c.paid_amount), c.status,
+                    ]),
+                  },
+                ],
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => exportCSV("contractor-contracts.csv", buildExportRows())}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:bg-muted transition-colors"
+              title="Export CSV"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => exportHTML({ title: "Contractor Contracts", titleBn: "ঠিকাদার চুক্তি", rows: buildExportRows() })}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground hover:bg-muted transition-colors"
+              title="Export HTML"
+            >
+              <FileText className="h-3.5 w-3.5" />
+            </button>
+          </>
+        }
         stats={[
-          { label: "মোট ঠিকাদার", value: String(stats.totalContractors) },
-          { label: "সক্রিয়", value: String(stats.activeCount) },
-          { label: "মোট চুক্তি মূল্য", value: fmt(stats.totalContractValue) },
-          { label: "মোট পেমেন্ট", value: fmt(stats.totalPaid) },
+          { label: "Total", labelBn: "মোট ঠিকাদার", value: stats.totalContractors, color: "default" },
+          { label: "Active", labelBn: "সক্রিয়", value: stats.activeCount, color: "green" },
+          { label: "Contract Value", labelBn: "চুক্তি মূল্য", value: fmt(stats.totalContractValue), color: "blue" },
+          { label: "Paid", labelBn: "মোট পেমেন্ট", value: fmt(stats.totalPaid), color: "amber" },
         ]}
       />
-
-      <div className="flex justify-end">
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportPDFButton
-            onBuildOptions={() => ({
-            moduleName: "Contractor",
-            moduleNameBn: "ঠিকাদার ব্যবস্থাপনা",
-            description: "Contractor register with contracts and payment records.",
-            descriptionBn: "ঠিকাদার রেজিস্টার — চুক্তি ও পেমেন্ট রেকর্ড।",
-            sections: [
-              {
-                title: "Contractor Overview",
-                titleBn: "ঠিকাদার সারসংক্ষেপ",
-                rows: [
-                  { label: "Total Contractors", labelBn: "মোট ঠিকাদার", value: String(stats.totalContractors) },
-                  { label: "Active Contractors", labelBn: "সক্রিয় ঠিকাদার", value: String(stats.activeCount) },
-                  { label: "Total Contract Value", labelBn: "মোট চুক্তি মূল্য", value: fmt(stats.totalContractValue) },
-                  { label: "Total Payments Made", labelBn: "মোট পেমেন্ট", value: fmt(stats.totalPaid) },
-                ],
-              },
-              {
-                title: "Contractor List",
-                titleBn: "ঠিকাদার তালিকা",
-                rows: [],
-                tableHeaders: ["Name", "Company", "Phone", "Specialization", "Status"],
-                tableHeadersBn: ["নাম", "কোম্পানি", "ফোন", "বিশেষত্ব", "অবস্থা"],
-                tableRows: contractors.slice(0, 20).map((c) => [
-                  c.name,
-                  c.company ?? "—",
-                  c.phone ?? "—",
-                  c.specialization ?? "—",
-                  c.status,
-                ]),
-              },
-              {
-                title: "Contract Register",
-                titleBn: "চুক্তি রেজিস্টার",
-                rows: [],
-                tableHeaders: ["Project", "Contractor", "Amount", "Paid", "Status"],
-                tableHeadersBn: ["প্রজেক্ট", "ঠিকাদার", "পরিমাণ", "পরিশোধিত", "অবস্থা"],
-                tableRows: contracts.slice(0, 20).map((c) => [
-                  c.project_name,
-                  c.contractors?.name ?? "—",
-                  fmt(c.contract_amount),
-                  fmt(c.paid_amount),
-                  c.status,
-                ]),
-              },
-            ],
-            })}
-          />
-          <Button
-            variant="outline"
-            onClick={() => {
-              const rows = buildExportRows();
-              exportCSV("contractor-contracts.csv", rows);
-            }}
-          >
-            CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              const rows = buildExportRows();
-              exportHTML({ title: "Contractor Contracts", titleBn: "ঠিকাদার চুক্তি", rows });
-            }}
-          >
-            HTML
-          </Button>
-        </div>
-      </div>
 
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 

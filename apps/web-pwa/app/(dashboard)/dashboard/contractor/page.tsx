@@ -1,5 +1,5 @@
-import { ContractorCompactPage } from "@/features/contractor/ContractorCompactPage";
+import { ContractorView } from "@/features/contractor/ContractorView";
 
 export default function ContractorPage() {
-  return <ContractorCompactPage />;
+  return <ContractorView />;
 }

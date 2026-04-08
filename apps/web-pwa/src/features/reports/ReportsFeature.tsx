@@ -1,4 +1,3 @@
-// MODULE LOCKED: REPORTS (SAFE PARTIAL REFACTOR)
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -19,7 +18,7 @@ import {
 import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { exportHTML } from "@/lib/exportHTML";
@@ -162,20 +161,13 @@ export function ReportsFeature() {
 
   return (
     <div className="space-y-6">
-      <WorkspaceHero
-        badge="Reports Workspace / রিপোর্ট ও বিশ্লেষণ"
-        stats={[
-          { label: "Funds", value: fmt(data.totalFunds) },
-          { label: "Expenses", value: fmt(data.totalExpenses) },
-          { label: "Material Cost", value: fmt(data.materialCost) },
-        ]}
-      />
-
-      <SectionHeader
-        eyebrow="Time Filter / সময়সীমা"
-        title="Period-based reporting desk"
+      <ModulePageHeader
+        icon={BarChart3}
+        title="Reports"
+        titleBn="রিপোর্ট ও বিশ্লেষণ"
+        theme="reports"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1">
             {(["7d", "30d", "90d"] as const).map((p) => (
               <button
                 key={p}
@@ -186,7 +178,7 @@ export function ReportsFeature() {
                 {p === "7d" ? "৭ দিন" : p === "30d" ? "৩০ দিন" : "৯০ দিন"}
               </button>
             ))}
-            <Button variant="outline" className="h-10 px-3 text-xs" onClick={fetchReport} disabled={loading}>
+            <Button variant="outline" className="h-8 w-8 p-0" onClick={fetchReport} disabled={loading}>
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             </Button>
             <ExportPDFButton
@@ -272,6 +264,12 @@ export function ReportsFeature() {
             </Button>
           </div>
         }
+        stats={[
+          { label: "Funds", labelBn: "তহবিল প্রাপ্তি", value: fmt(data.totalFunds), color: "green" },
+          { label: "Expenses", labelBn: "মোট ব্যয়", value: fmt(data.totalExpenses), color: "rose" },
+          { label: "Pending", labelBn: "অনুমোদন বাকি", value: data.pendingExpenses, color: "amber" },
+          { label: "Mat. Cost", labelBn: "উপকরণ খরচ", value: fmt(data.materialCost), color: "blue" },
+        ]}
       />
 
       {/* Stat grid */}

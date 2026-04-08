@@ -1,5 +1,5 @@
-import { MaterialsCompactPage } from "@/features/construction/MaterialsCompactPage";
+import { MaterialsView } from "@/features/construction/MaterialsView";
 
 export default function MaterialsPage() {
-  return <MaterialsCompactPage />;
+  return <MaterialsView />;
 }
