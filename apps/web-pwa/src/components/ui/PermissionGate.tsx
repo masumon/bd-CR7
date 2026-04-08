@@ -113,7 +113,6 @@ export function PermissionGate({ type, fallback, children }: PermissionGateProps
 
       {status !== "denied" && (
         <Button
-          size="sm"
           onClick={() => void handleRequest()}
           disabled={requesting}
           className="h-9 px-4 text-xs"
