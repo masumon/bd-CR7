@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/authStore";
 import {
   DEFAULT_SETTING_ITEMS,
   SETTINGS_TABS,
+  SETTINGS_TABS_SUPER_ADMIN,
   type IntegrationState,
   type SettingCategory,
   type SettingItem,
@@ -22,11 +23,17 @@ import { ProfileTab } from "@/features/settings_rbac/tabs/ProfileTab";
 import { SettingsCatalogTab } from "@/features/settings_rbac/tabs/SettingsCatalogTab";
 import { SettingsTabsNav } from "@/features/settings_rbac/tabs/SettingsTabsNav";
 import { WorkspaceTab } from "@/features/settings_rbac/tabs/WorkspaceTab";
+import { UserManagementTab } from "@/features/settings_rbac/tabs/UserManagementTab";
+import { normalizeRoleName } from "@/lib/rbac";
 
 export function SettingsFeature() {
   const userId = useAuthStore((state) => state.userId);
   const token = useAuthStore((state) => state.token ?? undefined);
   const role = useAuthStore((state) => state.role);
+  const normalizedRole = normalizeRoleName(role);
+  const isSuperAdmin = normalizedRole === "super_admin";
+
+  const availableTabs = isSuperAdmin ? SETTINGS_TABS_SUPER_ADMIN : SETTINGS_TABS;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState("");
@@ -244,7 +251,7 @@ export function SettingsFeature() {
         <p className="mt-1 text-sm text-muted-foreground">{language === "bn" ? "প্রোফাইল, ভাষা, থিম এবং অ্যাপ কনফিগারেশন সহজভাবে ম্যানেজ করুন।" : "Manage profile, language, theme, and app configuration in one place."}</p>
       </div>
 
-      <SettingsTabsNav language={language} tabs={SETTINGS_TABS} activeTab={activeTab} onChange={setActiveTab} />
+      <SettingsTabsNav language={language} tabs={availableTabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "Profile" ? (
         <ProfileTab
@@ -288,6 +295,7 @@ export function SettingsFeature() {
 
       {activeTab === "Sync" ? <SyncControlPanel language={language} /> : null}
       {activeTab === "Advanced" ? <AdvancedTab onReset={resetWorkspacePreferences} /> : null}
+      {activeTab === "Users" && isSuperAdmin ? <UserManagementTab /> : null}
 
       {message && activeTab !== "Profile" ? (
         <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
