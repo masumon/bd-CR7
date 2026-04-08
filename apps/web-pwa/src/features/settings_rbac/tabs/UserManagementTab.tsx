@@ -136,7 +136,6 @@ export function UserManagementTab() {
         </div>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => void loadUsers()}
           className="h-8 gap-1.5 px-3 text-xs"
         >
