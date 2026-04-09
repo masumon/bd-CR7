@@ -1,10 +1,6 @@
+import { redirect } from "next/navigation";
+
+// Redirect to parent AI page — chat is now handled by the floating ChatWidget
 export default function AiChatPage() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center p-8">
-      <h2 className="text-xl font-semibold text-gray-700">AI Chat Removed</h2>
-      <p className="text-gray-500 max-w-md">
-        The SUMONIX AI chat has been removed from this system.
-      </p>
-    </div>
-  );
+  redirect("/dashboard/ai");
 }

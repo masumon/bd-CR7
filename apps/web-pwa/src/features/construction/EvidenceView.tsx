@@ -5,7 +5,7 @@ import { Camera, FileText, MapPin, Trash2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
-import { WorkspaceHero } from "@/components/ui/workspace";
+import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ProgressCamFeature } from "@/features/construction/progress_cam/ProgressCamFeature";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { Button } from "@/components/ui/button";
@@ -66,12 +66,16 @@ export function EvidenceView() {
 
   return (
     <div className="space-y-4">
-      <WorkspaceHero
-        badge="Evidence"
+      <ModulePageHeader
+        icon={Camera}
+        title="Evidence"
+        titleBn="সাক্ষ্য ও প্রমাণ"
+        theme="evidence"
         stats={[
-          { label: "Total Files", value: String(stats.total) },
-          { label: "Images", value: String(stats.images) },
-          { label: "GPS Tagged", value: String(stats.geoTagged) },
+          { label: "Total", labelBn: "মোট ফাইল", value: stats.total, color: "default" },
+          { label: "Images", labelBn: "ছবি", value: stats.images, color: "amber" },
+          { label: "Videos", labelBn: "ভিডিও", value: stats.videos, color: "blue" },
+          { label: "GPS Tagged", labelBn: "জিপিএস ট্যাগড", value: stats.geoTagged, color: "green" },
         ]}
       />
 

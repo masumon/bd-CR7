@@ -6,7 +6,7 @@ import { Activity, BadgeDollarSign, FileSearch, Search, ShieldCheck } from "luci
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
-import { WorkspaceHero } from "@/components/ui/workspace";
+import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { createClient } from "@/lib/supabase/client";
@@ -92,66 +92,70 @@ export function AuditView() {
 
   const tabs = ["Activity Logs", "Financial Audit", "System Changes", "File Audit"];
 
+  const exportActions = (
+    <ExportPDFButton
+      onBuildOptions={() => ({
+        moduleName: "Audit Trail",
+        moduleNameBn: "অডিট ট্রেইল",
+        description: "Complete audit log of all system actions, database changes, and financial events.",
+        descriptionBn: "সমস্ত সিস্টেম কার্যক্রম, ডেটাবেস পরিবর্তন এবং আর্থিক ঘটনার সম্পূর্ণ অডিট লগ।",
+        sections: [
+          {
+            title: "Audit Summary",
+            titleBn: "অডিট সারসংক্ষেপ",
+            rows: [
+              { label: "Total Events", labelBn: "মোট ঘটনা", value: String(stats.total) },
+              { label: "INSERT Events", labelBn: "নতুন রেকর্ড", value: String(stats.inserts) },
+              { label: "UPDATE Events", labelBn: "আপডেট রেকর্ড", value: String(stats.updates) },
+              { label: "DELETE Events", labelBn: "মুছে ফেলা রেকর্ড", value: String(stats.deletes) },
+            ],
+          },
+          {
+            title: "Activity Log",
+            titleBn: "কার্যক্রম লগ",
+            rows: [],
+            tableHeaders: ["Action", "Table", "Record ID", "Changed By", "Time"],
+            tableHeadersBn: ["কার্যক্রম", "টেবিল", "রেকর্ড আইডি", "পরিবর্তনকারী", "সময়"],
+            tableRows: auditLogs.slice(0, 20).map((log) => [
+              log.action, log.table_name ?? "—",
+              log.record_id ? log.record_id.slice(0, 8) : "—",
+              log.changed_by ?? "system",
+              new Date(log.created_at).toLocaleString(),
+            ]),
+          },
+          {
+            title: "Financial Audit",
+            titleBn: "আর্থিক অডিট",
+            rows: [],
+            tableHeaders: ["Date", "Amount", "Status", "Description"],
+            tableHeadersBn: ["তারিখ", "পরিমাণ", "স্ট্যাটাস", "বিবরণ"],
+            tableRows: expenses.slice(0, 20).map((e) => [
+              e.created_at?.slice(0, 10) ?? "—",
+              `৳${Number(e.amount || 0).toLocaleString("en-BD")}`,
+              e.status === "approved" ? "✓ অনুমোদিত" : "⏳ বাকি",
+              e.description ?? "—",
+            ]),
+          },
+        ],
+      })}
+    />
+  );
+
   return (
-    <div className="glass rounded-2xl space-y-4">
-      <WorkspaceHero
-        badge="Audit"
+    <div className="space-y-4">
+      <ModulePageHeader
+        icon={ShieldCheck}
+        title="Audit"
+        titleBn="অডিট ট্রেইল"
+        theme="audit"
+        actions={exportActions}
         stats={[
-          { label: "Total Events", value: String(stats.total) },
-          { label: "Inserts", value: String(stats.inserts) },
-          { label: "Updates", value: String(stats.updates) },
+          { label: "Total", labelBn: "মোট ঘটনা", value: stats.total, color: "default" },
+          { label: "Inserts", labelBn: "নতুন রেকর্ড", value: stats.inserts, color: "green" },
+          { label: "Updates", labelBn: "আপডেট", value: stats.updates, color: "amber" },
+          { label: "Deletes", labelBn: "মুছে ফেলা", value: stats.deletes, color: "rose" },
         ]}
       />
-
-      <div className="flex justify-end px-4 pb-1">
-        <ExportPDFButton
-          onBuildOptions={() => ({
-            moduleName: "Audit Trail",
-            moduleNameBn: "অডিট ট্রেইল",
-            description: "Complete audit log of all system actions, database changes, and financial events.",
-            descriptionBn: "সমস্ত সিস্টেম কার্যক্রম, ডেটাবেস পরিবর্তন এবং আর্থিক ঘটনার সম্পূর্ণ অডিট লগ।",
-            sections: [
-              {
-                title: "Audit Summary",
-                titleBn: "অডিট সারসংক্ষেপ",
-                rows: [
-                  { label: "Total Events", labelBn: "মোট ঘটনা", value: String(stats.total) },
-                  { label: "INSERT Events", labelBn: "নতুন রেকর্ড", value: String(stats.inserts) },
-                  { label: "UPDATE Events", labelBn: "আপডেট রেকর্ড", value: String(stats.updates) },
-                  { label: "DELETE Events", labelBn: "মুছে ফেলা রেকর্ড", value: String(stats.deletes) },
-                ],
-              },
-              {
-                title: "Activity Log",
-                titleBn: "কার্যক্রম লগ",
-                rows: [],
-                tableHeaders: ["Action", "Table", "Record ID", "Changed By", "Time"],
-                tableHeadersBn: ["কার্যক্রম", "টেবিল", "রেকর্ড আইডি", "পরিবর্তনকারী", "সময়"],
-                tableRows: auditLogs.slice(0, 20).map((log) => [
-                  log.action,
-                  log.table_name ?? "—",
-                  log.record_id ? log.record_id.slice(0, 8) : "—",
-                  log.changed_by ?? "system",
-                  new Date(log.created_at).toLocaleString(),
-                ]),
-              },
-              {
-                title: "Financial Audit",
-                titleBn: "আর্থিক অডিট",
-                rows: [],
-                tableHeaders: ["Date", "Amount", "Status", "Description"],
-                tableHeadersBn: ["তারিখ", "পরিমাণ", "স্ট্যাটাস", "বিবরণ"],
-                tableRows: expenses.slice(0, 20).map((e) => [
-                  e.created_at?.slice(0, 10) ?? "—",
-                  `৳${Number(e.amount || 0).toLocaleString("en-BD")}`,
-                  e.status === "approved" ? "✓ অনুমোদিত" : "⏳ বাকি",
-                  e.description ?? "—",
-                ]),
-              },
-            ],
-          })}
-        />
-      </div>
 
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 

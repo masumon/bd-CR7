@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { ChatWidget } from "@/components/ui/ChatWidget";
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 
@@ -195,6 +196,9 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       <Dialog open={openNotifications} onClose={() => setOpenNotifications(false)} title={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
         {notificationContent}
       </Dialog>
+
+      {/* Global floating AI chat — visible on all dashboard pages */}
+      <ChatWidget />
     </>
   );
 }

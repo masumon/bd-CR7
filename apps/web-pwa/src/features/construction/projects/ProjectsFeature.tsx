@@ -18,7 +18,7 @@ import {
 import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SectionHeader, WorkspaceHero } from "@/components/ui/workspace";
+import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { apiRequest } from "@/lib/api";
@@ -379,20 +379,17 @@ export function ProjectsFeature() {
     </div>
   );
 
+  const activeCount = projects.filter((p) => p.status === "Active").length;
+  const completedCount = projects.filter((p) => p.status === "Completed").length;
+  const planningCount = projects.filter((p) => p.status === "Planning").length;
+
   return (
     <div className="space-y-5">
-      <WorkspaceHero
-        badge="Project Introduction / প্রকল্প পরিচিতি"
-        stats={[
-          { label: "Total Projects", value: String(projects.length) },
-          { label: "Active Projects", value: String(projects.filter((project) => project.status === "Active").length) },
-          { label: "Completed", value: String(projects.filter((project) => project.status === "Completed").length) },
-        ]}
-      />
-
-      <SectionHeader
-        eyebrow="Project Desk / প্রজেক্ট ডেস্ক"
-        title="Project cards with update controls"
+      <ModulePageHeader
+        icon={FolderKanban}
+        title="Projects"
+        titleBn="প্রকল্প ব্যবস্থাপনা"
+        theme="projects"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <ExportPDFButton
@@ -409,22 +406,25 @@ export function ProjectsFeature() {
                     tableHeaders: ["Name", "Status", "Phase", "Budget", "Start", "End"],
                     tableHeadersBn: ["নাম", "স্ট্যাটাস", "পর্যায়", "বাজেট", "শুরু", "শেষ"],
                     tableRows: projects.map((p) => [
-                      p.name,
-                      p.status,
-                      p.phase ?? "—",
+                      p.name, p.status, p.phase ?? "—",
                       p.budget != null ? `৳${Number(p.budget).toLocaleString()}` : "—",
-                      p.start_date ?? "—",
-                      p.end_date ?? "—",
+                      p.start_date ?? "—", p.end_date ?? "—",
                     ]),
                   },
                 ],
               })}
             />
-            <Button onClick={openCreate} className="gap-1.5 h-10 px-4 text-sm">
-              <Plus className="h-4 w-4" /> New Project
+            <Button onClick={openCreate} className="h-8 gap-1.5 px-3 text-xs">
+              <Plus className="h-3.5 w-3.5" /> New
             </Button>
           </div>
         }
+        stats={[
+          { label: "Total", labelBn: "মোট প্রকল্প", value: projects.length, color: "default" },
+          { label: "Active", labelBn: "সক্রিয়", value: activeCount, color: "green" },
+          { label: "Completed", labelBn: "সম্পন্ন", value: completedCount, color: "blue" },
+          { label: "Planning", labelBn: "পরিকল্পনায়", value: planningCount, color: "amber" },
+        ]}
       />
 
       {loading ? (

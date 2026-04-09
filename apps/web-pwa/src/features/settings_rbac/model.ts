@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { Bell, CloudUpload, Database, Globe, Layers, Settings2, Shield, UserRound } from "lucide-react";
+import { Bell, CloudUpload, Database, Globe, Layers, Settings2, Shield, UserRound, Users } from "lucide-react";
 
 export interface UserProfile {
   id: string;
@@ -11,7 +11,7 @@ export interface UserProfile {
 }
 
 export type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
-export type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Sync" | "Advanced";
+export type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Sync" | "Advanced" | "Users";
 
 export type IntegrationState = {
   cloudinary: boolean;
@@ -45,20 +45,24 @@ export const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
     Integrations: "Integrations",
     Sync: "Sync",
     Advanced: "About",
+    Users: "Users",
   },
   bn: {
     Profile: "সাধারণ",
-    Workspace: "ওয়ার্কস্পেস",
+    Workspace: "ওয়ার্কস্পেস",
     Notifications: "নোটিফিকেশন",
     Security: "নিরাপত্তা",
     Data: "ক্যাটাগরি",
     Integrations: "ইন্টিগ্রেশন",
     Sync: "সিঙ্ক",
     Advanced: "তথ্য",
+    Users: "ব্যবহারকারী",
   },
 };
 
 export const SETTINGS_TABS: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Sync", "Advanced"];
+/** Super-admin gets an extra Users management tab */
+export const SETTINGS_TABS_SUPER_ADMIN: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Sync", "Users", "Advanced"];
 
 export const TAB_META: Record<SettingsTab, { Icon: ElementType; desc: string }> = {
   Profile: { Icon: UserRound, desc: "আপনার তথ্য" },
@@ -69,6 +73,7 @@ export const TAB_META: Record<SettingsTab, { Icon: ElementType; desc: string }> 
   Integrations: { Icon: Globe, desc: "API কানেকশন" },
   Sync: { Icon: CloudUpload, desc: "সিঙ্ক কন্ট্রোল" },
   Advanced: { Icon: Settings2, desc: "অ্যাডভান্সড" },
+  Users: { Icon: Users, desc: "ব্যবহারকারী" },
 };
 
 export const DEFAULT_SETTING_ITEMS: SettingItem[] = [
@@ -102,7 +107,7 @@ export const DEFAULT_SETTING_ITEMS: SettingItem[] = [
     subcategory: "Session",
     label: "Session Expiry Reminder",
     description: "Warn user before session timeout",
-    enabled: false,
+    enabled: true,
   },
   {
     id: "data-export-ready",
@@ -110,6 +115,54 @@ export const DEFAULT_SETTING_ITEMS: SettingItem[] = [
     subcategory: "Reporting",
     label: "Report Export Ready",
     description: "Keep export helpers enabled in reports module",
+    enabled: true,
+  },
+  {
+    id: "ws-chart-mini",
+    category: "Workspace",
+    subcategory: "Layout",
+    label: "Mini Charts on Dashboard",
+    description: "Show mini bar/pie/line charts on dashboard home",
+    enabled: true,
+  },
+  {
+    id: "ws-offline-ai",
+    category: "Workspace",
+    subcategory: "Assistant",
+    label: "AI Offline Mode",
+    description: "Enable local rule-based AI responses when offline",
+    enabled: true,
+  },
+  {
+    id: "ntf-approval-alert",
+    category: "Notifications",
+    subcategory: "Approvals",
+    label: "Approval Queue Alert",
+    description: "Notify when new expense approval requests arrive",
+    enabled: true,
+  },
+  {
+    id: "ntf-expense-alert",
+    category: "Notifications",
+    subcategory: "Finance",
+    label: "New Expense Alert",
+    description: "Show notification when a new expense is added",
+    enabled: true,
+  },
+  {
+    id: "sec-audit-log",
+    category: "Security",
+    subcategory: "Audit",
+    label: "Audit Log Active",
+    description: "Track all user actions in the audit module",
+    enabled: true,
+  },
+  {
+    id: "data-camera-upload",
+    category: "Data",
+    subcategory: "Upload",
+    label: "Camera Capture Upload",
+    description: "Allow direct camera capture for evidence upload",
     enabled: true,
   },
 ];

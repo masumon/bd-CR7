@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
+import { PermissionGate } from "@/components/ui/PermissionGate";
 
 const PHASES = ["Foundation", "Structure", "Finishing", "Handover"];
 
@@ -102,6 +103,22 @@ export function ProgressCamFeature() {
     }
   };
 
+  /** File input shared between upload and camera fallback */
+  const fileInput = (
+    <input
+      className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+      type="file"
+      title="Photo or video upload"
+      accept="image/*,video/*"
+      onChange={(e) => {
+        const next = e.target.files?.[0] || null;
+        setFile(next);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(next ? URL.createObjectURL(next) : null);
+      }}
+    />
+  );
+
   return (
     <section className="module rounded-[1.5rem] border border-border/70 bg-white/80 p-5 shadow-soft dark:bg-slate-950/45">
       <div className="mb-4">
@@ -110,39 +127,32 @@ export function ProgressCamFeature() {
       </div>
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
         <div className="md:col-span-2">
-          <input
-            className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
-            type="file"
-            title="Photo or video upload"
-            accept="image/*,video/*"
-            onChange={(e) => {
-              const next = e.target.files?.[0] || null;
-              setFile(next);
-              if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-              }
-              setPreviewUrl(next ? URL.createObjectURL(next) : null);
-            }}
-          />
-          <input
-            id="progress-cam-capture"
-            className="hidden"
-            type="file"
-            title="Capture from camera"
-            accept="image/*,video/*"
-            capture="environment"
-            onChange={(e) => {
-              const next = e.target.files?.[0] || null;
-              setFile(next);
-              if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-              }
-              setPreviewUrl(next ? URL.createObjectURL(next) : null);
-            }}
-          />
-          <label htmlFor="progress-cam-capture" className="mt-2 inline-flex cursor-pointer items-center rounded-xl border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
-            Open Camera
-          </label>
+          {/* Camera capture — wrapped in PermissionGate; file upload shown as fallback */}
+          <PermissionGate type="camera" fallback={fileInput}>
+            <div className="flex flex-col gap-2">
+              <input
+                id="progress-cam-capture"
+                className="hidden"
+                type="file"
+                title="Capture from camera"
+                accept="image/*,video/*"
+                capture="environment"
+                onChange={(e) => {
+                  const next = e.target.files?.[0] || null;
+                  setFile(next);
+                  if (previewUrl) URL.revokeObjectURL(previewUrl);
+                  setPreviewUrl(next ? URL.createObjectURL(next) : null);
+                }}
+              />
+              <label
+                htmlFor="progress-cam-capture"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/15 transition-colors"
+              >
+                📷 Capture from Camera / ক্যামেরা থেকে ছবি তুলুন
+              </label>
+              {fileInput}
+            </div>
+          </PermissionGate>
         </div>
         <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Phase category" value={phaseCategory} onChange={(e) => setPhaseCategory(e.target.value)}>
           {PHASES.map((item) => <option key={item} value={item}>{item}</option>)}
