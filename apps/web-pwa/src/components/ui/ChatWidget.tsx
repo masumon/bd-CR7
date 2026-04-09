@@ -169,7 +169,7 @@ export function ChatWidget() {
             aria-label="Open AI Chat"
           >
             <img
-              src="/icons/sumonix-ai.svg"
+              src="/icons/sumonix-ai.png"
               alt="AI Assistant"
               width={56}
               height={56}
@@ -177,7 +177,7 @@ export function ChatWidget() {
               onError={(e) => {
                 const t = e.currentTarget;
                 t.onerror = null;
-                t.src = "/icons/sumonix-ai.png";
+                t.src = "/icons/sumonix-ai.svg";
               }}
             />
           </motion.button>
