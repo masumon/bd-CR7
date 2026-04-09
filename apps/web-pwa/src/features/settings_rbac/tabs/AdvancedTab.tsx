@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminDataResetPanel } from "@/features/settings_rbac/tabs/AdminDataResetPanel";
 
 type AdvancedTabProps = {
   onReset: () => void;
@@ -27,6 +28,8 @@ export function AdvancedTab({ onReset }: AdvancedTabProps) {
             <li>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET configured</li>
           </ul>
         </div>
+
+        <AdminDataResetPanel />
       </CardContent>
     </Card>
   );

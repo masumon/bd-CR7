@@ -42,3 +42,24 @@ export async function deleteExpense(id: string, token?: string): Promise<string 
     return (error as Error).message;
   }
 }
+
+export async function approveExpense(
+  id: string,
+  decision: "approved" | "rejected",
+  note: string,
+  token?: string,
+): Promise<string | null> {
+  try {
+    await apiClient<{ status: string }>(
+      `/api/finance/expenses/${id}/approve`,
+      {
+        method: "POST",
+        body: JSON.stringify({ decision, note }),
+      },
+      token,
+    );
+    return null;
+  } catch (error) {
+    return (error as Error).message;
+  }
+}

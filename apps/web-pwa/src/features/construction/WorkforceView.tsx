@@ -225,9 +225,22 @@ export function WorkforceView() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">Loading...</p>
+              <div className="space-y-2 py-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex animate-pulse gap-3 rounded-lg px-2 py-2">
+                    <div className="h-3 w-28 rounded bg-muted" />
+                    <div className="h-3 w-16 rounded bg-muted" />
+                    <div className="h-3 w-20 rounded bg-muted" />
+                    <div className="ml-auto h-3 w-12 rounded bg-muted" />
+                  </div>
+                ))}
+              </div>
             ) : workers.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">No records found. Start logging workers above.</p>
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <HardHat className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">No attendance records yet</p>
+                <p className="text-xs text-muted-foreground/70">Log worker attendance using the form above.</p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -286,9 +299,20 @@ export function WorkforceView() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">Loading...</p>
+              <div className="space-y-2 py-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex animate-pulse gap-3 rounded-lg px-2 py-2">
+                    <div className="h-3 w-28 rounded bg-muted" />
+                    <div className="h-3 w-16 rounded bg-muted" />
+                    <div className="ml-auto h-3 w-16 rounded bg-muted" />
+                  </div>
+                ))}
+              </div>
             ) : workers.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">No payment records found.</p>
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <Wallet className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">No payment records yet</p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>

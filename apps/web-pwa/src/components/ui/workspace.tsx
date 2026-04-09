@@ -23,14 +23,14 @@ export function WorkspaceHero({ badge, stats, className }: WorkspaceHeroProps) {
         {stats.map((item, i) => {
           const c = STAT_COLORS[i % STAT_COLORS.length];
           return (
-            <div key={item.label} className={cn("glass rounded-2xl border p-4 shadow-[0_10px_24px_rgba(0,0,0,0.15)]", c.border)}>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{item.label}</p>
-                <span className={cn("inline-flex h-6 w-6 items-center justify-center rounded-lg border", c.border, c.bg)}>
-                  <span className={cn("h-2 w-2 rounded-full", c.text, c.bg)} />
+            <div key={item.label} className={cn("glass min-w-0 rounded-2xl border p-3 shadow-[0_10px_24px_rgba(0,0,0,0.15)] sm:p-4", c.border)}>
+              <div className="flex items-center justify-between gap-1">
+                <p className="min-w-0 truncate text-[10px] uppercase tracking-wide text-muted-foreground sm:text-[11px]">{item.label}</p>
+                <span className={cn("inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border sm:h-6 sm:w-6", c.border, c.bg)}>
+                  <span className={cn("h-1.5 w-1.5 rounded-full sm:h-2 sm:w-2", c.text, c.bg)} />
                 </span>
               </div>
-              <p className={cn("mt-1.5 text-2xl font-bold", c.text)}>{item.value}</p>
+              <p className={cn("mt-1 truncate text-xl font-bold sm:mt-1.5 sm:text-2xl", c.text)}>{item.value}</p>
             </div>
           );
         })}
@@ -52,7 +52,7 @@ export function SectionHeader({ eyebrow, title, actions }: SectionHeaderProps) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80">{eyebrow}</p>
         <h3 className="mt-0.5 text-[17px] font-semibold text-foreground">{title}</h3>
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }

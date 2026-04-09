@@ -394,7 +394,7 @@ export function ProjectsFeature() {
         eyebrow="Project Desk / প্রজেক্ট ডেস্ক"
         title="Project cards with update controls"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ExportPDFButton
               onBuildOptions={() => ({
                 moduleName: "Projects",
@@ -439,7 +439,7 @@ export function ProjectsFeature() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
             <motion.div
               key={p.id}
@@ -524,7 +524,7 @@ export function ProjectsFeature() {
       )}
 
       {selectedProject ? (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardContent className="space-y-4 p-4">
               <div className="flex items-start justify-between gap-3">

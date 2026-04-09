@@ -284,7 +284,7 @@ export function ReportsFeature() {
           initial="hidden"
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {statCards.map((card) => (
             <motion.div key={card.label} variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}>
@@ -328,7 +328,7 @@ export function ReportsFeature() {
         </Card>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>
           <CardHeader>
             <CardTitle>Expense Category Signal</CardTitle>

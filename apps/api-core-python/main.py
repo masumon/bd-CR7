@@ -44,7 +44,7 @@ def create_app() -> Any:
     from core.logging import configure_logging
     from core.middleware import RateLimitMiddleware
     from core.supabase import supabase_service
-    from routers import auth, contractor, finance, hr, project_management, users
+    from routers import admin, auth, contractor, finance, hr, project_management, users
 
     configure_logging(settings.log_level, env=settings.env)
 
@@ -155,6 +155,7 @@ def create_app() -> Any:
     app.include_router(contractor.router, prefix="/api/contractor", tags=["contractor"])
     app.include_router(project_management.router, prefix="/api/project-management", tags=["project_management"])
     app.include_router(users.router, prefix="/api/users", tags=["users"])
+    app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
     @app.get("/api")
     async def root() -> dict[str, str]:
