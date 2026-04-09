@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowDownUp, BadgeDollarSign, CheckCircle2, MoreHorizontal, XCircle } from "lucide-react";
-import { BadgeDollarSign, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { BadgeDollarSign, CheckCircle2, FileSpreadsheet, FileText, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
