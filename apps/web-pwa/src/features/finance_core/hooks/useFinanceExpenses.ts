@@ -7,11 +7,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 
 import type { ExpenseEditForm, ExpenseRow } from "@/features/finance_core/types";
-import { deleteExpense, fetchExpenses, updateExpense } from "@/features/finance_core/services/expenseService";
+import { approveExpense, deleteExpense, fetchExpenses, updateExpense } from "@/features/finance_core/services/expenseService";
 
 export function useFinanceExpenses() {
   const token = useAuthStore((state) => state.token ?? undefined);
+  const role = useAuthStore((state) => state.role);
   const [open, setOpen] = useState(false);
+  // Approval flow state
+  const [approvalTarget, setApprovalTarget] = useState<{ id: string; decision: "approved" | "rejected" } | null>(null);
+  const [approvalNote, setApprovalNote] = useState("");
+  const [approving, setApproving] = useState(false);
+  const [approvalError, setApprovalError] = useState("");
   const [rows, setRows] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState<ExpenseRow | null>(null);
@@ -105,6 +111,28 @@ export function useFinanceExpenses() {
     await loadExpenses();
   };
 
+  const submitApproval = async () => {
+    if (!approvalTarget) return;
+    if (approvalNote.trim().length < 2) {
+      setApprovalError("Note must be at least 2 characters.");
+      return;
+    }
+    setApproving(true);
+    setApprovalError("");
+    const error = await approveExpense(approvalTarget.id, approvalTarget.decision, approvalNote.trim(), token);
+    setApproving(false);
+    if (error) {
+      setApprovalError(error);
+      return;
+    }
+    setApprovalTarget(null);
+    setApprovalNote("");
+    await loadExpenses();
+  };
+
+  // Roles that can approve/reject
+  const canApprove = role === "admin" || role === "super_admin" || role === "checker";
+
   return {
     open,
     setOpen,
@@ -128,5 +156,15 @@ export function useFinanceExpenses() {
     openEdit,
     submitEdit,
     confirmDelete,
+    // Approval
+    canApprove,
+    approvalTarget,
+    setApprovalTarget,
+    approvalNote,
+    setApprovalNote,
+    approving,
+    approvalError,
+    setApprovalError,
+    submitApproval,
   };
 }

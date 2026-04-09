@@ -79,7 +79,7 @@ export function ConstructionView() {
         initial="hidden"
         animate="show"
         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-        className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]"
+        className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]"
       >
         <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
         <Card>

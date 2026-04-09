@@ -273,7 +273,7 @@ export function MaterialTrackFeature() {
               <ArrowDownToLine className="h-3 w-3" /> CSV
             </button>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {stockList.map((s) => {
               const low = s.current_qty <= s.low_stock_threshold;
               return (
@@ -296,7 +296,7 @@ export function MaterialTrackFeature() {
       <div>
         <div className="mb-3 flex items-center justify-between gap-2">
           <h4 className="text-sm font-semibold text-foreground">সাম্প্রতিক মুভমেন্ট / Recent Movements</h4>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={fetchMovements}

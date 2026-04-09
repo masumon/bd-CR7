@@ -225,7 +225,7 @@ export function WorkerLogsFeature() {
             <h3 className="text-base font-semibold text-foreground">সাম্প্রতিক উপস্থিতি / Recent Attendance</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">Last 50 entries</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => fetchLogs()} disabled={logsLoading}
               className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition hover:bg-muted disabled:opacity-50" aria-label="Refresh">
               <RefreshCw className={`h-3.5 w-3.5 ${logsLoading ? "animate-spin" : ""}`} />
