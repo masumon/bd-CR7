@@ -63,6 +63,7 @@ export function ChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dragControls = useDragControls();
   const constraintRef = useRef<HTMLDivElement>(null);
+  const fabDragging = useRef(false);
 
   // Track online/offline status
   useEffect(() => {
@@ -141,48 +142,64 @@ export function ChatWidget() {
     ]);
   };
 
-  // ── FAB (closed state) ────────────────────────────────────────────────────
-  if (!open) {
-    return (
-      <motion.button
-        key="chat-fab"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-[100] bg-transparent border-none outline-none p-0 lg:bottom-6"
-        aria-label="Open AI Chat"
-      >
-        <img
-          src="/icons/sumonix-ai.png"
-          alt="AI Assistant"
-          className="h-14 w-14 object-contain drop-shadow-[0_0_14px_rgba(0,255,200,0.7)]"
-        />
-      </motion.button>
-    );
-  }
-
-  // ── Chat Window ───────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Drag constraint layer (full screen) */}
+      {/* Drag constraint layer — always mounted so FAB can use it */}
       <div ref={constraintRef} className="pointer-events-none fixed inset-0 z-[99]" />
 
-      <motion.div
-        drag
-        dragControls={dragControls}
-        dragListener={false}
-        dragConstraints={constraintRef}
-        dragElastic={0.08}
-        dragMomentum={false}
-        initial={{ opacity: 0, scale: 0.85, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.85, y: 20 }}
-        transition={{ duration: 0.22, ease: "easeOut" }}
-        className="fixed bottom-20 right-4 z-[100] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl lg:bottom-6"
-        style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.45)" }}
-      >
+      <AnimatePresence mode="wait">
+        {/* ── FAB (closed state) ───────────────────────────────────────── */}
+        {!open && (
+          <motion.button
+            key="chat-fab"
+            drag
+            dragConstraints={constraintRef}
+            dragElastic={0.1}
+            dragMomentum={false}
+            onDragStart={() => { fabDragging.current = true; }}
+            onDragEnd={() => { setTimeout(() => { fabDragging.current = false; }, 80); }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => { if (!fabDragging.current) setOpen(true); }}
+            className="fixed bottom-20 right-4 z-[100] cursor-grab touch-none bg-transparent border-none outline-none p-0 active:cursor-grabbing lg:bottom-6"
+            aria-label="Open AI Chat"
+          >
+            <img
+              src="/icons/sumonix-ai.png"
+              alt="AI Assistant"
+              width={56}
+              height={56}
+              className="h-14 w-14 object-contain drop-shadow-[0_0_14px_rgba(0,255,200,0.7)]"
+              onError={(e) => {
+                const t = e.currentTarget;
+                t.onerror = null;
+                t.src = "/icons/sumonix-ai.svg";
+              }}
+            />
+          </motion.button>
+        )}
+
+        {/* ── Chat Window ──────────────────────────────────────────────── */}
+        {open && (
+        <motion.div
+          key="chat-window"
+          drag
+          dragControls={dragControls}
+          dragListener={false}
+          dragConstraints={constraintRef}
+          dragElastic={0.08}
+          dragMomentum={false}
+          initial={{ opacity: 0, scale: 0.85, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.85, y: 20 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="fixed bottom-20 right-4 z-[100] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl lg:bottom-6"
+          style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.45)" }}
+        >
         {/* ── Header ── */}
         <div
           className="flex items-center gap-2 border-b border-border/50 bg-gradient-to-r from-primary/15 to-accent/10 px-3 py-2.5"
@@ -356,6 +373,8 @@ export function ChatWidget() {
           )}
         </AnimatePresence>
       </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
