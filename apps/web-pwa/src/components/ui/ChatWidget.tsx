@@ -148,16 +148,17 @@ export function ChatWidget() {
         key="chat-fab"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.94 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent shadow-float lg:bottom-6"
+        className="fixed bottom-20 right-4 z-[100] bg-transparent border-none outline-none p-0 lg:bottom-6"
         aria-label="Open AI Chat"
       >
-        <Bot className="h-6 w-6 text-primary-foreground" />
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400 text-[8px] font-bold text-black">
-          AI
-        </span>
+        <img
+          src="/icons/sumonix-ai.png"
+          alt="AI Assistant"
+          className="h-14 w-14 object-contain drop-shadow-[0_0_14px_rgba(0,255,200,0.7)]"
+        />
       </motion.button>
     );
   }
