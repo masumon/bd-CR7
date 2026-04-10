@@ -1,15 +1,15 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/main.py",
-      "use": "@vercel/python"
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter ./apps/web build",
+  "outputDirectory": "apps/web/.next",
+  "functions": {
+    "api/main.py": {
+      "runtime": "python@3.11.0",
+      "includeFiles": "apps/**"
     }
-  ],
+  },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/main.py"
-    }
+    { "source": "/api/:path*", "destination": "/api/main.py" }
   ]
 }
