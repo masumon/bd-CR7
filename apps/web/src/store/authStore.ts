@@ -4,27 +4,13 @@ import { persist } from "zustand/middleware";
 import { supabase } from "@/lib/supabase";
 import useOfflineQueue from "@/store/offlineQueue";
 
-type RoleJoin = { name?: string } | Array<{ name?: string }> | null | undefined;
-
-function extractRoleName(roles: RoleJoin): string {
-  if (Array.isArray(roles)) {
-    const name = roles[0]?.name;
-    if (typeof name === "string" && name.trim()) return name.trim().toLowerCase();
-  }
-  if (roles && typeof roles === "object") {
-    const name = (roles as { name?: string }).name;
-    if (typeof name === "string" && name.trim()) return name.trim().toLowerCase();
-  }
-  throw new Error("User role mapping is missing. Contact administrator.");
-}
-
 async function fetchUserRole(userId: string): Promise<string> {
   if (!supabase) {
     throw new Error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
   }
   const { data, error } = await supabase
     .from("users")
-    .select("id,is_active,roles(name)")
+    .select("id,is_active,role")
     .eq("id", userId)
     .maybeSingle();
 
@@ -38,7 +24,9 @@ async function fetchUserRole(userId: string): Promise<string> {
     throw new Error("User account is inactive.");
   }
 
-  return extractRoleName((data as { roles?: RoleJoin }).roles);
+  const role = (data as { role?: string }).role;
+  if (typeof role === "string" && role.trim()) return role.trim().toLowerCase();
+  throw new Error("User role mapping is missing. Contact administrator.");
 }
 
 
