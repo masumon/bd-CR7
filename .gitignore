@@ -26,8 +26,26 @@ venv/
 .vercel/
 
 # next-pwa generated assets
-apps/web-pwa/public/sw.js
-apps/web-pwa/public/workbox-*.js
-apps/web-pwa/public/fallback-*.js
-.vercel
-.env*.local
+apps/web/public/sw.js
+apps/web/public/workbox-*.js
+apps/web/public/fallback-*.js
+
+# Architecture 2 — backup folders (not needed in production)
+apps/api/routers_backup/
+apps/api/schemas_backup/
+apps/api/services_backup/
+
+# Internal planning docs (not for production repo)
+AI_ORCHESTRATOR_DESIGN.md
+ARCHITECTURE_2_REBUILD_PLAN.md
+COMPLETE_RESOURCE_INDEX.md
+EXECUTIVE_SUMMARY.md
+FINANCE_HARDENING.md
+IMPLEMENTATION_GUIDE.md
+IMPLEMENTATION_STATUS_OVERVIEW.md
+PHASE_5_IMPLEMENTATION_PROGRESS.md
+STEP_BY_STEP_EXECUTION_REPORT.md
+VALIDATION_DEPLOYMENT_CHECKLIST.md
+build_fix_report.md
+full_system_upgrade_report.md
+surgical_audit_report_last.bn.md

@@ -8,4 +8,5 @@ pgvector==0.3.6
 psycopg[binary]==3.2.3
 supabase==2.10.0
 python-dotenv==1.0.1
+mangum==0.17.0
 redis[hiredis]==5.2.1

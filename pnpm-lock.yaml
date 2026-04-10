@@ -23,9 +23,9 @@ importers:
         specifier: 2.9.2
         version: 2.9.2
 
-  apps/api-core-python: {}
+  apps/api: {}
 
-  apps/web-pwa:
+  apps/web:
     dependencies:
       '@bdcr7/media-engine':
         specifier: workspace:*

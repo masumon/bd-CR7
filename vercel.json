@@ -1,7 +1,6 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "pnpm --filter web-pwa run build",
-  "outputDirectory": "apps/web-pwa/.next",
+  "buildCommand": "pnpm --filter web run build",
   "installCommand": "pnpm install --frozen-lockfile"
 }

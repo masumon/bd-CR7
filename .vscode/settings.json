@@ -16,7 +16,7 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "/^Set-Location \"d:\\\\BD CR7 Project\"; python -m compileall apps/api-core-python sumonix_ai$/": {
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; python -m compileall apps/api sumonix_ai$/": {
             "approve": true,
             "matchCommandLine": true
         },
@@ -28,11 +28,11 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\apps\\\\api-core-python -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch '\\\\\\\\venv\\\\\\\\\\|\\\\\\\\__pycache__\\\\\\\\\\|\\\\\\\\\\.turbo\\\\\\\\' \\} \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\apps\\\\api -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch '\\\\\\\\venv\\\\\\\\\\|\\\\\\\\__pycache__\\\\\\\\\\|\\\\\\\\\\.turbo\\\\\\\\' \\} \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
             "approve": true,
             "matchCommandLine": true
         },
-        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\apps\\\\web-pwa -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch '\\\\\\\\node_modules\\\\\\\\\\|\\\\\\\\\\.next\\\\\\\\' \\} \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
+        "/^Set-Location \"d:\\\\BD CR7 Project\"; Get-ChildItem \\.\\\\apps\\\\web -Recurse -File \\| Where-Object \\{ \\$_\\.FullName -notmatch '\\\\\\\\node_modules\\\\\\\\\\|\\\\\\\\\\.next\\\\\\\\' \\} \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\}$/": {
             "approve": true,
             "matchCommandLine": true
         },
@@ -44,11 +44,11 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "/^cd \"d:\\\\\\\\BD CR7 Project\" ; git add \"apps/web-pwa/app/\\(auth\\)/login/page\\.tsx\" ; git commit -m \"fix\\(web-pwa\\): add missing ArrowRight and Fingerprint imports in login page\"$/": {
+        "/^cd \"d:\\\\\\\\BD CR7 Project\" ; git add \"apps/web/app/\\(auth\\)/login/page\\.tsx\" ; git commit -m \"fix\\(web\\): add missing ArrowRight and Fingerprint imports in login page\"$/": {
             "approve": true,
             "matchCommandLine": true
         },
-        "/^pnpm --filter \\./apps/web-pwa build$/": {
+        "/^pnpm --filter \\./apps/web build$/": {
             "approve": true,
             "matchCommandLine": true
         }
