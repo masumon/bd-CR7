@@ -60,7 +60,7 @@ class MaterialsRepository:
             RETURNING current_stock
         ),
         transaction_record AS (
-            INSERT INTO material_transactions (material_id, quantity_change, transaction_type, reference_id, notes, created_at)
+            INSERT INTO material_movements (material_id, quantity_change, transaction_type, reference_id, notes, created_at)
             VALUES ($1, $2, $3, $4, $5, NOW())
         )
         SELECT * FROM stock_update;
@@ -113,7 +113,7 @@ class MaterialsRepository:
     ) -> List[Dict]:
         """Get stock transaction history for a material"""
         query = """
-        SELECT * FROM material_transactions 
+        SELECT * FROM material_movements 
         WHERE material_id = $1 
         ORDER BY created_at DESC 
         LIMIT $2

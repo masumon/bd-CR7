@@ -58,7 +58,7 @@ class Settings:
             "yes",
             "on",
         }
-        self.require_redis_in_production = env.get("REQUIRE_REDIS_IN_PRODUCTION", "true").strip().lower() in {
+        self.require_redis_in_production = env.get("REQUIRE_REDIS_IN_PRODUCTION", "false").strip().lower() in {
             "1",
             "true",
             "yes",

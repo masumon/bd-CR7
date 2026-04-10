@@ -51,9 +51,9 @@ class SettingsRepository:
         # TODO: Execute query
         return {"status": "updated"}
     
-    async def get_user_preferences(self, user_id: str) -> Dict:
+    async def get_workspace_preferences(self, user_id: str) -> Dict:
         """Get user preferences"""
-        query = "SELECT key, value FROM user_preferences WHERE user_id = $1"
+        query = "SELECT key, value FROM workspace_preferences WHERE user_id = $1"
         # TODO: Execute query and format as dict
         return {"theme": "light"}
     
@@ -65,7 +65,7 @@ class SettingsRepository:
     ) -> Dict:
         """Update user preference"""
         query = """
-        INSERT INTO user_preferences (user_id, key, value, updated_at)
+        INSERT INTO workspace_preferences (user_id, key, value, updated_at)
         VALUES ($1, $2, $3, NOW())
         ON CONFLICT (user_id, key) DO UPDATE SET
             value = EXCLUDED.value,

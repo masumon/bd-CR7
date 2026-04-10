@@ -98,7 +98,7 @@ class UpdatePreferenceRequest(BaseModel):
 class SettingsResponse(BaseModel):
     """Response containing settings"""
     system_settings: SystemSettings
-    user_preferences: UserPreferences
+    workspace_preferences: UserPreferences
     notification_settings: NotificationSettings
     last_updated: Optional[datetime] = None
 

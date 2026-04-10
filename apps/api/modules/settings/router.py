@@ -59,9 +59,9 @@ async def delete_system_setting(
     return {"message": "Setting deleted successfully"}
 
 @router.get("/user", response_model=List[UserPreferenceResponse])
-async def get_user_preferences(current_user: dict = Depends(get_current_user)):
+async def get_workspace_preferences(current_user: dict = Depends(get_current_user)):
     """Get current user's preferences"""
-    return await settings_service.get_user_preferences(current_user["id"])
+    return await settings_service.get_workspace_preferences(current_user["id"])
 
 @router.post("/user", response_model=UserPreferenceResponse)
 async def create_user_preference(

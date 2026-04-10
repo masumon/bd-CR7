@@ -32,7 +32,7 @@ class SettingsService:
         # TODO: Update setting with audit trail
         return {"status": "updated"}
     
-    async def get_user_preferences(self, user_id: str) -> Dict:
+    async def get_workspace_preferences(self, user_id: str) -> Dict:
         """Get user-specific preferences."""
         # TODO: Retrieve user preferences
         return {"theme": "light", "language": "en"}

@@ -58,6 +58,7 @@ def create_app() -> Any:
     from modules.reports.router import router as reports_router
     from modules.settings.router import router as settings_router
     from modules.workforce.router import router as workforce_router
+    from modules.ai.router import router as ai_router
 
     configure_logging(settings.log_level, env=settings.env)
 
@@ -174,6 +175,7 @@ def create_app() -> Any:
     app.include_router(reports_router, prefix="/api/reports", tags=["reports"])
     app.include_router(settings_router, prefix="/api/settings", tags=["settings"])
     app.include_router(workforce_router, prefix="/api/workforce", tags=["workforce"])
+    app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 
     @app.get("/api")
     async def root() -> dict[str, str]:
@@ -197,7 +199,7 @@ def create_app() -> Any:
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             return {"status": "error", "reason": "supabase_service_not_configured"}
         try:
-            supabase_service.table("roles").select("id", count="exact").limit(1).execute()
+            supabase_service.table("users").select("id", count="exact").limit(1).execute()
         except Exception:  # noqa: BLE001
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             return {"status": "error", "reason": "dependency_check_failed"}
@@ -208,8 +210,8 @@ def create_app() -> Any:
         if supabase_service is None:
             return {"status": "error", "roles": 0}
         try:
-            roles = supabase_service.table("roles").select("id", count="exact").limit(1).execute()
-            return {"status": "ok", "roles": int(roles.count or 0)}
+            roles = supabase_service.table("users").select("id", count="exact").limit(1).execute()
+            return {"status": "ok", "users": int(roles.count or 0)}
         except Exception:  # noqa: BLE001
             return {"status": "error", "roles": 0}
 

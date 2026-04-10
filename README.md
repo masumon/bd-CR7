@@ -326,7 +326,7 @@ Run in Supabase SQL Editor **in order**. Each file is idempotent (`CREATE TABLE 
 | State           | Zustand                                             |
 | Monorepo        | PNPM workspaces + Turborepo                         |
 | Frontend Deploy | Vercel                                              |
-| Backend Deploy  | Render                                              |
+| Backend Deploy  | Vercel (serverless via `api/` entrypoint)           |
 
 ---
 
@@ -357,7 +357,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 # Backend
-NEXT_PUBLIC_API_URL=https://bd-cr7-api.onrender.com
+NEXT_PUBLIC_API_URL=
 
 # Cloudinary
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=

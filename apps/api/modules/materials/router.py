@@ -149,7 +149,7 @@ async def update_stock(
         client.table("materials").update({"current_stock": new_stock}).eq("id", material_id).execute()
         # Log the transaction
         tx_id = str(uuid4())
-        client.table("material_transactions").insert({
+        client.table("material_movements").insert({
             "id": tx_id,
             "material_id": material_id,
             "quantity_change": payload.quantity_change,

@@ -28,7 +28,7 @@ async def update_contractor_paid_amount(
     client = _require_supabase()
 
     existing = (
-        client.table("contractor_contracts")
+        client.table("contracts")
         .select("id,created_by")
         .eq("id", contract_id)
         .limit(1)
@@ -41,5 +41,5 @@ async def update_contractor_paid_amount(
     if user.role == "maker" and str(existing.data[0].get("created_by") or "") != user.user_id:
         raise HTTPException(status_code=403, detail="You do not have permission to update this contract")
 
-    client.table("contractor_contracts").update({"paid_amount": str(payload.paid_amount)}).eq("id", contract_id).execute()
+    client.table("contracts").update({"paid_amount": str(payload.paid_amount)}).eq("id", contract_id).execute()
     return {"id": contract_id, "paid_amount": str(payload.paid_amount)}
