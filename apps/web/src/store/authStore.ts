@@ -162,11 +162,13 @@ export const useAuthStore = create<AuthState>()(
           throw new Error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
         }
         set({ loading: true, error: null });
+        const origin = typeof window !== "undefined" ? window.location.origin : "https://bd-cr7.vercel.app";
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: fullName, role_name: roleName || "viewer" },
+            emailRedirectTo: `${origin}/auth/callback`,
           },
         });
         if (error || !data.user) {
