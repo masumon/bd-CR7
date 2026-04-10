@@ -6,7 +6,7 @@
   "framework": "nextjs",
   "functions": {
     "api/main.py": {
-      "runtime": "python3.11",
+      "runtime": "@vercel/python@3.11.0",
       "includeFiles": "apps/**"
     }
   },
