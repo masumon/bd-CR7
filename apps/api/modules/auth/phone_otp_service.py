@@ -1,26 +1,22 @@
 """
 phone_otp_service.py
 ──────────────────────────────────────────────────────────────────────────────
-Custom phone OTP system for BD CR7 ERP.
+Phone OTP system for BD CR7 ERP.
 
-Bypasses Supabase's built-in phone provider (which requires Twilio configured
-in the Supabase dashboard). Instead:
-  1. Python generates a 6-digit OTP, hashes it, stores in phone_otp_verifications.
-  2. Sends SMS via Twilio REST API using httpx (no additional SDK needed).
-  3. On verify, checks hash + expiry + attempt limit.
-  4. On success, creates a Supabase magic-link token so the frontend can
-     exchange it for a real Supabase session.
+Preferred path:
+    1. Use Twilio Verify Service (TWILIO_VERIFY_SERVICE_SID) to send/check OTP.
+    2. On successful verification, issue a Supabase magic-link token.
 
-Environment variables required (set in Vercel & .env.local):
-  TWILIO_ACCOUNT_SID   — Twilio account SID (starts with AC...)
-  TWILIO_AUTH_TOKEN    — Twilio auth token
-  TWILIO_FROM_NUMBER   — Twilio phone number in E.164 format (+1415...)
+Fallback path:
+    1. Python generates a 6-digit OTP, hashes it, stores in phone_otp_verifications.
+    2. Sends SMS via Twilio Messaging API.
+    3. On verify, checks hash + expiry + attempt limit.
+    4. On success, creates a Supabase magic-link token.
 """
 
 from __future__ import annotations
 
 import hashlib
-import os
 import random
 import secrets
 from datetime import datetime, timezone
@@ -33,6 +29,8 @@ from core.supabase import supabase_service
 # ── Constants ──────────────────────────────────────────────────────────────────
 OTP_LENGTH = 6
 TWILIO_MESSAGES_URL = "https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+TWILIO_VERIFY_URL = "https://verify.twilio.com/v2/Services/{service_sid}/Verifications"
+TWILIO_VERIFY_CHECK_URL = "https://verify.twilio.com/v2/Services/{service_sid}/VerificationCheck"
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -95,6 +93,46 @@ def _send_sms_twilio(to: str, body: str) -> None:
         raise RuntimeError(f"SMS network error: {exc}") from exc
 
 
+def _send_verify_otp_twilio(to: str) -> None:
+    url = TWILIO_VERIFY_URL.format(service_sid=settings.twilio_verify_service_sid)
+    try:
+        with httpx.Client(timeout=15) as client:
+            resp = client.post(
+                url,
+                auth=(settings.twilio_account_sid, settings.twilio_auth_token),
+                data={"To": to, "Channel": "sms"},
+            )
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(
+            f"Twilio Verify send failed ({exc.response.status_code}): {exc.response.text}"
+        ) from exc
+    except httpx.RequestError as exc:
+        raise RuntimeError(f"Twilio Verify network error: {exc}") from exc
+
+
+def _check_verify_otp_twilio(to: str, otp_input: str) -> None:
+    url = TWILIO_VERIFY_CHECK_URL.format(service_sid=settings.twilio_verify_service_sid)
+    try:
+        with httpx.Client(timeout=15) as client:
+            resp = client.post(
+                url,
+                auth=(settings.twilio_account_sid, settings.twilio_auth_token),
+                data={"To": to, "Code": otp_input},
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(
+            f"Twilio Verify check failed ({exc.response.status_code}): {exc.response.text}"
+        ) from exc
+    except httpx.RequestError as exc:
+        raise RuntimeError(f"Twilio Verify network error: {exc}") from exc
+
+    if str(payload.get("status") or "").lower() != "approved":
+        raise OtpError("ভুল OTP। আবার চেষ্টা করুন।")
+
+
 def _build_sms_body(otp: str) -> str:
     return (
         f"BD CR7 ERP — আপনার OTP কোড: {otp}\n"
@@ -127,6 +165,10 @@ def send_phone_otp(raw_phone: str) -> dict:
     phone = _normalize_phone(raw_phone)
     if not phone.startswith("+") or len(phone) < 8:
         raise OtpError(f"Invalid phone number format: {raw_phone!r}")
+
+    if settings.twilio_verify_service_sid:
+        _send_verify_otp_twilio(phone)
+        return {"phone": phone, "expires_in": settings.phone_otp_ttl_seconds}
 
     # Cleanup old OTPs for this number + expired rows globally
     try:
@@ -182,50 +224,53 @@ def verify_phone_otp(raw_phone: str, otp_input: str) -> dict:
     phone = _normalize_phone(raw_phone)
     otp_input = otp_input.strip()
 
-    # Load OTP row
-    rows = (
-        supabase_service.table("phone_otp_verifications")
-        .select("id,otp_hash,salt,expires_at,attempts,verified")
-        .eq("phone", phone)
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
+    if settings.twilio_verify_service_sid:
+        _check_verify_otp_twilio(phone, otp_input)
+    else:
+        # Load OTP row
+        rows = (
+            supabase_service.table("phone_otp_verifications")
+            .select("id,otp_hash,salt,expires_at,attempts,verified")
+            .eq("phone", phone)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
 
-    if not rows.data:
-        raise OtpError("OTP পাওয়া যায়নি। আবার OTP পাঠান।")
+        if not rows.data:
+            raise OtpError("OTP পাওয়া যায়নি। আবার OTP পাঠান।")
 
-    row = rows.data[0]
-    row_id = row["id"]
+        row = rows.data[0]
+        row_id = row["id"]
 
-    if row.get("verified"):
-        raise OtpError("এই OTP আগেই ব্যবহার হয়ে গেছে। নতুন OTP পাঠান।")
+        if row.get("verified"):
+            raise OtpError("এই OTP আগেই ব্যবহার হয়ে গেছে। নতুন OTP পাঠান।")
 
-    # Check expiry
-    expires_at_str = row.get("expires_at", "")
-    if expires_at_str:
-        expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
-        if datetime.now(timezone.utc) > expires_at:
-            raise OtpError("OTP মেয়াদ শেষ হয়ে গেছে। নতুন OTP পাঠান।")
+        # Check expiry
+        expires_at_str = row.get("expires_at", "")
+        if expires_at_str:
+            expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) > expires_at:
+                raise OtpError("OTP মেয়াদ শেষ হয়ে গেছে। নতুন OTP পাঠান।")
 
-    # Increment attempts
-    attempts = int(row.get("attempts") or 0) + 1
-    if attempts > settings.phone_otp_max_attempts:
-        raise OtpError("অনেকবার ভুল OTP দেওয়া হয়েছে। নতুন OTP পাঠান।")
+        # Increment attempts
+        attempts = int(row.get("attempts") or 0) + 1
+        if attempts > settings.phone_otp_max_attempts:
+            raise OtpError("অনেকবার ভুল OTP দেওয়া হয়েছে। নতুন OTP পাঠান।")
 
-    supabase_service.table("phone_otp_verifications").update(
-        {"attempts": attempts}
-    ).eq("id", row_id).execute()
+        supabase_service.table("phone_otp_verifications").update(
+            {"attempts": attempts}
+        ).eq("id", row_id).execute()
 
-    # Verify hash
-    expected_hash = _hash_otp(otp_input, phone, str(row["salt"]))
-    if not secrets.compare_digest(expected_hash, str(row["otp_hash"])):
-        raise OtpError(f"ভুল OTP। {settings.phone_otp_max_attempts - attempts} টি সুযোগ বাকি।")
+        # Verify hash
+        expected_hash = _hash_otp(otp_input, phone, str(row["salt"]))
+        if not secrets.compare_digest(expected_hash, str(row["otp_hash"])):
+            raise OtpError(f"ভুল OTP। {settings.phone_otp_max_attempts - attempts} টি সুযোগ বাকি।")
 
-    # Mark as verified
-    supabase_service.table("phone_otp_verifications").update(
-        {"verified": True}
-    ).eq("id", row_id).execute()
+        # Mark as verified
+        supabase_service.table("phone_otp_verifications").update(
+            {"verified": True}
+        ).eq("id", row_id).execute()
 
     # Look up user by phone in our users table
     user_rows = (
