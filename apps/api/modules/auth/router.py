@@ -14,6 +14,7 @@ from core.supabase import supabase_anon, supabase_service
 from core.exceptions import AuthError
 from schemas.auth import AuthResponse, LoginRequest, RegisterRequest
 from webauthn import base64url_to_bytes, verify_authentication_response
+from modules.auth.phone_otp_service import OtpError, send_phone_otp, verify_phone_otp
 
 router = APIRouter()
 
@@ -453,3 +454,52 @@ async def deactivate_biometric_credential(credential_id: str, user: UserContext 
     if not res.data:
         raise HTTPException(status_code=404, detail="Credential not found")
     return {"ok": True}
+
+
+# ── Phone OTP (custom — no Supabase phone provider required) ──────────────────
+
+@router.post("/otp/phone/send")
+async def phone_otp_send(payload: dict):
+    """
+    Send a 6-digit OTP to a phone number via Twilio SMS.
+
+    Body: { "phone": "+8801XXXXXXXXX" }
+    Returns: { "phone": str, "expires_in": int }
+    """
+    phone = str(payload.get("phone") or "").strip()
+    if not phone:
+        raise HTTPException(status_code=422, detail="phone is required")
+    try:
+        result = send_phone_otp(phone)
+        return result
+    except OtpError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.post("/otp/phone/verify")
+async def phone_otp_verify(payload: dict):
+    """
+    Verify a phone OTP and return a Supabase magic-link token the frontend
+    uses to create a real Supabase session.
+
+    Body: { "phone": "+8801XXXXXXXXX", "otp": "123456" }
+    Returns: { "token_hash": str, "email": str, "type": "magiclink", "role": str, "user_id": str }
+    """
+    phone = str(payload.get("phone") or "").strip()
+    otp = str(payload.get("otp") or "").strip()
+    if not phone or not otp:
+        raise HTTPException(status_code=422, detail="phone and otp are required")
+    try:
+        result = verify_phone_otp(phone, otp)
+        audit_log(
+            user_id=result.get("user_id", "unknown"),
+            action="auth.phone_otp.verify",
+            meta={"phone_suffix": phone[-4:], "role": result.get("role")},
+        )
+        return result
+    except OtpError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc

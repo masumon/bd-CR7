@@ -158,53 +158,71 @@ export function useAuthFlow(router: RouterLike) {
       setOtpError("ফোন নম্বর বা ইমেইল লিখুন");
       return;
     }
-    if (!supabase) {
-      setOtpError("সার্ভিস পাওয়া যাচ্ছে না। একটু পরে চেষ্টা করুন।");
-      return;
-    }
     setOtpLoading(true);
     setOtpError("");
     const isEmail = contact.includes("@");
 
-    if (!isEmail) {
-      // Phone OTP requires Twilio/SMS provider configured in Supabase dashboard.
-      // Show a clear Bengali message instead of the raw "Unsupported phone provider" error.
+    if (isEmail) {
+      // ── Email OTP via Supabase built-in ──────────────────────────────────
+      if (!supabase) {
+        setOtpLoading(false);
+        setOtpError("সার্ভিস পাওয়া যাচ্ছে না।");
+        return;
+      }
+      const { error } = await supabase.auth.signInWithOtp({
+        email: contact,
+        options: { shouldCreateUser: false },
+      });
       setOtpLoading(false);
-      setOtpError(
-        "SMS OTP এই মুহূর্তে উপলব্ধ নয়। অনুগ্রহ করে ইমেইল OTP ব্যবহার করুন।\n(Phone OTP requires SMS provider setup)"
-      );
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: contact,
-      options: { shouldCreateUser: false },
-    });
-    setOtpLoading(false);
-    if (error) {
-      const msg = error.message || "";
-      if (msg.toLowerCase().includes("unsupported") || msg.toLowerCase().includes("phone provider")) {
-        setOtpError("SMS OTP সক্রিয় নেই। ইমেইল দিয়ে OTP পাঠান।");
-      } else if (msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("no user")) {
-        setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
+      if (error) {
+        const msg = error.message || "";
+        if (msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("no user")) {
+          setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
+        } else {
+          setOtpError(msg);
+        }
       } else {
-        setOtpError(msg);
+        setOtpStep(2);
+        setOtpResendTimer(60);
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
       }
     } else {
-      setOtpStep(2);
-      setOtpResendTimer(60);
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      // ── Phone OTP via custom Python API + Twilio SMS ──────────────────────
+      // Normalize BD numbers: 01XXXXXXXXX → +8801XXXXXXXXX
+      let phone = contact;
+      if (phone.startsWith("01") && phone.length === 11) phone = "+880" + phone.slice(1);
+      else if (phone.startsWith("880") && !phone.startsWith("+")) phone = "+" + phone;
+
+      try {
+        const res = await fetch("/api/auth/otp/phone/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone }),
+        });
+        const json = await res.json() as { detail?: string; phone?: string; expires_in?: number };
+        if (!res.ok) {
+          setOtpError(json.detail || "OTP পাঠানো ব্যর্থ হয়েছে।");
+        } else {
+          setOtpStep(2);
+          setOtpResendTimer(60);
+          setTimeout(() => otpRefs.current[0]?.focus(), 100);
+        }
+      } catch {
+        setOtpError("নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।");
+      } finally {
+        setOtpLoading(false);
+      }
     }
   };
 
   const handleVerifyOtp = async () => {
-    const token = otpDigits.join("");
-    if (token.length < 6) {
-      setOtpError("Enter all 6 digits");
+    const otpCode = otpDigits.join("");
+    if (otpCode.length < 6) {
+      setOtpError("৬টি সংখ্যা পূরণ করুন");
       return;
     }
     if (!supabase) {
-      setOtpError("Service unavailable");
+      setOtpError("সার্ভিস পাওয়া যাচ্ছে না।");
       return;
     }
     setOtpLoading(true);
@@ -212,29 +230,79 @@ export function useAuthFlow(router: RouterLike) {
     const contact = otpContact.trim();
     const isEmail = contact.includes("@");
 
-    const { data, error } = isEmail
-      ? await supabase.auth.verifyOtp({
-          email: contact,
-          token,
-          type: "email",
-        })
-      : await supabase.auth.verifyOtp({
-          phone: contact,
-          token,
-          type: "sms",
-        });
-    if (error || !data.session || !data.user) {
+    if (isEmail) {
+      // ── Email OTP verify via Supabase ─────────────────────────────────────
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: contact,
+        token: otpCode,
+        type: "email",
+      });
+      if (error || !data.session || !data.user) {
+        setOtpLoading(false);
+        setOtpError(error?.message || "OTP যাচাই ব্যর্থ। আবার চেষ্টা করুন।");
+        return;
+      }
+      const { role: currentRole } = useAuthStore.getState();
+      useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
+      await useAuthStore.getState().fetchUser().catch(() => {});
+      setOtpSuccess(true);
+      setShowOverlay(true);
+      setAuthDone(true);
       setOtpLoading(false);
-      setOtpError(error?.message || "OTP verification failed. Please try again.");
-      return;
+    } else {
+      // ── Phone OTP verify via custom Python API ────────────────────────────
+      let phone = contact;
+      if (phone.startsWith("01") && phone.length === 11) phone = "+880" + phone.slice(1);
+      else if (phone.startsWith("880") && !phone.startsWith("+")) phone = "+" + phone;
+
+      try {
+        const res = await fetch("/api/auth/otp/phone/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, otp: otpCode }),
+        });
+        const json = await res.json() as {
+          detail?: string;
+          token_hash?: string;
+          email?: string;
+          type?: string;
+          role?: string;
+          user_id?: string;
+        };
+
+        if (!res.ok) {
+          setOtpError(json.detail || "OTP যাচাই ব্যর্থ।");
+          setOtpLoading(false);
+          return;
+        }
+
+        // Exchange magic-link token for a real Supabase session
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: json.token_hash!,
+          type: "magiclink",
+        });
+
+        if (error || !data.session || !data.user) {
+          setOtpError(error?.message || "সেশন তৈরি ব্যর্থ। আবার চেষ্টা করুন।");
+          setOtpLoading(false);
+          return;
+        }
+
+        useAuthStore.setState({
+          token: data.session.access_token,
+          userId: data.user.id,
+          role: json.role || null,
+        });
+        await useAuthStore.getState().fetchUser().catch(() => {});
+        setOtpSuccess(true);
+        setShowOverlay(true);
+        setAuthDone(true);
+      } catch {
+        setOtpError("নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।");
+      } finally {
+        setOtpLoading(false);
+      }
     }
-    const { role: currentRole } = useAuthStore.getState();
-    useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
-    await useAuthStore.getState().fetchUser().catch(() => {});
-    setOtpSuccess(true);
-    setShowOverlay(true);
-    setAuthDone(true);
-    setOtpLoading(false);
   };
 
   const handleOtpInput = (index: number, value: string) => {

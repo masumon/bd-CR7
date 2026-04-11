@@ -69,6 +69,15 @@ class Settings:
         self.site_longitude = float(env.get("SITE_LNG", "90.399452"))
         self.site_max_radius_km = float(env.get("SITE_MAX_RADIUS_KM", "2.0"))
         self.governance_refresh_secret = env.get("GOVERNANCE_REFRESH_SECRET", "").strip()
+
+        # ── Twilio SMS (custom phone OTP) ─────────────────────────────────────
+        self.twilio_account_sid = env.get("TWILIO_ACCOUNT_SID", "").strip()
+        self.twilio_auth_token = env.get("TWILIO_AUTH_TOKEN", "").strip()
+        self.twilio_from_number = env.get("TWILIO_FROM_NUMBER", "").strip()
+        self.phone_otp_ttl_seconds = int(env.get("PHONE_OTP_TTL_SECONDS", "600"))   # 10 min
+        self.phone_otp_max_attempts = int(env.get("PHONE_OTP_MAX_ATTEMPTS", "5"))
+        self.has_sms = bool(self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number)
+
         self.is_production = self.env in {"production", "staging"}
         self.database_url = self._resolve_database_url()
         self._validate()
