@@ -57,17 +57,23 @@ async def delete_user(user_id: str, user: UserContext = Depends(require_roles("s
 @router.get("/users/me/profile")
 async def get_my_profile(user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     client = _client_or_503()
-    row = client.table("users").select("id,email,full_name,phone,user_code,profile_image_url").eq("id", user.user_id).limit(1).execute()
+    row = client.table("users").select("id,email,full_name,phone,profile_image_url").eq("id", user.user_id).limit(1).execute()
     data = row.data or []
     if not data:
         raise HTTPException(status_code=404, detail="User profile not found")
-    return data[0]
+    profile = data[0]
+    profile.setdefault("user_code", None)
+    return profile
 
 
 @router.patch("/users/me/profile")
 async def update_my_profile(payload: dict[str, Any], user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     client = _client_or_503()
-    updated = client.table("users").update(payload).eq("id", user.user_id).execute()
+    allowed_keys = {"full_name", "phone", "profile_image_url"}
+    safe_payload = {k: v for k, v in payload.items() if k in allowed_keys}
+    if not safe_payload:
+        return {"updated": False, "data": {}}
+    updated = client.table("users").update(safe_payload).eq("id", user.user_id).execute()
     return {"updated": bool(updated.data), "data": (updated.data or [{}])[0]}
 
 

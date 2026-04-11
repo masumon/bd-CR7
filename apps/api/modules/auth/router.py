@@ -162,7 +162,6 @@ async def register(payload: RegisterRequest):
             "id": user_id,
             "email": payload.email,
             "full_name": payload.full_name,
-            "password_hash": None,
             "role": SELF_SERVICE_ROLE,
             "is_active": True,
         },
@@ -199,7 +198,7 @@ async def login(payload: LoginRequest):
 
     local_user = (
         supabase_service.table("users")
-        .select("id,is_active,role,roles(name)")
+        .select("id,is_active,role")
         .eq("id", str(auth_result.user.id))
         .limit(1)
         .execute()
@@ -211,7 +210,6 @@ async def login(payload: LoginRequest):
                 "id": str(auth_result.user.id),
                 "email": payload.email,
                 "full_name": auth_result.user.user_metadata.get("full_name") if auth_result.user.user_metadata else payload.email,
-                "password_hash": None,
                 "role": SELF_SERVICE_ROLE,
                 "is_active": True,
             },
@@ -388,7 +386,7 @@ async def me(user: UserContext = Depends(get_current_user)):
 
     profile = (
         supabase_service.table("users")
-        .select("id,email,full_name,role,roles(name)")
+        .select("id,email,full_name,role")
         .eq("id", user.user_id)
         .limit(1)
         .execute()
