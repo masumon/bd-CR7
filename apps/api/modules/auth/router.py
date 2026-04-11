@@ -17,7 +17,7 @@ from webauthn import base64url_to_bytes, verify_authentication_response
 
 router = APIRouter()
 
-SELF_SERVICE_ROLE = "viewer"
+SELF_SERVICE_ROLE = "worker"
 WEBAUTHN_CHALLENGE_TTL_SECONDS = 120
 
 
@@ -79,13 +79,17 @@ def _clear_webauthn_challenge(user_id: str) -> None:
     supabase_service.table("webauthn_challenges").delete().eq("user_id", user_id).execute()
 
 
-def _extract_joined_role_name(user_row: dict) -> str:
+def _extract_role_name(user_row: dict) -> str:
+    direct_role = user_row.get("role")
+    if isinstance(direct_role, str) and direct_role.strip():
+        return direct_role.strip().lower()
+
     role_obj = user_row.get("roles")
     if isinstance(role_obj, dict):
         role_name = role_obj.get("name")
         if isinstance(role_name, str) and role_name.strip():
             return role_name.strip().lower()
-    raise HTTPException(status_code=500, detail="User role mapping is invalid")
+    return SELF_SERVICE_ROLE
 
 
 def _normalize_role_name(role_name: str | None) -> str:
@@ -132,11 +136,6 @@ async def register(payload: RegisterRequest):
     if existing.data:
         raise HTTPException(status_code=409, detail="Email already exists")
 
-    role = supabase_service.table("roles").select("id,name").eq("name", SELF_SERVICE_ROLE).limit(1).execute()
-    if not role.data:
-        raise HTTPException(status_code=500, detail="Required roles are missing")
-    role_row = role.data[0]
-
     try:
         created = supabase_service.auth.admin.create_user(
             {
@@ -164,13 +163,13 @@ async def register(payload: RegisterRequest):
             "email": payload.email,
             "full_name": payload.full_name,
             "password_hash": None,
-            "role_id": role_row["id"],
+            "role": SELF_SERVICE_ROLE,
             "is_active": True,
         },
         on_conflict="id",
     ).execute()
 
-    _sync_auth_role_metadata(user_id, role_row["name"])
+    _sync_auth_role_metadata(user_id, SELF_SERVICE_ROLE)
 
     if supabase_anon is None:
         raise HTTPException(status_code=500, detail="Supabase client is not configured")
@@ -179,8 +178,8 @@ async def register(payload: RegisterRequest):
     if not login_result.session:
         raise HTTPException(status_code=500, detail="Registration succeeded but session creation failed")
 
-    audit_log(user_id=user_id, action="auth.register", meta={"email": payload.email, "role": role_row["name"]})
-    return AuthResponse(access_token=login_result.session.access_token, user_id=user_id, role=role_row["name"])
+    audit_log(user_id=user_id, action="auth.register", meta={"email": payload.email, "role": SELF_SERVICE_ROLE})
+    return AuthResponse(access_token=login_result.session.access_token, user_id=user_id, role=SELF_SERVICE_ROLE)
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -200,31 +199,27 @@ async def login(payload: LoginRequest):
 
     local_user = (
         supabase_service.table("users")
-        .select("id,is_active,roles(name)")
+        .select("id,is_active,role,roles(name)")
         .eq("id", str(auth_result.user.id))
         .limit(1)
         .execute()
     )
 
     if not local_user.data:
-        viewer = supabase_service.table("roles").select("id,name").eq("name", "viewer").limit(1).execute()
-        if not viewer.data:
-            raise HTTPException(status_code=500, detail="Viewer role is missing")
-        viewer_role = viewer.data[0]
         supabase_service.table("users").upsert(
             {
                 "id": str(auth_result.user.id),
                 "email": payload.email,
                 "full_name": auth_result.user.user_metadata.get("full_name") if auth_result.user.user_metadata else payload.email,
                 "password_hash": None,
-                "role_id": viewer_role["id"],
+                "role": SELF_SERVICE_ROLE,
                 "is_active": True,
             },
             on_conflict="id",
         ).execute()
-        role_name = viewer_role["name"]
+        role_name = SELF_SERVICE_ROLE
     else:
-        role_name = _extract_joined_role_name(local_user.data[0])
+        role_name = _extract_role_name(local_user.data[0])
 
     _sync_auth_role_metadata(str(auth_result.user.id), str(role_name))
     audit_log(user_id=str(auth_result.user.id), action="auth.login", meta={"role": str(role_name)})
@@ -393,7 +388,7 @@ async def me(user: UserContext = Depends(get_current_user)):
 
     profile = (
         supabase_service.table("users")
-        .select("id,email,full_name,roles(name)")
+        .select("id,email,full_name,role,roles(name)")
         .eq("id", user.user_id)
         .limit(1)
         .execute()
@@ -401,7 +396,7 @@ async def me(user: UserContext = Depends(get_current_user)):
     if not profile.data:
         raise HTTPException(status_code=404, detail="User not found")
     profile_row = profile.data[0]
-    role_name = _extract_joined_role_name(profile_row)
+    role_name = _extract_role_name(profile_row)
     return {
         "id": profile_row["id"],
         "email": profile_row.get("email"),

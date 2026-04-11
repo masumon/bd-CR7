@@ -22,8 +22,8 @@ type TopBarProps = {
 
 export function TopBar({ title, online, unread, dark, language, role, onMenu, onToggleTheme, onToggleLanguage, onOpenNotifications, onOpenUserDrawer }: TopBarProps) {
   const initials = role ? role.slice(0, 2).toUpperCase() : "U";
-  const onlineLabel = language === "bn" ? "সিস্টেম অনলাইন" : "System Online";
-  const offlineLabel = language === "bn" ? "সিস্টেম অফলাইন" : "System Offline";
+  const onlineLabel = "online";
+  const offlineLabel = "offline";
 
   return (
     <header className="fixed left-0 right-0 top-0 z-10 h-[calc(56px+env(safe-area-inset-top))] border-b border-border/65 bg-background/88 px-2 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
@@ -49,7 +49,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
         >
           <div className="flex min-w-0 flex-col text-left">
             <p className="truncate font-display text-sm font-semibold text-foreground leading-tight">{title}</p>
-            <p className={cn("text-[10px] uppercase tracking-[0.12em] leading-tight", online ? "text-emerald-400" : "text-rose-400")}>
+            <p className={cn("text-[11px] font-semibold lowercase leading-tight", online ? "text-emerald-500" : "text-rose-500")}>
               {online ? onlineLabel : offlineLabel}
             </p>
           </div>

@@ -30,16 +30,16 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
       <aside
         className={cn(
           "fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-0 top-[calc(56px+env(safe-area-inset-top))] z-30 border-r border-border/60 bg-background/94 backdrop-blur-xl transition-transform duration-300 ease-in-out",
-          "w-64 lg:bottom-0 lg:w-16 lg:translate-x-0",
+          "w-64 lg:bottom-0 lg:w-64 lg:translate-x-0",
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >
         <nav className="h-full overflow-y-auto py-2">
-          {/* Logo mark — visible on desktop icon-only sidebar */}
-          <div className="hidden lg:flex items-center justify-center py-2 mb-1">
-            <div className="h-9 w-9 overflow-hidden rounded-xl shadow-sm">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-2 mb-1">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl shadow-sm">
               <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={36} height={36} className="h-9 w-9 object-contain" />
             </div>
+            <p className="truncate text-sm font-semibold text-foreground">BD CR7</p>
           </div>
           <p className="section-label px-3 pb-2 pt-1 lg:hidden">Core Navigation / কোর নেভিগেশন</p>
           {items.map((item) => {
@@ -65,7 +65,7 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
                 )}>
                   <Icon className="h-4 w-4" />
                 </span>
-                <span className="truncate lg:hidden">{item.label}</span>
+                <span className="truncate">{item.label}</span>
               </Link>
             );
           })}

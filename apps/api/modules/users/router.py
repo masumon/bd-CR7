@@ -74,13 +74,64 @@ async def update_my_profile(payload: dict[str, Any], user: UserContext = Depends
 @router.get("/users/me/preferences")
 async def get_my_preferences(user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     client = _client_or_503()
-    row = client.table("user_preferences").select("preferences").eq("user_id", user.user_id).limit(1).execute()
-    data = row.data or []
-    return {"preferences": data[0].get("preferences", {}) if data else {}}
+    try:
+        row = (
+            client.table("workspace_preferences")
+            .select("theme,language,notifications_enabled,offline_mode_enabled")
+            .eq("user_id", user.user_id)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Failed to load preferences: {exc}") from exc
+
+    data = (row.data or [{}])[0]
+    return {
+        "theme": data.get("theme") or "dark",
+        "language": data.get("language") or "en",
+        "integrations": {
+            "realtime": bool(data.get("notifications_enabled", True)),
+            "offlineSync": bool(data.get("offline_mode_enabled", False)),
+        },
+    }
 
 
 @router.patch("/users/me/preferences")
 async def update_my_preferences(payload: dict[str, Any], user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     client = _client_or_503()
-    result = client.table("user_preferences").upsert({"user_id": user.user_id, "preferences": payload}, on_conflict="user_id").execute()
-    return {"updated": bool(result.data), "data": (result.data or [{}])[0]}
+    raw_integrations = payload.get("integrations")
+    integrations: dict[str, Any] = raw_integrations if isinstance(raw_integrations, dict) else {}
+    theme_value = payload.get("theme")
+    language_value = payload.get("language")
+    realtime_value = integrations.get("realtime")
+    offline_sync_value = integrations.get("offlineSync")
+
+    upsert_payload: dict[str, Any] = {"user_id": user.user_id}
+    if isinstance(theme_value, str) and theme_value in {"dark", "light"}:
+        upsert_payload["theme"] = theme_value
+    if isinstance(language_value, str) and language_value in {"bn", "en"}:
+        upsert_payload["language"] = language_value
+    if realtime_value is not None:
+        upsert_payload["notifications_enabled"] = bool(realtime_value)
+    if offline_sync_value is not None:
+        upsert_payload["offline_mode_enabled"] = bool(offline_sync_value)
+
+    try:
+        result = (
+            client.table("workspace_preferences")
+            .upsert(upsert_payload, on_conflict="user_id")
+            .execute()
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Failed to save preferences: {exc}") from exc
+
+    data = (result.data or [{}])[0]
+    return {
+        "updated": bool(result.data),
+        "theme": data.get("theme") or upsert_payload.get("theme") or "dark",
+        "language": data.get("language") or upsert_payload.get("language") or "en",
+        "integrations": {
+            "realtime": bool(data.get("notifications_enabled", upsert_payload.get("notifications_enabled", True))),
+            "offlineSync": bool(data.get("offline_mode_enabled", upsert_payload.get("offline_mode_enabled", False))),
+        },
+    }
