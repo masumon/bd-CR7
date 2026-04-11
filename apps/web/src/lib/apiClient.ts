@@ -18,6 +18,11 @@ const buildUrl = (path: string) => {
   if (IS_PRODUCTION && LOCALHOST_URL_PATTERN.test(base)) {
     return path;
   }
+  // Avoid duplicating the API prefix when callers pass /api/* and the base
+  // URL is already configured with a trailing /api segment.
+  if (base.endsWith("/api") && path.startsWith("/api/")) {
+    return `${base}${path.slice(4)}`;
+  }
   return `${base}${path}`;
 };
 
