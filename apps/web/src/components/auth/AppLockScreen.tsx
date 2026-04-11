@@ -9,6 +9,20 @@ import { useAuthStore } from "@/store/authStore";
 /* ── Constants ──────────────────────────────────────────────────── */
 const LOCK_KEY = "bdcr7-app-locked";
 const LOCK_GRACE_MS = 10_000; // 10 s grace after hide before locking
+const SETTINGS_CATALOG_KEY = "bdcr7-settings-catalog";
+
+function readSecurityToggle(toggleId: string, fallback = true): boolean {
+  try {
+    const raw = localStorage.getItem(SETTINGS_CATALOG_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Array<{ id?: string; enabled?: boolean }>;
+    const matched = parsed.find((item) => item.id === toggleId);
+    if (!matched) return fallback;
+    return matched.enabled !== false;
+  } catch {
+    return fallback;
+  }
+}
 
 /* ── Hook: detect app backgrounding and set lock ─────────────────── */
 export function useAppLock() {
@@ -30,6 +44,12 @@ export function useAppLock() {
   // Restore lock state after page refresh / SSR rehydration
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const appLockEnabled = readSecurityToggle("sec-app-lock-overlay", true);
+    if (!appLockEnabled) {
+      sessionStorage.removeItem(LOCK_KEY);
+      setLocked(false);
+      return;
+    }
     if (sessionStorage.getItem(LOCK_KEY) === "1" && userId) {
       setLocked(true);
     }
@@ -40,6 +60,7 @@ export function useAppLock() {
     if (!userId) return;
 
     const onHide = () => {
+      if (!readSecurityToggle("sec-app-lock-overlay", true)) return;
       timerRef.current = setTimeout(lock, LOCK_GRACE_MS);
     };
 
@@ -47,6 +68,11 @@ export function useAppLock() {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
+      }
+      if (!readSecurityToggle("sec-app-lock-overlay", true)) {
+        sessionStorage.removeItem(LOCK_KEY);
+        setLocked(false);
+        return;
       }
       // If the session store says locked, enforce it
       if (sessionStorage.getItem(LOCK_KEY) === "1") {
@@ -98,7 +124,7 @@ export function AppLockScreen({ onUnlock }: Props) {
     setEmail(stored);
   }, []);
 
-  const canBiometric = isWebAuthnSupported();
+  const canBiometric = isWebAuthnSupported() && readSecurityToggle("sec-biometric-unlock", true);
 
   const handleBiometric = useCallback(async () => {
     setError("");
@@ -146,9 +172,8 @@ export function AppLockScreen({ onUnlock }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0f1a16]/95 backdrop-blur-lg"
-      style={{ fontFamily: "var(--font-manrope, sans-serif)" }}
-      aria-modal="true"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0f1a16]/95 font-[var(--font-display)] backdrop-blur-lg"
+      role="dialog"
       aria-label="অ্যাপ লক স্ক্রিন"
     >
       {/* Logo / brand */}

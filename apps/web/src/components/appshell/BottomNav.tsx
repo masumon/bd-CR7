@@ -24,8 +24,8 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
   const hasMore = (moreItems?.length ?? 0) > 0;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/60 bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-      <div className={cn("grid h-[calc(56px+env(safe-area-inset-bottom))]", hasMore ? "grid-cols-5" : "grid-cols-4")}>
+    <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/60 bg-background/94 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_26px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:hidden">
+      <div className={cn("grid h-[calc(64px+env(safe-area-inset-bottom))]", hasMore ? "grid-cols-5" : "grid-cols-4")}>
         {primaryItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const Icon = item.icon;
@@ -36,21 +36,21 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
               href={item.href}
               title={item.label}
               className={cn(
-                "relative flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                "relative flex min-w-0 flex-col items-center justify-center gap-1 font-[var(--font-outfit)] text-[11px] font-semibold transition-colors",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
               aria-current={active ? "page" : undefined}
             >
               {active && (
-                <span className="absolute top-1 h-0.5 w-7 rounded-full bg-primary" />
+                <span className="absolute top-1 h-0.5 w-9 rounded-full bg-primary" />
               )}
               <span className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
+                "flex h-10 w-10 items-center justify-center rounded-2xl transition-all",
                 active ? "bg-primary/18 text-primary shadow-[0_8px_18px_rgba(20,184,166,0.22)]" : ""
               )}>
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5" />
               </span>
-              <span className="max-w-[4.6rem] truncate px-1">{compactLabel}</span>
+              <span className="max-w-[4.8rem] truncate px-1 leading-none">{compactLabel}</span>
             </Link>
           );
         })}
@@ -59,14 +59,14 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
           <button
             type="button"
             onClick={onOpenMore}
-            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-1 font-[var(--font-outfit)] text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
             aria-label="More modules"
             title="More modules"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl transition-all">
-              <MoreHorizontal className="h-4 w-4" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all">
+              <MoreHorizontal className="h-5 w-5" />
             </span>
-            <span className="px-1">More</span>
+            <span className="px-1 leading-none">More</span>
           </button>
         )}
       </div>

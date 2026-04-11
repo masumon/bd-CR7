@@ -207,8 +207,8 @@ a:focus-visible {
   position: relative;
   z-index: var(--z-base);
   min-height: 100dvh;
-  padding-top: calc(56px + env(safe-area-inset-top));
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  padding-top: calc(72px + env(safe-area-inset-top));
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
 /* ─── PHASE 11: Screen orientation fallback (CSS-level portrait enforcement) ─── */
@@ -344,7 +344,6 @@ html.reduce-motion *::after {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 .auth-page {
@@ -610,8 +609,8 @@ html.reduce-motion *::after {
 /* ── Glass Card BD CR7 ── */
 .glass-bdcr7 {
   background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
 }
@@ -625,8 +624,8 @@ html.reduce-motion *::after {
   border-radius: 14px;
   border: 1px solid rgba(251,189,35,0.2);
   background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   gap: 0.5rem;
   padding: 0 0.75rem;
@@ -744,8 +743,8 @@ html.reduce-motion *::after {
   border-radius: 12px;
   border: 1.5px solid rgba(251,189,35,0.25);
   background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: rgba(255,255,255,0.95);
   font-size: clamp(1rem, 4vw, 1.3rem);
   font-family: var(--font-outfit-var);
@@ -805,8 +804,8 @@ html.reduce-motion *::after {
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
   color: rgba(255,255,255,0.8);
   min-height: unset;
@@ -836,8 +835,8 @@ html.reduce-motion *::after {
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: rgba(255,255,255,0.65);
   transition: all 0.3s ease;
   cursor: pointer;

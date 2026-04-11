@@ -26,6 +26,24 @@ import { WorkspaceTab } from "@/modules/settings/tabs/WorkspaceTab";
 import { UserManagementTab } from "@/modules/settings/tabs/UserManagementTab";
 import { normalizeRoleName } from "@/lib/rbac";
 
+function mergeSettingCatalog(stored: SettingItem[] | null): SettingItem[] {
+  if (!stored || stored.length === 0) return DEFAULT_SETTING_ITEMS;
+
+  const byId = new Map(stored.map((item) => [item.id, item]));
+  const merged = DEFAULT_SETTING_ITEMS.map((defaultItem) => {
+    const existing = byId.get(defaultItem.id);
+    return existing ? { ...defaultItem, ...existing } : defaultItem;
+  });
+
+  for (const item of stored) {
+    if (!merged.some((existing) => existing.id === item.id)) {
+      merged.push(item);
+    }
+  }
+
+  return merged;
+}
+
 export function SettingsFeature() {
   const userId = useAuthStore((state) => state.userId);
   const token = useAuthStore((state) => state.token ?? undefined);
@@ -55,7 +73,10 @@ export function SettingsFeature() {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem("bdcr7-settings-catalog");
-      if (raw) setSettingItems(JSON.parse(raw) as SettingItem[]);
+      if (raw) {
+        const parsed = JSON.parse(raw) as SettingItem[];
+        setSettingItems(mergeSettingCatalog(parsed));
+      }
     } catch {
       setSettingItems((prev) => prev);
     }
@@ -91,8 +112,9 @@ export function SettingsFeature() {
   }, [token, userId]);
 
   const persistSettings = useCallback((next: SettingItem[]) => {
-    setSettingItems(next);
-    window.localStorage.setItem("bdcr7-settings-catalog", JSON.stringify(next));
+    const merged = mergeSettingCatalog(next);
+    setSettingItems(merged);
+    window.localStorage.setItem("bdcr7-settings-catalog", JSON.stringify(merged));
   }, []);
 
   const toggleSetting = (id: string) => {

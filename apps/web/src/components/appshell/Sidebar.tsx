@@ -29,19 +29,19 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-0 top-[calc(56px+env(safe-area-inset-top))] z-30 border-r border-border/60 bg-background/94 backdrop-blur-xl transition-transform duration-300 ease-in-out",
+          "fixed bottom-[calc(64px+env(safe-area-inset-bottom))] left-0 top-[calc(72px+env(safe-area-inset-top))] z-30 border-r border-border/60 bg-background/94 backdrop-blur-xl transition-transform duration-300 ease-in-out",
           "w-64 lg:bottom-0 lg:w-64 lg:translate-x-0",
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >
-        <nav className="h-full overflow-y-auto py-2">
+        <nav className="h-full overflow-y-auto py-3">
           <div className="hidden lg:flex items-center gap-2 px-3 py-2 mb-1">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl shadow-sm">
               <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={36} height={36} className="h-9 w-9 object-contain" />
             </div>
             <p className="truncate text-sm font-semibold text-foreground">BD CR7</p>
           </div>
-          <p className="section-label px-3 pb-2 pt-1 lg:hidden">Core Navigation / কোর নেভিগেশন</p>
+          <p className="section-label px-3 pb-2 pt-1 font-[var(--font-outfit)] lg:hidden">Core Navigation / কোর নেভিগেশন</p>
           {items.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             const Icon = item.icon;
@@ -51,7 +51,7 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
                 href={item.href}
                 title={item.label}
                 className={cn(
-                  "group mx-2 mb-1 flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  "group mx-2 mb-1.5 flex h-12 items-center gap-3.5 rounded-xl px-3 text-[15px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   active
                     ? "bg-primary/16 text-primary shadow-[0_8px_18px_rgba(16,185,129,0.18)]"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -60,10 +60,10 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
                 onClick={onCloseMobile}
               >
                 <span className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
                   active ? "bg-primary/20 text-primary" : "group-hover:bg-muted"
                 )}>
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-5 w-5" />
                 </span>
                 <span className="truncate">{item.label}</span>
               </Link>

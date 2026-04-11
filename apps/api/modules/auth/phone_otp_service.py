@@ -33,6 +33,17 @@ TWILIO_VERIFY_URL = "https://verify.twilio.com/v2/Services/{service_sid}/Verific
 TWILIO_VERIFY_CHECK_URL = "https://verify.twilio.com/v2/Services/{service_sid}/VerificationCheck"
 
 
+def _map_twilio_error(message: str) -> str:
+    lowered = message.lower()
+    if "63038" in message or "daily messages limit" in lowered:
+        return "আজকের Twilio SMS limit শেষ হয়েছে। আগামীকাল আবার চেষ্টা করুন বা Twilio account upgrade করুন।"
+    if "21266" in message or "to' and 'from' number cannot be the same" in lowered:
+        return "OTP পাঠানো যাচ্ছে না, কারণ receiver number এবং sender number একই। অন্য ফোন নম্বর ব্যবহার করুন।"
+    if "21659" in message or "is not a twilio phone number" in lowered or "country mismatch" in lowered:
+        return "Twilio sender configuration সঠিক নয়। Verify Service বা valid SMS sender number ব্যবহার করুন।"
+    return message
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _generate_otp() -> str:
@@ -86,9 +97,7 @@ def _send_sms_twilio(to: str, body: str) -> None:
             )
             resp.raise_for_status()
     except httpx.HTTPStatusError as exc:
-        raise RuntimeError(
-            f"SMS delivery failed ({exc.response.status_code}): {exc.response.text}"
-        ) from exc
+        raise RuntimeError(_map_twilio_error(exc.response.text)) from exc
     except httpx.RequestError as exc:
         raise RuntimeError(f"SMS network error: {exc}") from exc
 
@@ -104,9 +113,7 @@ def _send_verify_otp_twilio(to: str) -> None:
             )
             resp.raise_for_status()
     except httpx.HTTPStatusError as exc:
-        raise RuntimeError(
-            f"Twilio Verify send failed ({exc.response.status_code}): {exc.response.text}"
-        ) from exc
+        raise RuntimeError(_map_twilio_error(exc.response.text)) from exc
     except httpx.RequestError as exc:
         raise RuntimeError(f"Twilio Verify network error: {exc}") from exc
 
@@ -123,9 +130,7 @@ def _check_verify_otp_twilio(to: str, otp_input: str) -> None:
             resp.raise_for_status()
             payload = resp.json()
     except httpx.HTTPStatusError as exc:
-        raise RuntimeError(
-            f"Twilio Verify check failed ({exc.response.status_code}): {exc.response.text}"
-        ) from exc
+        raise RuntimeError(_map_twilio_error(exc.response.text)) from exc
     except httpx.RequestError as exc:
         raise RuntimeError(f"Twilio Verify network error: {exc}") from exc
 

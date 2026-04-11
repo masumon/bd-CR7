@@ -110,6 +110,22 @@ export const DEFAULT_SETTING_ITEMS: SettingItem[] = [
     enabled: true,
   },
   {
+    id: "sec-app-lock-overlay",
+    category: "Security",
+    subcategory: "Lock Screen",
+    label: "App Lock on Background",
+    description: "Lock the app after it stays in background",
+    enabled: true,
+  },
+  {
+    id: "sec-biometric-unlock",
+    category: "Security",
+    subcategory: "Biometric",
+    label: "Fingerprint / Face Unlock",
+    description: "Allow biometric unlock on the app lock screen",
+    enabled: true,
+  },
+  {
     id: "data-export-ready",
     category: "Data",
     subcategory: "Reporting",
