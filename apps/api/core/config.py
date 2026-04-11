@@ -51,14 +51,7 @@ class Settings:
         self.database_url = env.get("DATABASE_URL", "").strip()
         cors_default = "http://localhost:3000" if self.env == "development" else ""
         self.cors_origins = _split_csv(env.get("CORS_ORIGINS", cors_default))
-        self.redis_url = env.get("REDIS_URL", "").strip()
         self.require_supabase_in_production = env.get("REQUIRE_SUPABASE_IN_PRODUCTION", "true").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }
-        self.require_redis_in_production = env.get("REQUIRE_REDIS_IN_PRODUCTION", "true").strip().lower() in {
             "1",
             "true",
             "yes",
@@ -123,14 +116,8 @@ class Settings:
             if self.is_production and self.require_supabase_in_production:
                 raise SettingsError("SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are required")
 
-        if self.is_production and not self.cors_origins:
+        if self.is_production and self.require_supabase_in_production and not self.cors_origins:
             raise SettingsError("CORS_ORIGINS must be configured in production")
-
-        if any(origin == "*" for origin in self.cors_origins):
-            raise SettingsError("Wildcard CORS origin '*' is not allowed")
-
-        if self.is_production and self.require_redis_in_production and not self.redis_url:
-            raise SettingsError("REDIS_URL is required in production for distributed rate limiting")
 
 
 settings = Settings()

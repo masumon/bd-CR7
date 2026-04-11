@@ -76,7 +76,8 @@ function toBase64UrlFromBuffer(buffer: ArrayBuffer): string {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function fromBase64UrlToBuffer(input: string): ArrayBuffer {
+function fromBase64UrlToBuffer(input: string | undefined | null): ArrayBuffer {
+  if (!input) return new ArrayBuffer(0);
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
   const padding = normalized.length % 4;
   const padded = normalized + (padding ? "=".repeat(4 - padding) : "");
@@ -190,7 +191,7 @@ export async function verifyBiometricAssertion(token: string): Promise<void> {
     publicKey: {
       challenge: fromBase64UrlToBuffer(challenge.challenge),
       rpId: challenge.rp_id,
-      allowCredentials: challenge.allow_credentials.map((item) => ({
+      allowCredentials: (challenge.allow_credentials ?? []).filter((item) => item.id).map((item) => ({
         id: fromBase64UrlToBuffer(item.id),
         type: item.type,
       })),
@@ -237,7 +238,7 @@ export async function signInWithPasskey(email: string): Promise<{ token_hash: st
     publicKey: {
       challenge: fromBase64UrlToBuffer(challenge.challenge),
       rpId: challenge.rp_id,
-      allowCredentials: challenge.allow_credentials.map((item) => ({
+      allowCredentials: (challenge.allow_credentials ?? []).filter((item) => item.id).map((item) => ({
         id: fromBase64UrlToBuffer(item.id),
         type: item.type,
       })),

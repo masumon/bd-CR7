@@ -29,7 +29,7 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed bottom-[calc(64px+env(safe-area-inset-bottom))] left-0 top-[calc(72px+env(safe-area-inset-top))] z-30 border-r border-border/60 bg-background/94 backdrop-blur-xl transition-transform duration-300 ease-in-out",
+          "fixed bottom-[calc(64px+env(safe-area-inset-bottom))] left-0 top-[calc(72px+env(safe-area-inset-top))] z-50 border-r border-border/60 bg-background/94 backdrop-blur-xl transition-transform duration-300 ease-in-out",
           "w-64 lg:bottom-0 lg:w-64 lg:translate-x-0",
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}

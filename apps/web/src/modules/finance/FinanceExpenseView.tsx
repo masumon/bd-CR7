@@ -138,7 +138,7 @@ export function FinanceExpenseView() {
                 placeholder="Search by ID, description, category..."
                 className="h-9 min-w-0 w-full flex-1 rounded-lg border border-border/70 bg-background px-3 text-sm outline-none ring-0 placeholder:text-muted-foreground/70 focus:border-primary/60 sm:min-w-[230px]"
               />
-              <div className="flex items-center gap-1 rounded-lg border border-border/70 bg-background p-1">
+              <div className="flex w-full overflow-x-auto items-center gap-1 rounded-lg border border-border/70 bg-background p-1 sm:w-auto">
                 {([
                   ["all", "All"],
                   ["pending", "Pending"],

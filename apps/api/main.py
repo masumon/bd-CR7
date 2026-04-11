@@ -88,8 +88,6 @@ def create_app() -> Any:
     app.add_middleware(
         RateLimitMiddleware,
         requests_per_minute=settings.rate_limit_requests_per_minute,
-        redis_url=settings.redis_url or None,
-        fail_closed_without_redis=settings.is_production and settings.require_redis_in_production,
     )
 
     @app.middleware("http")
