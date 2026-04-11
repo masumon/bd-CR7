@@ -16,7 +16,8 @@ def _bootstrap_python_path() -> None:
 
 def _bootstrap_vercel_env() -> None:
 	# Prevent full cold-start failure when Redis is not configured in Vercel.
-	if os.getenv("VERCEL") == "1" and not os.getenv("REDIS_URL"):
+	is_vercel_runtime = bool(os.getenv("VERCEL_ENV")) or os.getenv("VERCEL") == "1"
+	if is_vercel_runtime and not os.getenv("REDIS_URL"):
 		os.environ.setdefault("REQUIRE_REDIS_IN_PRODUCTION", "false")
 
 
