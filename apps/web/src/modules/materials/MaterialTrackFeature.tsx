@@ -67,6 +67,9 @@ export function MaterialTrackFeature() {
   const [stockList, setStockList]       = useState<StockRow[]>([]);
   const [movements, setMovements]       = useState<MovementRow[]>([]);
   const [movLoading, setMovLoading]     = useState(false);
+  const [stockQuery, setStockQuery]     = useState("");
+  const [movementQuery, setMovementQuery] = useState("");
+  const [movementFilter, setMovementFilter] = useState<"all" | MovementType>("all");
 
   // Evidence enforcement
   const [proofFileId, setProofFileId]   = useState<string | null>(null);
@@ -78,6 +81,25 @@ export function MaterialTrackFeature() {
     () => Number(quantity || 0) * Number(unitPrice || 0),
     [quantity, unitPrice],
   );
+
+  const filteredStockList = useMemo(() => {
+    const normalized = stockQuery.trim().toLowerCase();
+    if (!normalized) return stockList;
+    return stockList.filter((item) => item.material_name.toLowerCase().includes(normalized));
+  }, [stockList, stockQuery]);
+
+  const filteredMovements = useMemo(() => {
+    const normalized = movementQuery.trim().toLowerCase();
+    return movements.filter((item) => {
+      const type = String(item.movement_type).toLowerCase() as MovementType;
+      if (movementFilter !== "all" && type !== movementFilter) return false;
+      if (!normalized) return true;
+      const haystack = [item.material_name, item.supplier || "", item.movement_type, item.created_at]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [movements, movementFilter, movementQuery]);
 
   const fetchStock = useCallback(async () => {
     const { data } = await supabase
@@ -273,8 +295,16 @@ export function MaterialTrackFeature() {
               <ArrowDownToLine className="h-3 w-3" /> CSV
             </button>
           </div>
+          <div className="mb-3">
+            <input
+              value={stockQuery}
+              onChange={(e) => setStockQuery(e.target.value)}
+              placeholder="Search stock by material name..."
+              className="h-9 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+            />
+          </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {stockList.map((s) => {
+            {filteredStockList.map((s) => {
               const low = s.current_qty <= s.low_stock_threshold;
               return (
                 <div key={s.id} className={`rounded-xl border px-3 py-2.5 text-sm ${low ? "border-rose-200 bg-rose-50 dark:bg-rose-950/20" : "border-border/70 bg-muted/30"}`}>
@@ -311,7 +341,7 @@ export function MaterialTrackFeature() {
               onClick={() =>
                 downloadCSV(
                   `material-movements-${new Date().toISOString().slice(0, 10)}.csv`,
-                  movements.map((m) => ({
+                  filteredMovements.map((m) => ({
                     date: m.created_at?.slice(0, 10),
                     material: m.material_name,
                     type: m.movement_type,
@@ -323,7 +353,7 @@ export function MaterialTrackFeature() {
                   }))
                 )
               }
-              disabled={!movements.length}
+              disabled={!filteredMovements.length}
               className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50"
             >
               <ArrowDownToLine className="h-3 w-3" /> CSV
@@ -331,11 +361,37 @@ export function MaterialTrackFeature() {
           </div>
         </div>
 
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            value={movementQuery}
+            onChange={(e) => setMovementQuery(e.target.value)}
+            placeholder="Search movement by material, supplier..."
+            className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+          />
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+            {([
+              ["all", "All"],
+              ["in", "IN"],
+              ["out", "OUT"],
+              ["adjust", "ADJUST"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setMovementFilter(value)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${movementFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {movLoading ? (
           <div className="flex h-16 items-center justify-center text-sm text-muted-foreground">লোড হচ্ছে...</div>
-        ) : !movements.length ? (
+        ) : !filteredMovements.length ? (
           <div className="rounded-2xl border border-dashed border-border bg-background/75 px-4 py-6 text-center text-sm text-muted-foreground">
-            কোনো মুভমেন্ট নেই।
+            বর্তমান ফিল্টারে কোনো মুভমেন্ট নেই।
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -350,7 +406,7 @@ export function MaterialTrackFeature() {
                 </tr>
               </thead>
               <tbody>
-                {movements.map((m) => (
+                {filteredMovements.map((m) => (
                   <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap">{m.created_at?.slice(0, 10)}</td>
                     <td className="py-2 pr-4 font-medium text-foreground">{m.material_name}</td>

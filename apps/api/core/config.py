@@ -52,13 +52,13 @@ class Settings:
         cors_default = "http://localhost:3000" if self.env == "development" else ""
         self.cors_origins = _split_csv(env.get("CORS_ORIGINS", cors_default))
         self.redis_url = env.get("REDIS_URL", "").strip()
-        self.require_supabase_in_production = env.get("REQUIRE_SUPABASE_IN_PRODUCTION", "false").strip().lower() in {
+        self.require_supabase_in_production = env.get("REQUIRE_SUPABASE_IN_PRODUCTION", "true").strip().lower() in {
             "1",
             "true",
             "yes",
             "on",
         }
-        self.require_redis_in_production = env.get("REQUIRE_REDIS_IN_PRODUCTION", "false").strip().lower() in {
+        self.require_redis_in_production = env.get("REQUIRE_REDIS_IN_PRODUCTION", "true").strip().lower() in {
             "1",
             "true",
             "yes",

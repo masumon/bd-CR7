@@ -14,7 +14,7 @@ API_ROOT = Path(__file__).resolve().parents[1]
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
 
-from routers.hr import distance_km
+from modules.workforce.router import distance_km
 from core.auth import UserContext
 from schemas.finance import FundTransfer
 from services.finance import score_risk, transfer_funds_atomic

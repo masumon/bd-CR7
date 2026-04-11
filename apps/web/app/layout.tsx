@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import ServiceWorkerRegistration from "../src/components/ServiceWorkerRegistration";
 import PWAInstallPrompt from "../src/components/PWAInstallPrompt";
 import { ToastContainer } from "@/components/ui/toast";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -36,12 +38,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body className="screen-shell">
-        <ServiceWorkerRegistration />
-        {children}
-        <PWAInstallPrompt />
-        <ToastContainer />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ServiceWorkerRegistration />
+          {children}
+          <PWAInstallPrompt />
+          <ToastContainer />
+          <Toaster richColors position="bottom-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

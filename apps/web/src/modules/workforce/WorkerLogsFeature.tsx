@@ -68,6 +68,8 @@ export function WorkerLogsFeature() {
 
   const [logs, setLogs]               = useState<AttendanceLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [logQuery, setLogQuery]       = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "half">("all");
 
   const fetchLogs = useCallback(async () => {
     setLogsLoading(true);
@@ -106,6 +108,19 @@ export function WorkerLogsFeature() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return 6371 * c;
   }, [latitude, longitude]);
+
+  const filteredLogs = useMemo(() => {
+    const normalized = logQuery.trim().toLowerCase();
+    return logs.filter((log) => {
+      const status = String(log.status).toLowerCase() as "present" | "absent" | "half";
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+      if (!normalized) return true;
+      const haystack = [log.worker_name, log.role, log.phone || "", log.work_description || "", log.date, status]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [logs, logQuery, statusFilter]);
 
   const handleFileReady = ({ fileId }: EvidenceGateFileReady) => {
     setProofFileId(fileId);
@@ -233,7 +248,7 @@ export function WorkerLogsFeature() {
             <button type="button"
               onClick={() =>
                 downloadCSV(`worker-attendance-${new Date().toISOString().slice(0, 10)}.csv`,
-                  logs.map((l) => ({
+                  filteredLogs.map((l) => ({
                     date: l.date, name: l.worker_name, role: l.role, status: l.status,
                     daily_wage: l.daily_wage, paid: l.paid_amount,
                     unpaid: Math.max(0, l.daily_wage * (l.status === "present" ? 1 : l.status === "half" ? 0.5 : 0) - l.paid_amount),
@@ -241,18 +256,44 @@ export function WorkerLogsFeature() {
                   }))
                 )
               }
-              disabled={!logs.length}
+              disabled={!filteredLogs.length}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50">
               <ArrowDownToLine className="h-3.5 w-3.5" /> CSV
             </button>
           </div>
         </div>
 
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            value={logQuery}
+            onChange={(e) => setLogQuery(e.target.value)}
+            placeholder="Search by worker, role, phone..."
+            className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+          />
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+            {([
+              ["all", "All"],
+              ["present", "Present"],
+              ["half", "Half"],
+              ["absent", "Absent"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatusFilter(value)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${statusFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {logsLoading ? (
           <div className="flex h-24 items-center justify-center text-muted-foreground text-sm">লোড হচ্ছে...</div>
-        ) : !logs.length ? (
+        ) : !filteredLogs.length ? (
           <div className="rounded-2xl border border-dashed border-border bg-background/75 px-4 py-8 text-center text-sm text-muted-foreground">
-            কোনো লগ পাওয়া যায়নি। শ্রমিক লগ যোগ করুন।
+            বর্তমান ফিল্টারে কোনো লগ পাওয়া যায়নি।
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -268,7 +309,7 @@ export function WorkerLogsFeature() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => (
+                {filteredLogs.map((log) => (
                   <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap">{log.date}</td>
                     <td className="py-2 pr-4 font-medium text-foreground">{log.worker_name}</td>

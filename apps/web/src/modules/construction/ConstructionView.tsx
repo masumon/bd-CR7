@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { FolderKanban, HardHat, Building2, ClipboardList } from "lucide-react";
 
 const MODULES = [
@@ -32,6 +33,14 @@ const MODULES = [
 
 export function ConstructionView() {
   const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  const filteredModules = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return MODULES;
+    return MODULES.filter((item) => `${item.label} ${item.sub}`.toLowerCase().includes(normalized));
+  }, [query]);
+
   return (
     <div className="min-h-dvh flex flex-col gap-3 bg-background p-3 pb-6">
       <div className="erp-card p-4">
@@ -41,9 +50,15 @@ export function ConstructionView() {
         <p className="text-erp-text-secondary text-xs mt-0.5">
           Select a module to continue
         </p>
+        <input
+          className="mt-3 h-10 w-full rounded-xl border border-border/70 bg-background px-3 text-sm text-foreground outline-none"
+          placeholder="Search construction module..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        {MODULES.map((m) => (
+        {filteredModules.map((m) => (
           <button
             key={m.href}
             type="button"
@@ -61,6 +76,11 @@ export function ConstructionView() {
             </div>
           </button>
         ))}
+        {filteredModules.length === 0 ? (
+          <div className="col-span-2 rounded-2xl border border-dashed border-border/70 bg-background/70 p-6 text-center text-sm text-muted-foreground">
+            No modules match your search.
+          </div>
+        ) : null}
       </div>
     </div>
   );

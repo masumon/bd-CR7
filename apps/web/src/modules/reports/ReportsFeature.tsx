@@ -55,28 +55,34 @@ function fmt(n: number) {
   return `৳${n.toLocaleString("en-BD")}`;
 }
 
-const MIN_BAR_HEIGHT_PX = 4;
-const MAX_BAR_HEIGHT_PX = 64;
+function getBarHeightClass(ratio: number) {
+  if (ratio >= 0.95) return "h-16";
+  if (ratio >= 0.85) return "h-14";
+  if (ratio >= 0.75) return "h-12";
+  if (ratio >= 0.65) return "h-10";
+  if (ratio >= 0.5) return "h-8";
+  if (ratio >= 0.35) return "h-6";
+  if (ratio >= 0.2) return "h-4";
+  return "h-2";
+}
 
-function MiniBarChart({ data, color = "#22c55e" }: { data: Array<{ label: string; value: number }>; color?: string }) {
+function MiniBarChart({ data }: { data: Array<{ label: string; value: number }> }) {
   if (!data.length) return null;
   const max = Math.max(...data.map((d) => d.value), 1);
   return (
     <div className="flex items-end gap-1 h-20 w-full">
-      {data.map((d) => (
-        <div key={d.label} className="flex flex-col items-center gap-1 flex-1 min-w-0">
-          <div
-            className="w-full rounded-t-sm transition-all duration-500"
-            style={{
-              height: `${Math.max(MIN_BAR_HEIGHT_PX, (d.value / max) * MAX_BAR_HEIGHT_PX)}px`,
-              background: color,
-              opacity: 0.85,
-            }}
-            title={`${d.label}: ${d.value}`}
-          />
-          <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">{d.label}</span>
-        </div>
-      ))}
+      {data.map((d) => {
+        const ratio = d.value / max;
+        return (
+          <div key={d.label} className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <div
+              className={`w-full rounded-t-sm bg-emerald-500/85 transition-all duration-500 ${getBarHeightClass(ratio)}`}
+              title={`${d.label}: ${d.value}`}
+            />
+            <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">{d.label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -100,6 +106,10 @@ export function ReportsFeature() {
   const [data, setData] = useState<ReportSummary>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("30d");
+  const [expenseQuery, setExpenseQuery] = useState("");
+  const [expenseStatusFilter, setExpenseStatusFilter] = useState<"all" | "approved" | "pending">("all");
+  const [materialQuery, setMaterialQuery] = useState("");
+  const [materialTypeFilter, setMaterialTypeFilter] = useState<"all" | "in" | "out" | "adjust">("all");
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -142,6 +152,32 @@ export function ReportsFeature() {
   }, [supabase, period]);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);
+
+  const filteredExpenses = useMemo(() => {
+    const normalized = expenseQuery.trim().toLowerCase();
+    return data.recentExpenses.filter((item) => {
+      const status = String(item.status).toLowerCase();
+      if (expenseStatusFilter !== "all" && status !== expenseStatusFilter) return false;
+      if (!normalized) return true;
+      const haystack = [item.id, item.metadata?.["category"] || "", status, item.created_at]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [data.recentExpenses, expenseQuery, expenseStatusFilter]);
+
+  const filteredMaterials = useMemo(() => {
+    const normalized = materialQuery.trim().toLowerCase();
+    return data.recentMaterials.filter((item) => {
+      const type = String(item.movement_type).toLowerCase() as "in" | "out" | "adjust";
+      if (materialTypeFilter !== "all" && type !== materialTypeFilter) return false;
+      if (!normalized) return true;
+      const haystack = [item.material_name, item.movement_type, item.created_at]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [data.recentMaterials, materialQuery, materialTypeFilter]);
 
   const statCards = [
     { label: "তহবিল প্রাপ্তি", sublabel: "Fund received", value: fmt(data.totalFunds), icon: TrendingUp, tone: "emerald" },
@@ -373,7 +409,7 @@ export function ReportsFeature() {
             onClick={() =>
               downloadCSV(
                 `expenses-${period}.csv`,
-                data.recentExpenses.map((e) => ({
+                filteredExpenses.map((e) => ({
                   id: e.id,
                   amount: e.amount,
                   status: e.status,
@@ -387,7 +423,32 @@ export function ReportsFeature() {
           </Button>
         </CardHeader>
         <CardContent>
-          {!data.recentExpenses.length ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              value={expenseQuery}
+              onChange={(e) => setExpenseQuery(e.target.value)}
+              placeholder="Search expenses by ID/category..."
+              className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+            />
+            <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+              {([
+                ["all", "All"],
+                ["pending", "Pending"],
+                ["approved", "Approved"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setExpenseStatusFilter(value)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${expenseStatusFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!filteredExpenses.length ? (
             <p className="py-6 text-center text-sm text-muted-foreground">এই সময়কালে কোনো ব্যয় নেই</p>
           ) : (
             <div className="overflow-x-auto">
@@ -402,7 +463,7 @@ export function ReportsFeature() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.recentExpenses.map((e) => (
+                  {filteredExpenses.map((e) => (
                     <tr key={e.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 pr-4 text-muted-foreground">{e.created_at?.slice(0, 10)}</td>
                       <td className="py-2 pr-4 font-medium text-foreground">{fmt(e.amount)}</td>
@@ -443,7 +504,7 @@ export function ReportsFeature() {
             onClick={() =>
               downloadCSV(
                 `materials-${period}.csv`,
-                data.recentMaterials.map((m) => ({
+                filteredMaterials.map((m) => ({
                   date: m.created_at?.slice(0, 10),
                   material: m.material_name,
                   type: m.movement_type,
@@ -458,7 +519,33 @@ export function ReportsFeature() {
           </Button>
         </CardHeader>
         <CardContent>
-          {!data.recentMaterials.length ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              value={materialQuery}
+              onChange={(e) => setMaterialQuery(e.target.value)}
+              placeholder="Search materials by name/type..."
+              className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+            />
+            <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+              {([
+                ["all", "All"],
+                ["in", "IN"],
+                ["out", "OUT"],
+                ["adjust", "Adjust"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setMaterialTypeFilter(value)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${materialTypeFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!filteredMaterials.length ? (
             <p className="py-6 text-center text-sm text-muted-foreground">এই সময়কালে কোনো উপকরণ নড়াচড়া নেই</p>
           ) : (
             <div className="overflow-x-auto">
@@ -474,7 +561,7 @@ export function ReportsFeature() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.recentMaterials.map((m) => (
+                  {filteredMaterials.map((m) => (
                     <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 pr-4 text-muted-foreground">{m.created_at?.slice(0, 10)}</td>
                       <td className="py-2 pr-4 font-medium text-foreground">{m.material_name}</td>

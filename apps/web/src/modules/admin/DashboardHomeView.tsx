@@ -38,6 +38,22 @@ function fmt(n: number) {
 }
 
 const PIE_COLORS = ["hsl(167,46%,46%)", "hsl(40,93%,64%)", "hsl(210,80%,56%)", "hsl(0,72%,51%)"];
+const PIE_DOT_CLASSES = ["bg-emerald-500", "bg-amber-400", "bg-blue-500", "bg-rose-500"];
+
+function getProgressWidthClass(progress: number) {
+  if (progress >= 100) return "w-full";
+  if (progress >= 90) return "w-11/12";
+  if (progress >= 80) return "w-10/12";
+  if (progress >= 70) return "w-9/12";
+  if (progress >= 60) return "w-8/12";
+  if (progress >= 50) return "w-6/12";
+  if (progress >= 40) return "w-5/12";
+  if (progress >= 30) return "w-4/12";
+  if (progress >= 20) return "w-3/12";
+  if (progress >= 10) return "w-2/12";
+  if (progress > 0) return "w-1/12";
+  return "w-0";
+}
 
 function KpiSkeleton() {
   return (
@@ -208,8 +224,7 @@ export function DashboardHomeView() {
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-700"
-            style={{ width: `${projectProgress}%` }}
+            className={`h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-700 ${getProgressWidthClass(projectProgress)}`}
           />
         </div>
         <p className="mt-2 text-[12px] text-muted-foreground">{t.completion}: {projectProgress}%</p>
@@ -261,7 +276,7 @@ export function DashboardHomeView() {
                 {pieData.map((entry, i) => (
                   <div key={entry.name} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <span className={`h-2 w-2 rounded-full ${PIE_DOT_CLASSES[i % PIE_DOT_CLASSES.length]}`} />
                       <span className="text-[11px] text-muted-foreground">{entry.name}</span>
                     </div>
                     <span className="text-[11px] font-medium text-foreground">{fmt(entry.value)}</span>

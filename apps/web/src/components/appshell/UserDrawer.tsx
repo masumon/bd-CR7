@@ -69,6 +69,19 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
     };
   }, [open, token]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   const handleLogout = () => {
     logout();
     onClose();
@@ -88,6 +101,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            type="button"
             onClick={onClose}
             aria-label={t.close}
           />
@@ -98,6 +112,9 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed bottom-0 right-0 top-0 z-50 w-72 border-l border-border bg-background/95 shadow-2xl backdrop-blur-md"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.profile}
           >
             <div className="flex h-full flex-col">
               {/* Header */}
@@ -106,8 +123,9 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                 <button
                   className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition",
-                    "hover:bg-muted hover:text-foreground"
+                    "hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   )}
+                  type="button"
                   onClick={onClose}
                   aria-label={t.close}
                 >

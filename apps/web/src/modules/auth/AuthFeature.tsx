@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
+import { Button } from "@/components/ui/button";
 
 type RoleLabel = "Super Admin" | "Owner" | "Worker";
 
@@ -104,49 +105,54 @@ export function AuthFeature() {
 
   if (token) {
     return (
-      <section className="module authPanel authPanelActive">
-        <div className="panelHeader">
-          <h2>Authentication</h2>
-          <span className="roleBadge">{roleLabel}</span>
+      <section className="space-y-4 rounded-2xl border border-border/70 bg-card/80 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-foreground">Authentication</h2>
+          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400">{roleLabel}</span>
         </div>
-        <p className="panelLead">Role verification complete: {roleLabel}</p>
-        <button type="button" onClick={logout}>Logout</button>
+        <p className="text-sm text-muted-foreground">Role verification complete: {roleLabel}</p>
+        <Button type="button" variant="outline" onClick={logout}>Logout</Button>
       </section>
     );
   }
 
   return (
-    <section className="module authPanel">
-      <div className="panelHeader">
-        <h2>Authentication</h2>
-        <span className="roleBadge roleBadgeMuted">Multi-login</span>
+    <section className="space-y-4 rounded-2xl border border-border/70 bg-card/80 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-foreground">Authentication</h2>
+        <span className="rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">Multi-login</span>
       </div>
 
-      <form onSubmit={onEmailLogin} className="formGrid">
-        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" placeholder="Email" />
-        <input value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" placeholder="Full Name" />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" placeholder="Password" />
-        <div className="actions">
-          <button type="submit">Login</button>
-          <button type="button" onClick={onRegister}>Register</button>
+      <form onSubmit={onEmailLogin} className="grid gap-2 sm:grid-cols-2">
+        <input className="h-10 rounded-xl border border-border/70 bg-background px-3 text-sm outline-none" value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" placeholder="Email" />
+        <input className="h-10 rounded-xl border border-border/70 bg-background px-3 text-sm outline-none" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" placeholder="Full Name" />
+        <input className="h-10 rounded-xl border border-border/70 bg-background px-3 text-sm outline-none sm:col-span-2" value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" placeholder="Password" />
+        <div className="flex gap-2 sm:col-span-2">
+          <Button type="submit" className="flex-1">Login</Button>
+          <Button type="button" variant="outline" className="flex-1" onClick={onRegister}>Register</Button>
         </div>
       </form>
 
-      <div className="mt-3 flex gap-2">
-        <button type="button" onClick={onGoogleLogin}>Google Login</button>
-        <button type="button" onClick={onWebAuthn}>WebAuthn (Face/Fingerprint)</button>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button type="button" variant="outline" onClick={onGoogleLogin}>Google Login</Button>
+        <Button type="button" variant="outline" onClick={onWebAuthn}>WebAuthn (Face/Fingerprint)</Button>
       </div>
 
-      <div className="mt-3 grid gap-2">
-        <input value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="Mobile (+880...)" />
-        <div className="flex gap-2">
-          <button type="button" onClick={onRequestOtp}>Send OTP</button>
-          <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter OTP" />
-          <button type="button" onClick={onVerifyOtp}>Verify OTP</button>
+      <div className="rounded-2xl border border-border/70 bg-background/50 p-3">
+        <p className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Mobile OTP</p>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <input className="h-10 rounded-xl border border-border/70 bg-background px-3 text-sm outline-none" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="Mobile (+880...)" />
+          <Button type="button" variant="outline" onClick={onRequestOtp}>Send OTP</Button>
+          <input className="h-10 rounded-xl border border-border/70 bg-background px-3 text-sm outline-none" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter OTP" />
+          <Button type="button" onClick={onVerifyOtp}>Verify OTP</Button>
         </div>
       </div>
 
-      {message ? <p className="panelMessage">{message}</p> : <p className="panelMessage">Use your administrator credentials, or continue with Register or OTP/Google sign-in.</p>}
+      {message ? (
+        <p className="rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-sm text-foreground">{message}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">Use your administrator credentials, or continue with Register or OTP/Google sign-in.</p>
+      )}
     </section>
   );
 }

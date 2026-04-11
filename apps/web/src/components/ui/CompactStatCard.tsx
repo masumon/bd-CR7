@@ -33,13 +33,16 @@ export function CompactStatCard({
   onClick,
 }: CompactStatCardProps) {
   const colors = ACCENT_MAP[accent];
+  const interactive = typeof onClick === "function";
 
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={!interactive}
+      aria-label={`${label}: ${value}`}
       className={`flex h-full w-full flex-col justify-between rounded-xl border border-border/40 bg-card/70 p-2.5 text-left backdrop-blur-sm transition-all active:scale-[0.97] ${
-        onClick ? "hover:border-primary/40 cursor-pointer" : "cursor-default"
+        interactive ? "hover:border-primary/40 cursor-pointer" : "cursor-default"
       }`}
     >
       <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${colors}`}>

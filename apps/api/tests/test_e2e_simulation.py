@@ -20,6 +20,7 @@ All Supabase calls are mocked — no real DB or network required.
 """
 from __future__ import annotations
 
+import os
 import sys
 import unittest
 from decimal import Decimal
@@ -77,6 +78,16 @@ _mock_anon = _make_mock_client()
 
 def _make_client():
     with (
+        patch.dict(
+            os.environ,
+            {
+                "APP_ENV": "test",
+                "REQUIRE_SUPABASE_IN_PRODUCTION": "false",
+                "REQUIRE_REDIS_IN_PRODUCTION": "false",
+                "REDIS_URL": "",
+            },
+            clear=False,
+        ),
         patch("core.supabase.supabase_service", _mock_service),
         patch("core.supabase.supabase_anon", _mock_anon),
     ):
@@ -443,16 +454,16 @@ class E2E_13_GeofenceDistance(unittest.TestCase):
     """distance_km must return accurate Haversine distances."""
 
     def test_zero_distance_same_point(self):
-        from routers.hr import distance_km
+        from modules.workforce.router import distance_km
         self.assertAlmostEqual(distance_km(23.81, 90.41, 23.81, 90.41), 0.0, places=3)
 
     def test_within_site_radius(self):
-        from routers.hr import distance_km
+        from modules.workforce.router import distance_km
         dist = distance_km(23.8103, 90.4125, 23.8106, 90.4128)
         self.assertLess(dist, 0.5)
 
     def test_outside_site_radius(self):
-        from routers.hr import distance_km
+        from modules.workforce.router import distance_km
         # Chittagong is ~200 km from Dhaka
         dist = distance_km(23.8103, 90.4125, 22.3569, 91.7832)
         self.assertGreater(dist, 100)

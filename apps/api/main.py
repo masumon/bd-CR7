@@ -59,6 +59,7 @@ def create_app() -> Any:
     from modules.settings.router import router as settings_router
     from modules.workforce.router import router as workforce_router
     from modules.ai.router import router as ai_router
+    from modules.users.router import router as users_router
 
     configure_logging(settings.log_level, env=settings.env)
 
@@ -175,6 +176,8 @@ def create_app() -> Any:
     app.include_router(reports_router, prefix="/api/reports", tags=["reports"])
     app.include_router(settings_router, prefix="/api/settings", tags=["settings"])
     app.include_router(workforce_router, prefix="/api/workforce", tags=["workforce"])
+    app.include_router(workforce_router, prefix="/api/construction", tags=["construction-compat"])
+    app.include_router(users_router, prefix="/api", tags=["users"])
     app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 
     @app.get("/api")

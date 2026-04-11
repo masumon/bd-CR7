@@ -51,9 +51,6 @@ export function useAuthFlow(router: RouterLike) {
   }, [router]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("bdcr7-theme");
-    document.documentElement.classList.toggle("dark", stored !== "light");
-
     const remembered = localStorage.getItem("bdcr7-remember-me") === "1";
     const rememberedEmail = localStorage.getItem("bdcr7-remember-email") || "";
     setSiRemember(remembered);

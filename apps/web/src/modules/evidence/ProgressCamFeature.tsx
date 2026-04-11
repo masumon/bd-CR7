@@ -6,6 +6,7 @@ import { detectFileType } from "@/components/ui/FilePreviewInline";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { useProjectFiles } from "@/hooks/useProjectFiles";
 import { PermissionGate } from "@/components/ui/PermissionGate";
+import { FileUploader, PreviewModal } from "@/modules/_shared";
 
 const PHASES = ["Foundation", "Structure", "Finishing", "Handover"];
 
@@ -23,6 +24,8 @@ export function ProgressCamFeature() {
   const [caption, setCaption] = useState("");
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewItem, setPreviewItem] = useState<ProgressEntry | null>(null);
 
   const {
     files,
@@ -127,7 +130,6 @@ export function ProgressCamFeature() {
                 type="file"
                 title="Capture from camera"
                 accept="image/*,video/*"
-                capture="environment"
                 onChange={(e) => {
                   const next = e.target.files?.[0] || null;
                   setFile(next);
@@ -169,24 +171,54 @@ export function ProgressCamFeature() {
         </button>
       </form>
 
-      <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-        {entries.slice(0, 8).map((entry, idx) => (
-          <div key={`${entry.media_url}-${idx}`} className="rounded-xl border border-border/70 bg-background/75 px-3 py-3">
+      <div className="mt-4">
+        <FileUploader module="evidence" category="progress" subcategory={phaseCategory} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-muted-foreground sm:grid-cols-2 xl:grid-cols-3">
+        {entries.slice(0, 12).map((entry, idx) => (
+          <button
+            key={`${entry.media_url}-${idx}`}
+            type="button"
+            onClick={() => {
+              setPreviewItem(entry);
+              setPreviewOpen(true);
+            }}
+            className="rounded-xl border border-border/70 bg-background/75 px-3 py-3 text-left transition hover:border-primary/50"
+          >
             <p className="font-medium text-foreground">{entry.phase_category}</p>
-            <p className="mt-1">{entry.caption || "No caption provided"}</p>
+            <p className="mt-1 truncate">{entry.caption || "No caption provided"}</p>
             <div className="mt-2 overflow-hidden rounded-xl border border-border/60 bg-background/90">
               {isVideo(entry.media_url) ? (
-                <video className="h-44 w-full object-cover" controls src={entry.media_url} />
+                <video className="h-44 w-full object-cover" muted src={entry.media_url} />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={entry.media_url} alt={entry.caption || entry.phase_category} className="h-44 w-full object-cover" />
               )}
             </div>
             {entry.created_at ? <p className="mt-2 text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleString()}</p> : null}
-            <p className="mt-1 truncate text-xs text-muted-foreground">{entry.media_url}</p>
-          </div>
+          </button>
         ))}
       </div>
+
+      <PreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        title={previewItem?.phase_category || "Evidence Preview"}
+      >
+        {previewItem ? (
+          <div className="space-y-3">
+            {isVideo(previewItem.media_url) ? (
+              <video className="max-h-[65vh] w-full rounded-xl" controls src={previewItem.media_url} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="max-h-[65vh] w-full rounded-xl object-contain" src={previewItem.media_url} alt={previewItem.caption || previewItem.phase_category} />
+            )}
+            <p className="text-sm text-foreground">{previewItem.caption || "No caption"}</p>
+            {previewItem.created_at ? <p className="text-xs text-muted-foreground">{new Date(previewItem.created_at).toLocaleString()}</p> : null}
+          </div>
+        ) : null}
+      </PreviewModal>
       {filesError ? <p className="mt-3 text-sm text-rose-500">{filesError}</p> : null}
       {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
     </section>

@@ -23,6 +23,7 @@ import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { apiRequest } from "@/lib/api";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
+import { PreviewModal } from "@/modules/_shared";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
 
@@ -123,11 +124,26 @@ export function ProjectsFeature() {
   const [attachmentCaption, setAttachmentCaption] = useState("");
   const [attachmentSaving, setAttachmentSaving] = useState(false);
   const [coverPhotoUploading, setCoverPhotoUploading] = useState(false);
+  const [projectQuery, setProjectQuery] = useState("");
+  const [projectStatusFilter, setProjectStatusFilter] = useState<"all" | ProjectStatus>("all");
+  const [previewItem, setPreviewItem] = useState<{ url: string; title: string; type: string | null } | null>(null);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
     [projects, selectedProjectId]
   );
+
+  const filteredProjects = useMemo(() => {
+    const normalized = projectQuery.trim().toLowerCase();
+    return projects.filter((project) => {
+      if (projectStatusFilter !== "all" && project.status !== projectStatusFilter) return false;
+      if (!normalized) return true;
+      const haystack = [project.name, project.description ?? "", project.phase ?? "", project.status]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [projects, projectQuery, projectStatusFilter]);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -439,8 +455,42 @@ export function ProjectsFeature() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
+        <>
+          <Card>
+            <CardContent className="flex flex-wrap items-center gap-2 p-3">
+              <input
+                value={projectQuery}
+                onChange={(e) => setProjectQuery(e.target.value)}
+                placeholder="Search projects by name, phase, status..."
+                className="h-9 min-w-[230px] flex-1 rounded-lg border border-border/70 bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/70 focus:border-primary/60"
+              />
+              <div className="flex items-center gap-1 rounded-lg border border-border/70 bg-background p-1">
+                {["all", ...STATUS_OPTIONS].map((status) => {
+                  const value = status === "all" ? "all" : status;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setProjectStatusFilter(value as "all" | ProjectStatus)}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${projectStatusFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                    >
+                      {status}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {filteredProjects.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                No projects match the current filters.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((p) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, y: 10 }}
@@ -519,8 +569,10 @@ export function ProjectsFeature() {
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
-        </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {selectedProject ? (
@@ -644,10 +696,34 @@ export function ProjectsFeature() {
                   attachments.map((item) => (
                     <div key={item.id} className="rounded-xl border border-border bg-background/80 p-2">
                       {item.file_type?.startsWith("image/") ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.file_url} alt={item.caption || item.file_name || "Attachment"} className="h-32 w-full rounded-lg object-cover" />
+                        <button
+                          type="button"
+                          className="block w-full"
+                          title={item.caption || item.file_name || "Preview attachment"}
+                          aria-label={item.caption || item.file_name || "Preview attachment"}
+                          onClick={() => setPreviewItem({
+                            url: item.file_url,
+                            type: item.file_type,
+                            title: item.caption || item.file_name || "Attachment",
+                          })}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={item.file_url} alt={item.caption || item.file_name || "Attachment"} className="h-32 w-full rounded-lg object-cover" />
+                        </button>
                       ) : item.file_type?.startsWith("video/") ? (
-                        <video className="h-32 w-full rounded-lg object-cover" controls src={item.file_url} />
+                        <button
+                          type="button"
+                          className="block w-full"
+                          title={item.caption || item.file_name || "Preview attachment"}
+                          aria-label={item.caption || item.file_name || "Preview attachment"}
+                          onClick={() => setPreviewItem({
+                            url: item.file_url,
+                            type: item.file_type,
+                            title: item.caption || item.file_name || "Attachment",
+                          })}
+                        >
+                          <video className="h-32 w-full rounded-lg object-cover" muted src={item.file_url} />
+                        </button>
                       ) : (
                         <a href={item.file_url} target="_blank" rel="noreferrer" className="flex h-20 items-center justify-center rounded-lg border border-dashed border-border text-xs text-primary hover:underline">
                           Open file
@@ -809,6 +885,21 @@ export function ProjectsFeature() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PreviewModal
+        open={!!previewItem}
+        onOpenChange={(open) => {
+          if (!open) setPreviewItem(null);
+        }}
+        title={previewItem?.title || "Preview"}
+      >
+        {previewItem?.type?.startsWith("video/") ? (
+          <video className="max-h-[70vh] w-full rounded-lg bg-black" controls src={previewItem.url} />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={previewItem?.url} alt={previewItem?.title || "Preview"} className="mx-auto max-h-[70vh] w-auto rounded-lg object-contain" />
+        )}
+      </PreviewModal>
     </div>
   );
 }

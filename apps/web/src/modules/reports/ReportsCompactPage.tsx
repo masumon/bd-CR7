@@ -33,15 +33,31 @@ export function ReportsCompactPage() {
   const [stats, setStats] = useState<Stats>({ totalFunds: 0, totalExpenses: 0, pending: 0, approved: 0, workers: 0, materials: 0 });
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const fetchNumericSum = useCallback(async (table: string, column: string) => {
+    const { data, error } = await supabase.from(table).select(column);
+    if (error || !data) return null;
+    const rows = data as unknown as Array<Record<string, unknown>>;
+    return rows.reduce((sum, row) => sum + Number(row[column] || 0), 0);
+  }, [supabase]);
+
+  const fetchRowCount = useCallback(async (table: string) => {
+    const { count, error } = await supabase.from(table).select("id", { count: "exact", head: true });
+    if (error) return null;
+    return count ?? 0;
+  }, [supabase]);
+
   const load = useCallback(async () => {
-    const [fundsRes, expensesRes, workersRes, materialsRes] = await Promise.all([
-      supabase.from("funds").select("amount"),
+    const [fundsPrimary, fundsFallback, expensesRes, workersPrimary, workersFallback, materialsPrimary, materialsFallback] = await Promise.all([
+      fetchNumericSum("fund_transactions", "amount"),
+      fetchNumericSum("funds", "amount"),
       supabase.from("expenses").select("amount,status"),
-      supabase.from("worker_logs").select("id", { count: "exact", head: true }),
-      supabase.from("material_logs").select("id", { count: "exact", head: true }),
+      fetchRowCount("attendance"),
+      fetchRowCount("worker_logs"),
+      fetchRowCount("material_movements"),
+      fetchRowCount("material_logs"),
     ]);
 
-    const funds = (fundsRes.data ?? []).reduce((s, r) => s + Number(r.amount || 0), 0);
+    const funds = fundsPrimary ?? fundsFallback ?? 0;
     const expRows = expensesRes.data ?? [];
     const expenses = expRows.reduce((s, r) => s + Number(r.amount || 0), 0);
     const pending = expRows.filter((r) => String(r.status).toLowerCase() === "pending").length;
@@ -52,10 +68,10 @@ export function ReportsCompactPage() {
       totalExpenses: expenses,
       pending,
       approved,
-      workers: workersRes.count ?? 0,
-      materials: materialsRes.count ?? 0,
+      workers: workersPrimary ?? workersFallback ?? 0,
+      materials: materialsPrimary ?? materialsFallback ?? 0,
     });
-  }, [supabase]);
+  }, [fetchNumericSum, fetchRowCount, supabase]);
 
   useEffect(() => { void load(); }, [load]);
 

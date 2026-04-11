@@ -7,10 +7,12 @@ type SettingsCatalogTabProps = {
   activeTab: "Workspace" | "Notifications" | "Security" | "Data";
   categoryTotals: Record<SettingCategory, number>;
   filteredSettings: SettingItem[];
+  query: string;
+  onQueryChange: (value: string) => void;
   onToggle: (id: string) => void;
 };
 
-export function SettingsCatalogTab({ activeTab, categoryTotals, filteredSettings, onToggle }: SettingsCatalogTabProps) {
+export function SettingsCatalogTab({ activeTab, categoryTotals, filteredSettings, query, onQueryChange, onToggle }: SettingsCatalogTabProps) {
   return (
     <Card>
       <CardHeader>
@@ -27,6 +29,13 @@ export function SettingsCatalogTab({ activeTab, categoryTotals, filteredSettings
           ))}
         </div>
 
+        <input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search controls by label, description, or subcategory..."
+          className="h-10 w-full rounded-2xl border border-border/70 bg-background px-3 text-sm text-foreground outline-none"
+        />
+
         <div className="overflow-x-auto rounded-2xl border border-border/70">
           <table className="w-full text-sm">
             <thead>
@@ -39,6 +48,13 @@ export function SettingsCatalogTab({ activeTab, categoryTotals, filteredSettings
               </tr>
             </thead>
             <tbody>
+              {filteredSettings.length === 0 ? (
+                <tr>
+                  <td className="px-3 py-10 text-center text-sm text-muted-foreground" colSpan={5}>
+                    No controls match the current search in {activeTab}.
+                  </td>
+                </tr>
+              ) : null}
               {filteredSettings.map((item) => (
                 <tr key={item.id} className="border-b border-border/50 last:border-b-0">
                   <td className="px-3 py-3 text-xs font-medium text-foreground">{item.category}</td>

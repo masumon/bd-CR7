@@ -6,6 +6,7 @@ Tests: health, auth, finance, construction, users, approval endpoints.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -31,8 +32,16 @@ _supabase_mock = _make_supabase_mock()
 
 
 def _create_test_client():
-    with patch("core.supabase.supabase_service", _supabase_mock), \
-         patch("core.supabase.supabase_anon", _supabase_mock):
+    with patch.dict(
+        os.environ,
+        {
+            "APP_ENV": "test",
+            "REQUIRE_SUPABASE_IN_PRODUCTION": "false",
+            "REQUIRE_REDIS_IN_PRODUCTION": "false",
+            "REDIS_URL": "",
+        },
+        clear=False,
+    ), patch("core.supabase.supabase_service", _supabase_mock), patch("core.supabase.supabase_anon", _supabase_mock):
         from fastapi.testclient import TestClient
         from main import create_app
         app = create_app()

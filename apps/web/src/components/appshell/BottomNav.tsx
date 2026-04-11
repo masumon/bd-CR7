@@ -29,10 +29,12 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
         {primaryItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const Icon = item.icon;
+          const compactLabel = item.label.split("/")[0]?.trim() || item.label;
           return (
             <Link
               key={item.href}
               href={item.href}
+              title={item.label}
               className={cn(
                 "relative flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
@@ -48,16 +50,18 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
               )}>
                 <Icon className="h-4 w-4" />
               </span>
-              <span className="max-w-[4.6rem] truncate px-1">{item.label}</span>
+              <span className="max-w-[4.6rem] truncate px-1">{compactLabel}</span>
             </Link>
           );
         })}
 
         {hasMore && (
           <button
+            type="button"
             onClick={onOpenMore}
             className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
             aria-label="More modules"
+            title="More modules"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-xl transition-all">
               <MoreHorizontal className="h-4 w-4" />

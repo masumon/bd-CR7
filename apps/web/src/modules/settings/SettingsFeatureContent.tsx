@@ -50,6 +50,7 @@ export function SettingsFeature() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("Profile");
   const [integrationState, setIntegrationState] = useState<IntegrationState>({ cloudinary: true, realtime: true, aiVoice: true, offlineSync: true });
   const [settingItems, setSettingItems] = useState<SettingItem[]>(DEFAULT_SETTING_ITEMS);
+  const [settingsQuery, setSettingsQuery] = useState("");
 
   useEffect(() => {
     try {
@@ -106,10 +107,16 @@ export function SettingsFeature() {
 
   const filteredSettings = useMemo(() => {
     if (activeTab === "Workspace" || activeTab === "Notifications" || activeTab === "Security" || activeTab === "Data") {
-      return settingItems.filter((item) => item.category === activeTab);
+      const categoryItems = settingItems.filter((item) => item.category === activeTab);
+      const normalized = settingsQuery.trim().toLowerCase();
+      if (!normalized) return categoryItems;
+      return categoryItems.filter((item) => [item.label, item.description, item.subcategory]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalized));
     }
     return settingItems;
-  }, [activeTab, settingItems]);
+  }, [activeTab, settingItems, settingsQuery]);
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("bdcr7-theme");
@@ -282,6 +289,8 @@ export function SettingsFeature() {
           activeTab={activeTab}
           categoryTotals={categoryTotals}
           filteredSettings={filteredSettings}
+          query={settingsQuery}
+          onQueryChange={setSettingsQuery}
           onToggle={toggleSetting}
         />
       ) : null}

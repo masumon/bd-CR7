@@ -51,11 +51,12 @@ export function Sidebar({ items, mobileOpen, onCloseMobile }: SidebarProps) {
                 href={item.href}
                 title={item.label}
                 className={cn(
-                  "group mx-2 mb-1 flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all",
+                  "group mx-2 mb-1 flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   active
                     ? "bg-primary/16 text-primary shadow-[0_8px_18px_rgba(16,185,129,0.18)]"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 )}
+                aria-current={active ? "page" : undefined}
                 onClick={onCloseMobile}
               >
                 <span className={cn(

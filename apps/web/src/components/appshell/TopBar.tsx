@@ -61,6 +61,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
         {/* Language toggle */}
         <button
           className="flex h-9 items-center justify-center gap-1 rounded-full border border-border/60 bg-muted/55 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground transition hover:border-primary/40 hover:text-primary focus-visible:outline-none"
+          type="button"
           onClick={onToggleLanguage}
           aria-label={language === "bn" ? "ভাষা পরিবর্তন" : "Toggle language"}
         >
@@ -83,8 +84,9 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
           className={cn(
             "flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold",
             "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm",
-            "transition hover:opacity-90 active:scale-95"
+            "transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           )}
+          type="button"
           onClick={onOpenUserDrawer}
           aria-label={language === "bn" ? "ইউজার প্রোফাইল খুলুন" : "Open user profile"}
         >

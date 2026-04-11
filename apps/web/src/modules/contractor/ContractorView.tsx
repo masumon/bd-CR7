@@ -441,6 +441,12 @@ export function ContractorView() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Add Contractor");
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; label: string } | null>(null);
+  const [contractorQuery, setContractorQuery] = useState("");
+  const [contractorStatusFilter, setContractorStatusFilter] = useState<"all" | "Active" | "Inactive" | "Blacklisted">("all");
+  const [contractQuery, setContractQuery] = useState("");
+  const [contractStatusFilter, setContractStatusFilter] = useState<"all" | "Active" | "Completed" | "Terminated" | "On Hold">("all");
+  const [paymentQuery, setPaymentQuery] = useState("");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<"all" | "Cash" | "Bank Transfer" | "Cheque" | "bKash" | "Nagad" | "Other">("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -463,6 +469,42 @@ export function ContractorView() {
     const activeCount = contractors.filter((c) => c.status === "Active").length;
     return { totalContractors: contractors.length, activeCount, totalContractValue, totalPaid };
   }, [contractors, contracts, payments]);
+
+  const filteredContractors = useMemo(() => {
+    const normalized = contractorQuery.trim().toLowerCase();
+    return contractors.filter((item) => {
+      if (contractorStatusFilter !== "all" && item.status !== contractorStatusFilter) return false;
+      if (!normalized) return true;
+      const haystack = [item.name, item.company || "", item.phone || "", item.specialization || "", item.status]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [contractors, contractorQuery, contractorStatusFilter]);
+
+  const filteredContracts = useMemo(() => {
+    const normalized = contractQuery.trim().toLowerCase();
+    return contracts.filter((item) => {
+      if (contractStatusFilter !== "all" && item.status !== contractStatusFilter) return false;
+      if (!normalized) return true;
+      const haystack = [item.project_name, item.contractors?.name || "", item.status, item.description || ""]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [contracts, contractQuery, contractStatusFilter]);
+
+  const filteredPayments = useMemo(() => {
+    const normalized = paymentQuery.trim().toLowerCase();
+    return payments.filter((item) => {
+      if (paymentMethodFilter !== "all" && item.method !== paymentMethodFilter) return false;
+      if (!normalized) return true;
+      const haystack = [item.contractors?.name || "", item.method, item.notes || "", item.payment_date]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [payments, paymentMethodFilter, paymentQuery]);
 
   const buildExportRows = useCallback(() => {
     return contracts.map((c) => ({
@@ -639,10 +681,32 @@ export function ContractorView() {
           <CardContent>
             {loading ? (
               <p className="py-4 text-center text-sm text-muted-foreground">লোড হচ্ছে...</p>
-            ) : contractors.length === 0 ? (
+            ) : filteredContractors.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">কোনো ঠিকাদার নেই। উপরের ফর্ম থেকে যোগ করুন।</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    value={contractorQuery}
+                    onChange={(e) => setContractorQuery(e.target.value)}
+                    placeholder="Search contractor by name/company..."
+                    className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+                  />
+                  <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+                    {(["all", "Active", "Inactive", "Blacklisted"] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setContractorStatusFilter(value)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${contractorStatusFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
                 <Table>
                   <thead>
                     <tr>
@@ -655,7 +719,7 @@ export function ContractorView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {contractors.map((c) => (
+                    {filteredContractors.map((c) => (
                       <tr key={c.id}>
                         <Td className="font-medium">{c.name}</Td>
                         <Td className="text-xs text-muted-foreground">{c.company ?? "—"}</Td>
@@ -676,6 +740,7 @@ export function ContractorView() {
                     ))}
                   </tbody>
                 </Table>
+                </div>
               </div>
             )}
           </CardContent>
@@ -709,10 +774,32 @@ export function ContractorView() {
           <CardContent>
             {loading ? (
               <p className="py-4 text-center text-sm text-muted-foreground">লোড হচ্ছে...</p>
-            ) : contracts.length === 0 ? (
+            ) : filteredContracts.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">কোনো চুক্তি নেই।</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    value={contractQuery}
+                    onChange={(e) => setContractQuery(e.target.value)}
+                    placeholder="Search contract by project/contractor..."
+                    className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+                  />
+                  <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+                    {(["all", "Active", "Completed", "On Hold", "Terminated"] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setContractStatusFilter(value)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${contractStatusFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
                 <Table>
                   <thead>
                     <tr>
@@ -726,7 +813,7 @@ export function ContractorView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {contracts.map((c) => {
+                    {filteredContracts.map((c) => {
                       const remaining = Number(c.contract_amount) - Number(c.paid_amount);
                       return (
                         <tr key={c.id}>
@@ -753,6 +840,7 @@ export function ContractorView() {
                     })}
                   </tbody>
                 </Table>
+                </div>
               </div>
             )}
           </CardContent>
@@ -786,10 +874,32 @@ export function ContractorView() {
           <CardContent>
             {loading ? (
               <p className="py-4 text-center text-sm text-muted-foreground">লোড হচ্ছে...</p>
-            ) : payments.length === 0 ? (
+            ) : filteredPayments.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">কোনো পেমেন্ট নেই।</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    value={paymentQuery}
+                    onChange={(e) => setPaymentQuery(e.target.value)}
+                    placeholder="Search payment by contractor/method..."
+                    className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+                  />
+                  <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+                    {(["all", "Cash", "Bank Transfer", "Cheque", "bKash", "Nagad", "Other"] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPaymentMethodFilter(value)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${paymentMethodFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
                 <Table>
                   <thead>
                     <tr>
@@ -802,7 +912,7 @@ export function ContractorView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {payments.map((p) => (
+                    {filteredPayments.map((p) => (
                       <tr key={p.id}>
                         <Td className="font-medium">{p.contractors?.name ?? "—"}</Td>
                         <Td className="text-xs">{p.payment_date}</Td>
@@ -823,6 +933,7 @@ export function ContractorView() {
                     ))}
                   </tbody>
                 </Table>
+                </div>
               </div>
             )}
           </CardContent>

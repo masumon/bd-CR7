@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { BadgeDollarSign, CheckCircle2, FileSpreadsheet, FileText, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,25 @@ import { useFinanceExpenses } from "@/modules/finance/hooks/useFinanceExpenses";
 
 export function FinanceExpenseView() {
   const finance = useFinanceExpenses();
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+
+  const filteredRows = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return finance.rows.filter((row) => {
+      const status = String(row.status).toLowerCase();
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+      if (!normalized) return true;
+
+      const category = typeof row.metadata?.category === "string" ? row.metadata.category : "";
+      const subcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "";
+      const haystack = [row.id, row.description, category, subcategory, status]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [finance.rows, query, statusFilter]);
 
   const exportActions = (
     <>
@@ -60,7 +80,7 @@ export function FinanceExpenseView() {
               rows: [],
               tableHeaders: ["ID", "Category", "Subcategory", "Amount", "Status"],
               tableHeadersBn: ["আইডি", "ক্যাটাগরি", "উপ-ক্যাটাগরি", "পরিমাণ", "স্ট্যাটাস"],
-              tableRows: finance.rows.slice(0, 20).map((row) => {
+              tableRows: filteredRows.slice(0, 20).map((row) => {
                 const metaCategory = typeof row.metadata?.category === "string" ? row.metadata.category : "";
                 const metaSubcategory = typeof row.metadata?.subcategory === "string" ? row.metadata.subcategory : "General";
                 const category = metaCategory || row.description?.split(" ")[0] || "General";
@@ -111,11 +131,36 @@ export function FinanceExpenseView() {
           <CardHeader>
             <CardTitle>Expense Ledger / ব্যয় লেজার</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">Detailed finance entries with category, subcategory, and approval status.</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by ID, description, category..."
+                className="h-9 min-w-[230px] flex-1 rounded-lg border border-border/70 bg-background px-3 text-sm outline-none ring-0 placeholder:text-muted-foreground/70 focus:border-primary/60"
+              />
+              <div className="flex items-center gap-1 rounded-lg border border-border/70 bg-background p-1">
+                {([
+                  ["all", "All"],
+                  ["pending", "Pending"],
+                  ["approved", "Approved"],
+                  ["rejected", "Rejected"],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setStatusFilter(value)}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${statusFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ExpenseLedgerTable
               loading={finance.loading}
-              rows={finance.rows}
+              rows={filteredRows}
               onEdit={finance.openEdit}
               onDelete={finance.setDeleteTarget}
               canApprove={finance.canApprove}

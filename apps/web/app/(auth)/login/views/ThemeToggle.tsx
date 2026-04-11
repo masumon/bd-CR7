@@ -1,43 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 type ThemeMode = "dark" | "light" | "system";
 
-function resolveEffectiveDark(mode: ThemeMode): boolean {
-  if (mode === "dark") return true;
-  if (mode === "light") return false;
-  if (typeof window !== "undefined") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  }
-  return true;
-}
-
 export function ThemeToggle() {
-  const [mode, setMode] = useState<ThemeMode>("dark");
+  const { theme, setTheme } = useTheme();
+  const mode: ThemeMode = theme === "light" || theme === "system" ? theme : "dark";
 
   useEffect(() => {
     const stored = localStorage.getItem("bdcr7-theme") as ThemeMode | null;
     const initial: ThemeMode = stored === "light" || stored === "system" ? stored : "dark";
-    setMode(initial);
-    document.documentElement.classList.toggle("dark", resolveEffectiveDark(initial));
-
-    if (initial === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const onChange = (e: MediaQueryListEvent) => {
-        document.documentElement.classList.toggle("dark", e.matches);
-      };
-      mq.addEventListener("change", onChange);
-      return () => mq.removeEventListener("change", onChange);
-    }
-  }, []);
+    setTheme(initial);
+  }, [setTheme]);
 
   const cycle = () => {
     const next: ThemeMode = mode === "dark" ? "light" : mode === "light" ? "system" : "dark";
-    setMode(next);
+    setTheme(next);
     localStorage.setItem("bdcr7-theme", next);
-    document.documentElement.classList.toggle("dark", resolveEffectiveDark(next));
   };
 
   const icon =

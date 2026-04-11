@@ -10,6 +10,7 @@ import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
 import { createClient } from "@/lib/supabase/client";
+import { AuditViewer } from "@/modules/_shared";
 
 type AuditRow = {
   id: string;
@@ -208,34 +209,15 @@ export function AuditView() {
             ) : filteredLogs.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">No results match your search.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <thead>
-                    <tr>
-                      <Th>Action</Th>
-                      <Th>Table</Th>
-                      <Th>Record</Th>
-                      <Th>By</Th>
-                      <Th>Time</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredLogs.map((log) => (
-                      <tr key={log.id}>
-                        <Td>
-                          <span className={`text-xs font-semibold ${ACTION_COLORS[log.action] ?? "text-foreground"}`}>
-                            {log.action}
-                          </span>
-                        </Td>
-                        <Td className="text-xs text-muted-foreground">{log.table_name || "—"}</Td>
-                        <Td className="max-w-[80px] truncate font-mono text-[10px] text-muted-foreground">{log.record_id || "—"}</Td>
-                        <Td className="max-w-[80px] truncate font-mono text-[10px] text-muted-foreground">{log.changed_by || "system"}</Td>
-                        <Td className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString()}</Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
+              <AuditViewer
+                items={filteredLogs.map((log) => ({
+                  id: log.id,
+                  action: `${log.action}${log.table_name ? ` · ${log.table_name}` : ""}`,
+                  actor: log.changed_by,
+                  timestamp: log.created_at,
+                  summary: log.record_id ? `Record: ${log.record_id}` : null,
+                }))}
+              />
             )}
           </CardContent>
         </Card>
