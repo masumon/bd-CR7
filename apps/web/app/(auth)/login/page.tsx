@@ -41,8 +41,11 @@ export default function LoginPageController() {
                   key="landing"
                   onSignin={() => goTo("signin")}
                   onSignup={() => goTo("signup")}
-                  onOtp={() => goTo("otp")}
+                  onEmailOtp={() => goTo("otp")}
                   onBiometric={flow.biometric.trigger}
+                  onPasskey={() => void flow.passkey.trigger()}
+                  passkeyLoading={flow.passkey.loading}
+                  passkeyError={flow.passkey.error}
                   bioLoading={flow.biometric.loading}
                   bioError={flow.biometric.error}
                   bioState={flow.biometric.state}
@@ -55,9 +58,11 @@ export default function LoginPageController() {
                 key="signin"
                 onBack={() => flow.setView("landing")}
                 onSignup={() => flow.setView("signup")}
-                onOtp={() => flow.setView("otp")}
+                onEmailOtp={() => flow.setView("otp")}
+                onPasskey={() => void flow.passkey.trigger(flow.signin.email)}
                 onGoogle={flow.oauth.loginWithGoogle}
                 loading={flow.signin.loading}
+                passkeyLoading={flow.passkey.loading}
                 onSubmit={flow.signin.submit}
                 email={flow.signin.email}
                 setEmail={flow.signin.setEmail}
@@ -70,6 +75,7 @@ export default function LoginPageController() {
                 capsLock={flow.signin.capsLock}
                 setCapsLock={flow.signin.setCapsLock}
                 error={flow.signin.error}
+                passkeyError={flow.passkey.error}
               />
             )}
 

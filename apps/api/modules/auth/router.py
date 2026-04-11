@@ -128,6 +128,59 @@ def _sync_auth_role_metadata(user_id: str, role_name: str) -> None:
         return
 
 
+def _load_active_user_by_email(email: str) -> dict[str, Any]:
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    result = (
+        supabase_service.table("users")
+        .select("id,email,full_name,role,is_active")
+        .eq("email", email)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_row = result.data[0]
+    if user_row.get("is_active") is False:
+        raise HTTPException(status_code=403, detail="User account is inactive")
+    return user_row
+
+
+def _create_magic_link_login_payload(user_row: dict[str, Any]) -> dict[str, str]:
+    if supabase_service is None:
+        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+
+    user_email = str(user_row.get("email") or "").strip()
+    if not user_email:
+        raise HTTPException(status_code=400, detail="User account has no email address")
+
+    try:
+        link_response = supabase_service.auth.admin.generate_link(
+            {
+                "type": "magiclink",
+                "email": user_email,
+                "options": {"redirect_to": "/dashboard"},
+            }
+        )
+        props = getattr(link_response, "properties", None) or {}
+        token_hash = getattr(props, "hashed_token", None) or (props.get("hashed_token") if isinstance(props, dict) else None)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail="Failed to create sign-in link") from exc
+
+    if not token_hash:
+        raise HTTPException(status_code=500, detail="Supabase sign-in link is missing token_hash")
+
+    return {
+        "token_hash": str(token_hash),
+        "email": user_email,
+        "type": "magiclink",
+        "role": _extract_role_name(user_row),
+        "user_id": str(user_row.get("id") or ""),
+    }
+
+
 @router.post("/register", response_model=AuthResponse)
 async def register(payload: RegisterRequest):
     if supabase_service is None:
@@ -304,6 +357,45 @@ async def create_webauthn_challenge(request: Request, user: UserContext = Depend
     }
 
 
+@router.post("/passkey/challenge")
+async def create_passkey_login_challenge(payload: dict, request: Request):
+    email = str(payload.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=422, detail="email is required")
+
+    user_row = _load_active_user_by_email(email)
+    user_id = str(user_row.get("id") or "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User account is missing id")
+
+    rows = (
+        supabase_service.table("biometric_credentials")
+        .select("credential_id,public_key,is_active")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+
+    credentials = [
+        row for row in (rows.data or []) if row.get("credential_id") and row.get("public_key")
+    ]
+    if not credentials:
+        raise HTTPException(status_code=400, detail="No passkey enrolled for this account. Sign in with password first.")
+
+    challenge = secrets.token_urlsafe(32)
+    _store_webauthn_challenge(user_id, challenge)
+
+    expected_origin, rp_id = _resolve_origin_and_rp_id(request)
+    return {
+        "challenge": challenge,
+        "rp_id": rp_id,
+        "origin": expected_origin,
+        "allow_credentials": [{"id": row["credential_id"], "type": "public-key"} for row in credentials],
+        "timeout": 60000,
+        "user_verification": "required",
+    }
+
+
 @router.post("/webauthn/verify")
 async def verify_webauthn_assertion(payload: dict, request: Request, user: UserContext = Depends(get_current_user)):
     if supabase_service is None:
@@ -378,6 +470,88 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
     ).eq("credential_id", credential_id).execute()
 
     return {"ok": True, "verified": True}
+
+
+@router.post("/passkey/login")
+async def login_with_passkey(payload: dict, request: Request):
+    email = str(payload.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=422, detail="email is required")
+
+    user_row = _load_active_user_by_email(email)
+    user_id = str(user_row.get("id") or "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User account is missing id")
+
+    challenge_state = _load_webauthn_challenge(user_id)
+    if not challenge_state:
+        raise HTTPException(status_code=400, detail="Passkey challenge is missing or expired")
+
+    expected_challenge, expires_at = challenge_state
+    if datetime.now(timezone.utc) > expires_at:
+        _clear_webauthn_challenge(user_id)
+        raise HTTPException(status_code=400, detail="Passkey challenge expired")
+
+    credential_id = str(payload.get("credential_id") or "").strip()
+    authenticator_data = str(payload.get("authenticator_data") or "").strip()
+    client_data_json = str(payload.get("client_data_json") or "").strip()
+    signature = str(payload.get("signature") or "").strip()
+    user_handle = payload.get("user_handle")
+
+    if not credential_id or not authenticator_data or not client_data_json or not signature:
+        raise HTTPException(status_code=400, detail="Missing required passkey assertion fields")
+
+    row_res = (
+        supabase_service.table("biometric_credentials")
+        .select("credential_id,public_key,sign_count,is_active")
+        .eq("user_id", user_id)
+        .eq("credential_id", credential_id)
+        .eq("is_active", True)
+        .limit(1)
+        .execute()
+    )
+    if not row_res.data:
+        raise HTTPException(status_code=404, detail="Passkey credential not found")
+
+    cred_row = row_res.data[0]
+    if not cred_row.get("public_key"):
+        raise HTTPException(status_code=400, detail="Credential is missing public key; re-enroll passkey")
+
+    expected_origin, rp_id = _resolve_origin_and_rp_id(request)
+    credential: dict[str, Any] = {
+        "id": credential_id,
+        "rawId": credential_id,
+        "type": "public-key",
+        "response": {
+            "authenticatorData": authenticator_data,
+            "clientDataJSON": client_data_json,
+            "signature": signature,
+            "userHandle": user_handle,
+        },
+        "clientExtensionResults": payload.get("client_extension_results") or {},
+    }
+
+    try:
+        verification = verify_authentication_response(
+            credential=credential,
+            expected_challenge=base64url_to_bytes(expected_challenge),
+            expected_rp_id=rp_id,
+            expected_origin=expected_origin,
+            credential_public_key=base64url_to_bytes(str(cred_row.get("public_key"))),
+            credential_current_sign_count=int(cred_row.get("sign_count") or 0),
+            require_user_verification=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=401, detail="Passkey cryptographic verification failed") from exc
+    finally:
+        _clear_webauthn_challenge(user_id)
+
+    supabase_service.table("biometric_credentials").update({"sign_count": int(verification.new_sign_count)}).eq(
+        "user_id", user_id
+    ).eq("credential_id", credential_id).execute()
+
+    audit_log(user_id=user_id, action="auth.passkey.login", meta={"role": _extract_role_name(user_row)})
+    return _create_magic_link_login_payload(user_row)
 
 
 @router.get("/me")

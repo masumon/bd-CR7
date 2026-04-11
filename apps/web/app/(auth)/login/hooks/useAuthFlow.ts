@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { ensureBiometricCredential, verifyBiometricAssertion } from "@/lib/webauthn";
+import { ensureBiometricCredential, signInWithPasskey, verifyBiometricAssertion } from "@/lib/webauthn";
 import { useAuthStore } from "@/store/authStore";
 import type { BiometricState, View } from "../types";
 
@@ -16,6 +16,7 @@ export function useAuthFlow(router: RouterLike) {
   const register = useAuthStore((s) => s.register);
   const persistedToken = useAuthStore((s) => s.token);
   const persistedUserId = useAuthStore((s) => s.userId);
+  const fetchUser = useAuthStore((s) => s.fetchUser);
 
   const [view, setView] = useState<View>("splash");
   const [showOverlay, setShowOverlay] = useState(false);
@@ -85,6 +86,8 @@ export function useAuthFlow(router: RouterLike) {
   const [siCapsLock, setSiCapsLock] = useState(false);
   const [siLoading, setSiLoading] = useState(false);
   const [siError, setSiError] = useState("");
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeyError, setPasskeyError] = useState("");
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setSiError("");
@@ -108,6 +111,52 @@ export function useAuthFlow(router: RouterLike) {
       setSiLoading(false);
     }
   };
+
+  const completeMagicLinkLogin = useCallback(async (tokenHash: string, email: string, role: string | null | undefined, userId: string | null | undefined) => {
+    if (!supabase) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "magiclink",
+      email,
+    });
+    if (error || !data.session || !data.user) {
+      throw new Error(error?.message || "Passkey sign-in session creation failed.");
+    }
+
+    useAuthStore.setState({
+      token: data.session.access_token,
+      userId: userId || data.user.id,
+      role: role || null,
+    });
+    await fetchUser().catch(() => {});
+    setShowOverlay(true);
+    setAuthDone(true);
+  }, [fetchUser]);
+
+  const handlePasskey = useCallback(async (emailHint?: string) => {
+    const candidateEmail = (emailHint || siEmail || localStorage.getItem("bdcr7-remember-email") || "").trim().toLowerCase();
+    if (!candidateEmail) {
+      setPasskeyError("Passkey ব্যবহার করতে আগে আপনার ইমেইল দিন।");
+      setView("signin");
+      return;
+    }
+
+    setPasskeyLoading(true);
+    setPasskeyError("");
+    try {
+      const result = await signInWithPasskey(candidateEmail);
+      await completeMagicLinkLogin(result.token_hash, result.email, result.role || null, result.user_id || null);
+    } catch (err) {
+      setPasskeyError((err as Error).message || "Passkey sign in failed.");
+      setAuthDone(false);
+      setShowOverlay(false);
+    } finally {
+      setPasskeyLoading(false);
+    }
+  }, [completeMagicLinkLogin, siEmail]);
 
   const [suFullName, setSuFullName] = useState("");
   const [suUserId, setSuUserId] = useState("");
@@ -155,63 +204,36 @@ export function useAuthFlow(router: RouterLike) {
   const handleSendOtp = async () => {
     const contact = otpContact.trim();
     if (!contact) {
-      setOtpError("ফোন নম্বর বা ইমেইল লিখুন");
+      setOtpError("ইমেইল লিখুন");
+      return;
+    }
+    if (!contact.includes("@")) {
+      setOtpError("শুধু Email OTP fallback সক্রিয় আছে। বৈধ ইমেইল লিখুন।");
       return;
     }
     setOtpLoading(true);
     setOtpError("");
-    const isEmail = contact.includes("@");
-
-    if (isEmail) {
-      // ── Email OTP via Supabase built-in ──────────────────────────────────
-      if (!supabase) {
-        setOtpLoading(false);
-        setOtpError("সার্ভিস পাওয়া যাচ্ছে না।");
-        return;
-      }
-      const { error } = await supabase.auth.signInWithOtp({
-        email: contact,
-        options: { shouldCreateUser: false },
-      });
+    if (!supabase) {
       setOtpLoading(false);
-      if (error) {
-        const msg = error.message || "";
-        if (msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("no user")) {
-          setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
-        } else {
-          setOtpError(msg);
-        }
+      setOtpError("সার্ভিস পাওয়া যাচ্ছে না।");
+      return;
+    }
+    const { error } = await supabase.auth.signInWithOtp({
+      email: contact,
+      options: { shouldCreateUser: false },
+    });
+    setOtpLoading(false);
+    if (error) {
+      const msg = error.message || "";
+      if (msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("no user")) {
+        setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
       } else {
-        setOtpStep(2);
-        setOtpResendTimer(60);
-        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+        setOtpError(msg);
       }
     } else {
-      // ── Phone OTP via custom Python API + Twilio SMS ──────────────────────
-      // Normalize BD numbers: 01XXXXXXXXX → +8801XXXXXXXXX
-      let phone = contact;
-      if (phone.startsWith("01") && phone.length === 11) phone = "+880" + phone.slice(1);
-      else if (phone.startsWith("880") && !phone.startsWith("+")) phone = "+" + phone;
-
-      try {
-        const res = await fetch("/api/auth/otp/phone/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone }),
-        });
-        const json = await res.json() as { detail?: string; phone?: string; expires_in?: number };
-        if (!res.ok) {
-          setOtpError(json.detail || "OTP পাঠানো ব্যর্থ হয়েছে।");
-        } else {
-          setOtpStep(2);
-          setOtpResendTimer(60);
-          setTimeout(() => otpRefs.current[0]?.focus(), 100);
-        }
-      } catch {
-        setOtpError("নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।");
-      } finally {
-        setOtpLoading(false);
-      }
+      setOtpStep(2);
+      setOtpResendTimer(60);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
     }
   };
 
@@ -228,81 +250,23 @@ export function useAuthFlow(router: RouterLike) {
     setOtpLoading(true);
     setOtpError("");
     const contact = otpContact.trim();
-    const isEmail = contact.includes("@");
-
-    if (isEmail) {
-      // ── Email OTP verify via Supabase ─────────────────────────────────────
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: contact,
-        token: otpCode,
-        type: "email",
-      });
-      if (error || !data.session || !data.user) {
-        setOtpLoading(false);
-        setOtpError(error?.message || "OTP যাচাই ব্যর্থ। আবার চেষ্টা করুন।");
-        return;
-      }
-      const { role: currentRole } = useAuthStore.getState();
-      useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
-      await useAuthStore.getState().fetchUser().catch(() => {});
-      setOtpSuccess(true);
-      setShowOverlay(true);
-      setAuthDone(true);
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: contact,
+      token: otpCode,
+      type: "email",
+    });
+    if (error || !data.session || !data.user) {
       setOtpLoading(false);
-    } else {
-      // ── Phone OTP verify via custom Python API ────────────────────────────
-      let phone = contact;
-      if (phone.startsWith("01") && phone.length === 11) phone = "+880" + phone.slice(1);
-      else if (phone.startsWith("880") && !phone.startsWith("+")) phone = "+" + phone;
-
-      try {
-        const res = await fetch("/api/auth/otp/phone/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, otp: otpCode }),
-        });
-        const json = await res.json() as {
-          detail?: string;
-          token_hash?: string;
-          email?: string;
-          type?: string;
-          role?: string;
-          user_id?: string;
-        };
-
-        if (!res.ok) {
-          setOtpError(json.detail || "OTP যাচাই ব্যর্থ।");
-          setOtpLoading(false);
-          return;
-        }
-
-        // Exchange magic-link token for a real Supabase session
-        const { data, error } = await supabase.auth.verifyOtp({
-          token_hash: json.token_hash!,
-          type: "magiclink",
-        });
-
-        if (error || !data.session || !data.user) {
-          setOtpError(error?.message || "সেশন তৈরি ব্যর্থ। আবার চেষ্টা করুন।");
-          setOtpLoading(false);
-          return;
-        }
-
-        useAuthStore.setState({
-          token: data.session.access_token,
-          userId: data.user.id,
-          role: json.role || null,
-        });
-        await useAuthStore.getState().fetchUser().catch(() => {});
-        setOtpSuccess(true);
-        setShowOverlay(true);
-        setAuthDone(true);
-      } catch {
-        setOtpError("নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।");
-      } finally {
-        setOtpLoading(false);
-      }
+      setOtpError(error?.message || "OTP যাচাই ব্যর্থ। আবার চেষ্টা করুন।");
+      return;
     }
+    const { role: currentRole } = useAuthStore.getState();
+    useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
+    await useAuthStore.getState().fetchUser().catch(() => {});
+    setOtpSuccess(true);
+    setShowOverlay(true);
+    setAuthDone(true);
+    setOtpLoading(false);
   };
 
   const handleOtpInput = (index: number, value: string) => {
@@ -406,6 +370,7 @@ export function useAuthFlow(router: RouterLike) {
     setShowOverlay,
     signin: { email: siEmail, setEmail: setSiEmail, password: siPassword, setPassword: setSiPassword, showPass: siShowPass, setShowPass: setSiShowPass, remember: siRemember, setRemember: setSiRemember, capsLock: siCapsLock, setCapsLock: setSiCapsLock, loading: siLoading, error: siError, submit: handleSignIn },
     signup: { fullName: suFullName, setFullName: setSuFullName, userId: suUserId, setUserId: setSuUserId, email: suEmail, setEmail: setSuEmail, phone: suPhone, setPhone: setSuPhone, password: suPassword, setPassword: setSuPassword, confirmPass: suConfirmPass, setConfirmPass: setSuConfirmPass, showPass: suShowPass, setShowPass: setSuShowPass, showConfirm: suShowConfirm, setShowConfirm: setSuShowConfirm, loading: suLoading, error: suError, success: suSuccess, submit: handleSignUp },
+    passkey: { loading: passkeyLoading, error: passkeyError, trigger: handlePasskey },
     otp: {
       contact: otpContact,
       setContact: setOtpContact,

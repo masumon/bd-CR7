@@ -33,6 +33,30 @@ async function apiPost<T>(path: string, token: string, payload: unknown): Promis
   return (await response.json()) as T;
 }
 
+async function apiPostPublic<T>(path: string, payload: unknown): Promise<T> {
+  const response = await fetch(buildApiUrl(path), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let detail = "Request failed";
+    try {
+      const data = (await response.json()) as { detail?: string; error?: string };
+      detail = data?.detail || data?.error || detail;
+    } catch {
+      const text = await response.text();
+      detail = text || detail;
+    }
+    throw new Error(detail);
+  }
+
+  return (await response.json()) as T;
+}
+
 type BiometricCredentialRow = {
   id: string;
   credential_id: string;
@@ -181,6 +205,54 @@ export async function verifyBiometricAssertion(token: string): Promise<void> {
 
   const assertionResponse = assertion.response as AuthenticatorAssertionResponse;
   await apiPost<{ ok: boolean; verified: boolean }>("/api/auth/webauthn/verify", token, {
+    credential_id: assertion.id,
+    authenticator_data: toBase64UrlFromBuffer(assertionResponse.authenticatorData),
+    client_data_json: toBase64UrlFromBuffer(assertionResponse.clientDataJSON),
+    signature: toBase64UrlFromBuffer(assertionResponse.signature),
+    user_handle: assertionResponse.userHandle ? toBase64UrlFromBuffer(assertionResponse.userHandle) : null,
+  });
+}
+
+export async function signInWithPasskey(email: string): Promise<{ token_hash: string; email: string; type: "magiclink"; role?: string; user_id?: string }> {
+  if (!isWebAuthnSupported()) {
+    throw new Error("Passkey is not supported on this browser/device.");
+  }
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    throw new Error("Email is required for passkey sign in.");
+  }
+
+  const challenge = await apiPostPublic<{
+    challenge: string;
+    rp_id: string;
+    allow_credentials: Array<{ id: string; type: PublicKeyCredentialType }>;
+    timeout?: number;
+  }>("/api/auth/passkey/challenge", { email: normalizedEmail });
+
+  const assertion = (await navigator.credentials.get({
+    publicKey: {
+      challenge: fromBase64UrlToBuffer(challenge.challenge),
+      rpId: challenge.rp_id,
+      allowCredentials: challenge.allow_credentials.map((item) => ({
+        id: fromBase64UrlToBuffer(item.id),
+        type: item.type,
+      })),
+      timeout: challenge.timeout || 60_000,
+      userVerification: "required",
+    },
+  })) as PublicKeyCredential | null;
+
+  if (!assertion) {
+    throw new Error("Passkey verification was cancelled or failed.");
+  }
+
+  const assertionResponse = assertion.response as AuthenticatorAssertionResponse;
+  return apiPostPublic<{ token_hash: string; email: string; type: "magiclink"; role?: string; user_id?: string }>("/api/auth/passkey/login", {
+    email: normalizedEmail,
     credential_id: assertion.id,
     authenticator_data: toBase64UrlFromBuffer(assertionResponse.authenticatorData),
     client_data_json: toBase64UrlFromBuffer(assertionResponse.clientDataJSON),
