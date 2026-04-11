@@ -37,8 +37,6 @@ def _create_test_client():
         {
             "APP_ENV": "test",
             "REQUIRE_SUPABASE_IN_PRODUCTION": "false",
-            "REQUIRE_REDIS_IN_PRODUCTION": "false",
-            "REDIS_URL": "",
         },
         clear=False,
     ), patch("core.supabase.supabase_service", _supabase_mock), patch("core.supabase.supabase_anon", _supabase_mock):

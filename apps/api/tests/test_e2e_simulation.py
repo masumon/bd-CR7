@@ -83,8 +83,6 @@ def _make_client():
             {
                 "APP_ENV": "test",
                 "REQUIRE_SUPABASE_IN_PRODUCTION": "false",
-                "REQUIRE_REDIS_IN_PRODUCTION": "false",
-                "REDIS_URL": "",
             },
             clear=False,
         ),
