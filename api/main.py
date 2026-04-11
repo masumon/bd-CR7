@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -13,7 +14,14 @@ def _bootstrap_python_path() -> None:
 			sys.path.insert(0, candidate_str)
 
 
+def _bootstrap_vercel_env() -> None:
+	# Prevent full cold-start failure when Redis is not configured in Vercel.
+	if os.getenv("VERCEL") == "1" and not os.getenv("REDIS_URL"):
+		os.environ.setdefault("REQUIRE_REDIS_IN_PRODUCTION", "false")
+
+
 _bootstrap_python_path()
+_bootstrap_vercel_env()
 
 from apps.api.main import app
 
