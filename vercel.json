@@ -18,6 +18,10 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/apps/web"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/main.py"
     },
