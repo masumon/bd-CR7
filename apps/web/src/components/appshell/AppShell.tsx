@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   BadgeDollarSign,
   BarChart3,
+  BookOpenText,
   Bot,
   Briefcase,
   Building2,
@@ -52,6 +53,7 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
     const bi = (en: string, bn: string) => `${en} / ${bn}`;
     return [
       { href: "/dashboard", label: bi("Dashboard", "ড্যাশবোর্ড"), icon: Home },
+      { href: "/dashboard/docs", label: bi("Guide", "ইউজার গাইড"), icon: BookOpenText },
       { href: "/dashboard/construction/projects", label: bi("Projects", "প্রজেক্ট"), icon: FolderKanban },
       { href: "/dashboard/finance", label: bi("Finance", "ফাইন্যান্স"), icon: BadgeDollarSign },
       { href: "/dashboard/workforce", label: bi("Workforce", "শ্রমিক"), icon: HardHat },

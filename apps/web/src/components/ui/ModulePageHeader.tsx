@@ -118,13 +118,13 @@ export function ModulePageHeader({ icon: Icon, title, titleBn, theme, stats, act
       <div className={`pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full ${t.glow} opacity-10 blur-3xl`} />
 
       {/* Top row: identity + actions */}
-      <div className="relative flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="relative flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${t.border} ${t.iconBg}`}>
             <Icon className={`h-6 w-6 ${t.iconColor}`} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-sm font-bold text-foreground leading-tight truncate">{title}</h1>
               <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${t.badge}`}>
                 {titleBn}
@@ -136,7 +136,7 @@ export function ModulePageHeader({ icon: Icon, title, titleBn, theme, stats, act
 
         {/* Actions slot */}
         {actions && (
-          <div className="flex shrink-0 items-center gap-1">{actions}</div>
+          <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto sm:justify-end">{actions}</div>
         )}
       </div>
 

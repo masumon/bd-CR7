@@ -1,5 +1,6 @@
 export const CORE_MAIN_DASHBOARD_PATHS = [
   "/dashboard",
+  "/dashboard/docs",
   "/dashboard/construction/projects",
   "/dashboard/finance",
   "/dashboard/workforce",

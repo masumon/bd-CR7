@@ -166,7 +166,7 @@ export function ChatWidget() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => { if (!fabDragging.current) setOpen(true); }}
-            className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-4 z-[30] cursor-grab touch-none bg-transparent border-none outline-none p-0 active:cursor-grabbing lg:bottom-6"
+            className="fixed bottom-[calc(74px+env(safe-area-inset-bottom))] right-4 z-[30] cursor-grab touch-none rounded-full border border-cyan-400/35 bg-cyan-400/10 p-1.5 shadow-[0_10px_30px_rgba(0,255,210,0.22)] backdrop-blur-md active:cursor-grabbing lg:bottom-7"
             aria-label="Open AI Chat"
           >
             <Image
@@ -174,7 +174,7 @@ export function ChatWidget() {
               alt="AI Assistant"
               width={56}
               height={56}
-              className="h-14 w-14 object-contain drop-shadow-[0_0_14px_rgba(0,255,200,0.7)]"
+              className="h-12 w-12 object-contain drop-shadow-[0_0_14px_rgba(0,255,200,0.7)]"
               onError={(e) => {
                 const t = e.currentTarget;
                 t.onerror = null;
@@ -198,7 +198,7 @@ export function ChatWidget() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.85, y: 20 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-4 z-[30] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl lg:bottom-6"
+          className="fixed bottom-[calc(78px+env(safe-area-inset-bottom))] right-4 z-[30] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-cyan-400/20 bg-card/95 shadow-2xl backdrop-blur-md lg:bottom-7"
           style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.45)" }}
         >
         {/* ── Header ── */}
@@ -356,8 +356,7 @@ export function ChatWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKey}
                   placeholder={lang === "bn" ? "প্রশ্ন লিখুন..." : "Type your question..."}
-                  className="min-h-0 flex-1 rounded-xl border border-border/60 bg-muted/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/50 transition-colors"
-                  style={{ minHeight: "unset", height: "36px", fontSize: "13px" }}
+                  className="h-9 min-h-0 flex-1 rounded-xl border border-border/60 bg-muted/50 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary/50"
                   disabled={typing}
                 />
                 <motion.button

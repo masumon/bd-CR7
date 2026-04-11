@@ -9,6 +9,7 @@ try:
     from fastapi import Response, status
     from fastapi.exceptions import RequestValidationError
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import RedirectResponse
     from fastapi.responses import JSONResponse
 
     FASTAPI_AVAILABLE = True
@@ -183,6 +184,16 @@ def create_app() -> Any:
     @app.get("/api")
     async def root() -> dict[str, str]:
         return {"status": "ok", "service": "bd-cr7-api", "env": settings.env}
+
+    @app.get("/api/docs", include_in_schema=False)
+    async def api_docs_redirect() -> RedirectResponse:
+        # Keep /api/docs stable for users; render the in-app guide page.
+        return RedirectResponse(url="/dashboard/docs", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+    @app.get("/api/docs/openapi", include_in_schema=False)
+    async def api_docs_openapi_redirect() -> RedirectResponse:
+        # Expose schema path from a predictable /api/docs namespace.
+        return RedirectResponse(url="/openapi.json", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
     @app.get("/favicon.ico", include_in_schema=False)
     async def favicon() -> Response:

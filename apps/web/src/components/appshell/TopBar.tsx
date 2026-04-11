@@ -1,10 +1,15 @@
 "use client";
 
-import { Bell, Languages, Menu, Moon, Sun, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Bell, Languages, LogOut, Menu, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/apiClient";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 
 type TopBarProps = {
   title: string;
@@ -21,81 +26,114 @@ type TopBarProps = {
 };
 
 export function TopBar({ title, online, unread, dark, language, role, onMenu, onToggleTheme, onToggleLanguage, onOpenNotifications, onOpenUserDrawer }: TopBarProps) {
-  const initials = role ? role.slice(0, 2).toUpperCase() : "U";
-  const onlineLabel = "online";
-  const offlineLabel = "offline";
+  const router = useRouter();
+  const token = useAuthStore((s) => s.token ?? undefined);
+  const logout = useAuthStore((s) => s.logout);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) {
+      setProfileImageUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadProfileImage = async () => {
+      try {
+        const profile = await apiClient<{ profile_image_url?: string | null }>("/api/users/me/profile", { method: "GET" }, token);
+        if (!cancelled) {
+          setProfileImageUrl(typeof profile?.profile_image_url === "string" ? profile.profile_image_url : null);
+        }
+      } catch {
+        if (!cancelled) {
+          setProfileImageUrl(null);
+        }
+      }
+    };
+
+    void loadProfileImage();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const initials = useMemo(() => (role ? role.slice(0, 2).toUpperCase() : "U"), [role]);
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <header className="fixed left-0 right-0 top-0 z-10 h-[calc(56px+env(safe-area-inset-top))] border-b border-border/65 bg-background/88 px-2 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-1.5">
-        {/* Mobile hamburger */}
-        <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label={language === "bn" ? "মেনু খুলুন" : "Open menu"}>
-          <Menu className="h-4 w-4" />
-        </Button>
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" className="h-10 w-10 p-0 lg:hidden" onClick={onMenu} aria-label={language === "bn" ? "মেনু খুলুন" : "Open menu"}>
+            <Menu className="h-4 w-4" />
+          </Button>
 
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm lg:hidden">
-          <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={32} height={32} className="h-8 w-8 object-contain" />
+          <Link
+            href="/dashboard"
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-muted/30 shadow-sm transition hover:border-primary/45"
+            aria-label={language === "bn" ? "ড্যাশবোর্ড" : "Dashboard"}
+            title={title}
+          >
+            <Image src="/icons/icon.svg" alt="BD CR7 Logo" width={32} height={32} className="h-8 w-8 object-contain" />
+          </Link>
+
+          <span
+            className={cn("h-2.5 w-2.5 rounded-full", online ? "bg-emerald-400" : "bg-rose-500")}
+            aria-label={online ? "Online" : "Offline"}
+            title={online ? "Online" : "Offline"}
+          />
         </div>
 
-        {/* Logo mark */}
-        <div className="hidden lg:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-sm">
-          <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={32} height={32} className="h-8 w-8 object-contain" />
+        <div className="flex items-center gap-0.5">
+          <Button variant="ghost" className="h-10 w-10 p-0" onClick={onToggleTheme} aria-label={language === "bn" ? "থিম পরিবর্তন" : "Toggle theme"}>
+            {dark ? <Sun className="h-4 w-4 text-gold" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          <Button variant="ghost" className="h-10 w-10 p-0" type="button" onClick={onToggleLanguage} aria-label={language === "bn" ? "ভাষা পরিবর্তন" : "Toggle language"}>
+            <Languages className="h-4 w-4" />
+          </Button>
+
+          <Button variant="ghost" className="relative h-10 w-10 p-0" onClick={onOpenNotifications} aria-label={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
+            <Bell className="h-4 w-4" />
+            {unread > 0 && (
+              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="h-10 w-10 p-0 text-rose-400 hover:text-rose-300"
+            type="button"
+            onClick={handleLogout}
+            aria-label={language === "bn" ? "লগআউট" : "Logout"}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+
+          <button
+            className={cn(
+              "ml-0.5 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-bold",
+              "border border-border/50 bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm",
+              "transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            )}
+            type="button"
+            onClick={onOpenUserDrawer}
+            aria-label={language === "bn" ? "ইউজার প্রোফাইল খুলুন" : "Open user profile"}
+          >
+            {profileImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profileImageUrl} alt="Profile" className="h-full w-full rounded-full object-cover" />
+            ) : (
+              initials
+            )}
+          </button>
         </div>
-
-        {/* Project selector / branding */}
-        <div
-          className="surface-panel flex min-w-0 flex-1 items-center gap-2 rounded-2xl px-2.5 py-1.5"
-          aria-label="Current workspace"
-        >
-          <div className="flex min-w-0 flex-col text-left">
-            <p className="truncate font-display text-sm font-semibold text-foreground leading-tight">{title}</p>
-            <p className={cn("text-[11px] font-semibold lowercase leading-tight", online ? "text-emerald-500" : "text-rose-500")}>
-              {online ? onlineLabel : offlineLabel}
-            </p>
-          </div>
-          <span className={cn("h-2 w-2 shrink-0 rounded-full", online ? "bg-emerald-400" : "bg-rose-500")} aria-hidden="true" />
-          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/60" aria-hidden="true" />
-        </div>
-
-        {/* Theme toggle */}
-        <Button variant="ghost" className="h-11 w-11 p-0" onClick={onToggleTheme} aria-label={language === "bn" ? "থিম পরিবর্তন" : "Toggle theme"}>
-          {dark ? <Sun className="h-4 w-4 text-gold" /> : <Moon className="h-4 w-4" />}
-        </Button>
-
-        {/* Language toggle */}
-        <button
-          className="flex h-9 items-center justify-center gap-1 rounded-full border border-border/60 bg-muted/55 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground transition hover:border-primary/40 hover:text-primary focus-visible:outline-none"
-          type="button"
-          onClick={onToggleLanguage}
-          aria-label={language === "bn" ? "ভাষা পরিবর্তন" : "Toggle language"}
-        >
-          <Languages className="h-3 w-3" />
-          <span>{language === "bn" ? "বাং" : "EN"}</span>
-        </button>
-
-        {/* Notifications */}
-        <Button variant="ghost" className="relative h-11 w-11 p-0" onClick={onOpenNotifications} aria-label={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
-          <Bell className="h-4 w-4" />
-          {unread > 0 && (
-            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </Button>
-
-        {/* User avatar */}
-        <button
-          className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold",
-            "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm",
-            "transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          )}
-          type="button"
-          onClick={onOpenUserDrawer}
-          aria-label={language === "bn" ? "ইউজার প্রোফাইল খুলুন" : "Open user profile"}
-        >
-          {initials}
-        </button>
       </div>
     </header>
   );
