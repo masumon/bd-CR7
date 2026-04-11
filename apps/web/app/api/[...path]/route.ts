@@ -41,7 +41,7 @@ const isVercelHostname = (hostname: string): boolean =>
 
 const getApiCandidates = (): string[] => {
   const raw = isProduction
-    ? [process.env.PYTHON_API_URL]
+    ? [process.env.PYTHON_API_URL, defaultProductionApi]
     : [
         process.env.PYTHON_API_URL,
         process.env.NEXT_PUBLIC_API_URL,
@@ -194,8 +194,9 @@ async function proxyRequest(
     // DOMException with name 'AbortError' is thrown when AbortController fires.
     // Check both the constructor name and the .name property for compatibility
     // across Node.js versions and runtimes (Node ≥18, Edge, etc.).
+    const hasDomException = typeof DOMException !== "undefined";
     const isTimeout =
-      (fetchError instanceof DOMException && fetchError.name === "AbortError") ||
+      (hasDomException && fetchError instanceof DOMException && fetchError.name === "AbortError") ||
       (fetchError instanceof Error && fetchError.name === "AbortError");
     return NextResponse.json(
       {
