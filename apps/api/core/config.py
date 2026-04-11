@@ -51,6 +51,18 @@ class Settings:
         self.database_url = env.get("DATABASE_URL", "").strip()
         cors_default = "http://localhost:3000" if self.env == "development" else ""
         self.cors_origins = _split_csv(env.get("CORS_ORIGINS", cors_default))
+        self.redis_url = env.get("REDIS_URL", "").strip()
+        self.upstash_redis_rest_url = env.get("UPSTASH_REDIS_REST_URL", "").strip()
+        self.upstash_redis_rest_token = env.get("UPSTASH_REDIS_REST_TOKEN", "").strip()
+        has_redis_credentials = bool(
+            self.redis_url
+            or (self.upstash_redis_rest_url and self.upstash_redis_rest_token)
+        )
+        use_redis_raw = env.get("USE_REDIS_RATE_LIMIT")
+        if use_redis_raw is None:
+            self.use_redis_rate_limit = has_redis_credentials
+        else:
+            self.use_redis_rate_limit = use_redis_raw.strip().lower() in {"1", "true", "yes", "on"}
         self.require_supabase_in_production = env.get("REQUIRE_SUPABASE_IN_PRODUCTION", "true").strip().lower() in {
             "1",
             "true",

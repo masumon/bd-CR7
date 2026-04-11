@@ -88,6 +88,10 @@ def create_app() -> Any:
     app.add_middleware(
         RateLimitMiddleware,
         requests_per_minute=settings.rate_limit_requests_per_minute,
+        use_redis=settings.use_redis_rate_limit,
+        redis_url=settings.redis_url or None,
+        upstash_redis_rest_url=settings.upstash_redis_rest_url or None,
+        upstash_redis_rest_token=settings.upstash_redis_rest_token or None,
     )
 
     @app.middleware("http")
