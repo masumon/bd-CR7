@@ -33,6 +33,10 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
           <Menu className="h-4 w-4" />
         </Button>
 
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm lg:hidden">
+          <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={32} height={32} className="h-8 w-8 object-contain" />
+        </div>
+
         {/* Logo mark */}
         <div className="hidden lg:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-sm">
           <Image src="/icons/icon.svg" alt="SUMONIX Logo" width={32} height={32} className="h-8 w-8 object-contain" />

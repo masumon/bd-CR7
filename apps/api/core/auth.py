@@ -24,6 +24,10 @@ def _normalize_role_name(raw: str | None) -> str | None:
 
 
 def _extract_role_name(user_row: dict) -> str:
+    direct_role = user_row.get("role")
+    if isinstance(direct_role, str) and direct_role.strip():
+        return direct_role.strip().lower()
+
     role_obj = user_row.get("roles")
     if isinstance(role_obj, dict):
         role_name = role_obj.get("name")
@@ -54,7 +58,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
 
     user_res = (
         supabase_service.table("users")
-        .select("id,is_active,roles(name)")
+        .select("id,is_active,role,roles(name)")
         .eq("id", supabase_user_id)
         .limit(1)
         .execute()
