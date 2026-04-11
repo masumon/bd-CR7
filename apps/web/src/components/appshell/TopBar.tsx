@@ -26,8 +26,8 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
   const offlineLabel = language === "bn" ? "সিস্টেম অফলাইন" : "System Offline";
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-border/65 bg-background/88 px-2 backdrop-blur-xl">
-      <div className="mx-auto flex h-full max-w-7xl items-center gap-1.5">
+    <header className="fixed left-0 right-0 top-0 z-10 h-[calc(56px+env(safe-area-inset-top))] border-b border-border/65 bg-background/88 px-2 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-1.5">
         {/* Mobile hamburger */}
         <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label={language === "bn" ? "মেনু খুলুন" : "Open menu"}>
           <Menu className="h-4 w-4" />

@@ -147,7 +147,7 @@ export function ChatWidget() {
   return (
     <>
       {/* Drag constraint layer — always mounted so FAB can use it */}
-      <div ref={constraintRef} className="pointer-events-none fixed inset-0 z-[99]" />
+      <div ref={constraintRef} className="pointer-events-none fixed inset-0 z-[30]" />
 
       <AnimatePresence mode="wait">
         {/* ── FAB (closed state) ───────────────────────────────────────── */}
@@ -166,7 +166,7 @@ export function ChatWidget() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => { if (!fabDragging.current) setOpen(true); }}
-            className="fixed bottom-20 right-4 z-[100] cursor-grab touch-none bg-transparent border-none outline-none p-0 active:cursor-grabbing lg:bottom-6"
+            className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-4 z-[30] cursor-grab touch-none bg-transparent border-none outline-none p-0 active:cursor-grabbing lg:bottom-6"
             aria-label="Open AI Chat"
           >
             <Image
@@ -198,7 +198,7 @@ export function ChatWidget() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.85, y: 20 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="fixed bottom-20 right-4 z-[100] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl lg:bottom-6"
+          className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-4 z-[30] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl lg:bottom-6"
           style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.45)" }}
         >
         {/* ── Header ── */}

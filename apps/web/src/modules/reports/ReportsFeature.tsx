@@ -428,7 +428,7 @@ export function ReportsFeature() {
               value={expenseQuery}
               onChange={(e) => setExpenseQuery(e.target.value)}
               placeholder="Search expenses by ID/category..."
-              className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+              className="h-9 min-w-0 w-full flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none sm:min-w-[230px]"
             />
             <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
               {([
@@ -524,7 +524,7 @@ export function ReportsFeature() {
               value={materialQuery}
               onChange={(e) => setMaterialQuery(e.target.value)}
               placeholder="Search materials by name/type..."
-              className="h-9 min-w-[230px] flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+              className="h-9 min-w-0 w-full flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none sm:min-w-[230px]"
             />
             <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
               {([

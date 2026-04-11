@@ -30,7 +30,7 @@ export function LoginLoadingOverlay({ visible, complete = false, onDone }: Login
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35 }}
-          className="fixed inset-0 z-[200] flex flex-col items-center justify-center px-6"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6"
           style={{ background: "rgba(4, 9, 16, 0.78)", backdropFilter: "blur(6px)" }}
         >
           <motion.div

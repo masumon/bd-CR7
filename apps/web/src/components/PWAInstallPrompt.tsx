@@ -47,7 +47,7 @@ export default function PWAInstallPrompt() {
   return (
     <div
       role="banner"
-      className="fixed bottom-20 left-4 right-4 z-50 flex items-center gap-3 rounded-2xl border border-border/70 bg-card/95 px-4 py-3 shadow-lg backdrop-blur-md sm:left-auto sm:right-4 sm:w-80"
+      className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] left-4 right-4 z-30 flex items-center gap-3 rounded-2xl border border-border/70 bg-card/95 px-4 py-3 shadow-lg backdrop-blur-md sm:left-auto sm:right-4 sm:w-80"
     >
       <Download className="h-5 w-5 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">

@@ -149,7 +149,7 @@ export default function DashboardPage() {
   const displayName = (role && ROLE_DISPLAY[role.toLowerCase()]) ?? role ?? "ম্যানেজার";
 
   return (
-    <div className="min-h-dvh flex flex-col gap-3 overflow-x-hidden bg-background p-3 pb-6">
+    <div className="min-h-full flex flex-col gap-3 overflow-x-hidden bg-background p-3 pb-6">
       {/* ── 1. HEADER ─────────────────────────────────────────────────────── */}
       <div className="erp-card p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -230,7 +230,7 @@ export default function DashboardPage() {
       {/* ── 5. QUICK ACTIONS ─────────────────────────────────────────────── */}
       <div>
         <p className="text-erp-text-secondary text-xs mb-2">⚡ দৈনিক কাজ (Quick Actions)</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {quickActions.map((a) => (
             <button
               key={a.href}
@@ -255,7 +255,7 @@ export default function DashboardPage() {
       {/* ── 6. CORE ACCESS ───────────────────────────────────────────────── */}
       <div>
         <p className="text-erp-text-secondary text-xs mb-2">🧱 Core Access</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {coreModules.map((m) => (
             <button
               key={m.href}

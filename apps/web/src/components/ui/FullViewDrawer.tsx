@@ -44,7 +44,7 @@ export function FullViewDrawer({ open, onClose, title, children }: FullViewDrawe
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
           transition={{ type: "tween", duration: 0.25, ease: "easeInOut" }}
-          className="fixed inset-0 z-[150] flex flex-col bg-background"
+          className="fixed inset-0 z-50 flex flex-col bg-background"
         >
           {/* Header */}
           <div className="flex shrink-0 items-center gap-2 border-b border-border/50 bg-card/80 px-3 py-2.5 backdrop-blur-sm">

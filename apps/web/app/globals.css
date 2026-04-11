@@ -29,6 +29,11 @@
   --surface-strong: 220 14% 12%;
   --gold: 40 93% 64%;
   --gold-foreground: 166 31% 10%;
+  --z-base: 1;
+  --z-header: 10;
+  --z-bottom-nav: 20;
+  --z-floating: 30;
+  --z-modal: 50;
 }
 
 .dark {
@@ -52,20 +57,28 @@
 
 /* ─── Base ─── */
 html {
+  height: 100%;
   min-height: 100%;
   background: hsl(var(--background));
   overflow-x: clip;
 }
 
 body {
+  height: 100%;
   min-height: 100dvh;
   overflow-x: clip;
   font-family: var(--font-body), var(--font-bengali), "Segoe UI", sans-serif;
+  font-size: clamp(14px, 2.5vw, 16px);
   background:
     radial-gradient(circle at 12% -6%, hsl(186 64% 22% / 0.28) 0%, transparent 34%),
     radial-gradient(circle at 88% 102%, hsl(40 72% 50% / 0.16) 0%, transparent 30%),
     hsl(var(--background));
   @apply text-foreground antialiased;
+}
+
+#__next,
+#root {
+  height: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -94,12 +107,12 @@ html[lang="bn"] button {
 /* ─── Touch targets ─── */
 button, input, select, textarea {
   -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
+  min-height: 48px;
   font-size: 16px;
 }
 
 a, button, [role="button"] {
-  min-height: 44px;
+  min-height: 48px;
 }
 
 /* ─── Media ─── */
@@ -189,6 +202,14 @@ a:focus-visible {
 
 /* ─── Utility classes ─── */
 .screen-shell { min-height: 100dvh; }
+
+.app-main-scroll {
+  position: relative;
+  z-index: var(--z-base);
+  min-height: 100dvh;
+  padding-top: calc(56px + env(safe-area-inset-top));
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
 
 /* ─── PHASE 11: Screen orientation fallback (CSS-level portrait enforcement) ─── */
 @media screen and (orientation: landscape) and (max-height: 500px) {
@@ -311,7 +332,7 @@ html.reduce-motion *::after {
   position: fixed;
   inset: 0;
   width: 100%;
-  overflow-y: hidden;
+  overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: none;
 }
@@ -328,7 +349,6 @@ html.reduce-motion *::after {
 
 .auth-page {
   min-height: 100dvh;
-  height: 100dvh;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: max(0.75rem, env(keyboard-inset-height, 0px), env(safe-area-inset-bottom));
   padding-left: max(1rem, env(safe-area-inset-left));
@@ -495,7 +515,7 @@ html.reduce-motion *::after {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 40;
+  z-index: var(--z-bottom-nav);
   padding-top: 0.5rem;
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   background: linear-gradient(0deg, rgba(0,0,0,0.55) 0%, transparent 100%);
@@ -807,7 +827,7 @@ html.reduce-motion *::after {
   position: fixed;
   top: max(1rem, env(safe-area-inset-top));
   right: 1rem;
-  z-index: 60;
+  z-index: var(--z-floating);
   display: flex;
   align-items: center;
   justify-content: center;

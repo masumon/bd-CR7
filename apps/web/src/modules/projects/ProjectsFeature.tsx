@@ -462,7 +462,7 @@ export function ProjectsFeature() {
                 value={projectQuery}
                 onChange={(e) => setProjectQuery(e.target.value)}
                 placeholder="Search projects by name, phase, status..."
-                className="h-9 min-w-[230px] flex-1 rounded-lg border border-border/70 bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/70 focus:border-primary/60"
+                className="h-9 min-w-0 w-full flex-1 rounded-lg border border-border/70 bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/70 focus:border-primary/60 sm:min-w-[230px]"
               />
               <div className="flex items-center gap-1 rounded-lg border border-border/70 bg-background p-1">
                 {["all", ...STATUS_OPTIONS].map((status) => {

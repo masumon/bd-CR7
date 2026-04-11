@@ -24,8 +24,8 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
   const hasMore = (moreItems?.length ?? 0) > 0;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-      <div className={cn("grid h-14", hasMore ? "grid-cols-5" : "grid-cols-4")}>
+    <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/60 bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+      <div className={cn("grid h-[calc(56px+env(safe-area-inset-bottom))]", hasMore ? "grid-cols-5" : "grid-cols-4")}>
         {primaryItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const Icon = item.icon;
