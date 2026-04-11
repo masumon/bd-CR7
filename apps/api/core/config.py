@@ -74,9 +74,14 @@ class Settings:
         self.twilio_account_sid = env.get("TWILIO_ACCOUNT_SID", "").strip()
         self.twilio_auth_token = env.get("TWILIO_AUTH_TOKEN", "").strip()
         self.twilio_from_number = env.get("TWILIO_FROM_NUMBER", "").strip()
+        self.twilio_messaging_service_sid = env.get("TWILIO_MESSAGING_SERVICE_SID", "").strip()
         self.phone_otp_ttl_seconds = int(env.get("PHONE_OTP_TTL_SECONDS", "600"))   # 10 min
         self.phone_otp_max_attempts = int(env.get("PHONE_OTP_MAX_ATTEMPTS", "5"))
-        self.has_sms = bool(self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number)
+        self.has_sms = bool(
+            self.twilio_account_sid
+            and self.twilio_auth_token
+            and (self.twilio_from_number or self.twilio_messaging_service_sid)
+        )
 
         self.is_production = self.env in {"production", "staging"}
         self.database_url = self._resolve_database_url()

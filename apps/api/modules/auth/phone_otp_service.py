@@ -70,12 +70,21 @@ def _send_sms_twilio(to: str, body: str) -> None:
     Raises RuntimeError on failure.
     """
     url = TWILIO_MESSAGES_URL.format(sid=settings.twilio_account_sid)
+    data = {"To": to, "Body": body}
+    if settings.twilio_messaging_service_sid:
+        data["MessagingServiceSid"] = settings.twilio_messaging_service_sid
+    elif settings.twilio_from_number:
+        data["From"] = settings.twilio_from_number
+    else:
+        raise RuntimeError(
+            "SMS provider is missing sender configuration. Set TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SERVICE_SID."
+        )
     try:
         with httpx.Client(timeout=15) as client:
             resp = client.post(
                 url,
                 auth=(settings.twilio_account_sid, settings.twilio_auth_token),
-                data={"From": settings.twilio_from_number, "To": to, "Body": body},
+                data=data,
             )
             resp.raise_for_status()
     except httpx.HTTPStatusError as exc:
