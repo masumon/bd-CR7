@@ -7,6 +7,7 @@ import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { ChatWidget } from "@/components/ui/ChatWidget";
+import { AppLockScreen, useAppLock } from "@/components/auth/AppLockScreen";
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 
@@ -50,6 +51,9 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const [online, setOnline] = useState(true);
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [openNotifications, setOpenNotifications] = useState(false);
+
+  // App-level biometric/password lock — activates when app is minimized or backgrounded
+  const appLock = useAppLock();
 
   const unread = notifications.length;
 
@@ -180,6 +184,9 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Biometric / password lock overlay — shown after app is backgrounded */}
+      {appLock.locked && <AppLockScreen onUnlock={appLock.unlock} />}
+
       <AppShell
         dark={dark}
         language={language}

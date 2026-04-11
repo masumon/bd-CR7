@@ -50,15 +50,34 @@ export function useAuthFlow(router: RouterLike) {
     return () => clearTimeout(splashTimer);
   }, [router]);
 
+  // Trusted device: if "Remember Me" was set AND a valid Supabase session exists,
+  // attempt silent session restore so the user never has to re-type credentials.
   useEffect(() => {
     const remembered = localStorage.getItem("bdcr7-remember-me") === "1";
     const rememberedEmail = localStorage.getItem("bdcr7-remember-email") || "";
     setSiRemember(remembered);
-    if (rememberedEmail) {
-      setSiEmail(rememberedEmail);
-    }
+    if (rememberedEmail) setSiEmail(rememberedEmail);
+
+    if (!remembered || !supabase) return;
+
+    // Capture in a non-null local so TypeScript keeps the narrowing inside callbacks.
+    const client = supabase;
+
+    // Try refreshing the Supabase session silently. If it succeeds the auth
+    // guard in MobileAppShell will redirect to /dashboard automatically.
+    void client.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        // Session still valid — redirect handled by the splash effect above.
+        return;
+      }
+      // Session expired but remember-me set → try refresh token silently
+      void client.auth.refreshSession().catch(() => {
+        // If refresh fails, fall through to normal login
+      });
+    });
   }, []);
 
+  const autoTriggeredRef = useRef(false);
   const [siEmail, setSiEmail] = useState("");
   const [siPassword, setSiPassword] = useState("");
   const [siShowPass, setSiShowPass] = useState(false);
@@ -136,25 +155,41 @@ export function useAuthFlow(router: RouterLike) {
   const handleSendOtp = async () => {
     const contact = otpContact.trim();
     if (!contact) {
-      setOtpError("Enter your phone or email");
+      setOtpError("ফোন নম্বর বা ইমেইল লিখুন");
       return;
     }
     if (!supabase) {
-      setOtpError("Service unavailable");
+      setOtpError("সার্ভিস পাওয়া যাচ্ছে না। একটু পরে চেষ্টা করুন।");
       return;
     }
     setOtpLoading(true);
     setOtpError("");
     const isEmail = contact.includes("@");
-    const { error } = isEmail
-      ? await supabase.auth.signInWithOtp({
-          email: contact,
-          options: { shouldCreateUser: false },
-        })
-      : await supabase.auth.signInWithOtp({ phone: contact });
+
+    if (!isEmail) {
+      // Phone OTP requires Twilio/SMS provider configured in Supabase dashboard.
+      // Show a clear Bengali message instead of the raw "Unsupported phone provider" error.
+      setOtpLoading(false);
+      setOtpError(
+        "SMS OTP এই মুহূর্তে উপলব্ধ নয়। অনুগ্রহ করে ইমেইল OTP ব্যবহার করুন।\n(Phone OTP requires SMS provider setup)"
+      );
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: contact,
+      options: { shouldCreateUser: false },
+    });
     setOtpLoading(false);
     if (error) {
-      setOtpError(error.message);
+      const msg = error.message || "";
+      if (msg.toLowerCase().includes("unsupported") || msg.toLowerCase().includes("phone provider")) {
+        setOtpError("SMS OTP সক্রিয় নেই। ইমেইল দিয়ে OTP পাঠান।");
+      } else if (msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("no user")) {
+        setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
+      } else {
+        setOtpError(msg);
+      }
     } else {
       setOtpStep(2);
       setOtpResendTimer(60);
@@ -271,9 +306,27 @@ export function useAuthFlow(router: RouterLike) {
     }
   }, [persistedToken, persistedUserId]);
 
+  // Trusted device: when remember-me is set and landing shows, auto-open biometric
+  // so the user taps the fingerprint once instead of typing email + password.
+  useEffect(() => {
+    if (view !== "landing") return;
+    if (autoTriggeredRef.current) return;
+    const remembered = localStorage.getItem("bdcr7-remember-me") === "1";
+    if (!remembered) return;
+    autoTriggeredRef.current = true;
+    const t = setTimeout(() => void handleBiometric(), 900);
+    return () => clearTimeout(t);
+  }, [view, handleBiometric]);
+
   const handleGoogleOAuth = async () => {
     if (!supabase) return;
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/dashboard` } });
+    // redirectTo must point to the /auth/callback route which exchanges the
+    // OAuth code for a session. Pointing directly to /dashboard causes a
+    // "validation_failed" 400 because no code exchange happens.
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+    });
   };
 
   return {

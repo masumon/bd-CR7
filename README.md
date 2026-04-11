@@ -1,490 +1,327 @@
-# 🏗️ BD CR7 — Construction Management System
+# BD CR7 ERP — Enterprise Construction & Finance Management System
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/masumon/bd-CR7)
-[![Next.js](https://img.shields.io/badge/Next.js-15.5.14-black)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-green)](https://fastapi.tiangolo.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-2.56.0-blue)](https://supabase.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4.5-blue)](https://www.typescriptlang.org/)
-[![Python](https://img.shields.io/badge/Python-3.12+-yellow)](https://www.python.org/)
+<div align="center">
 
-**Modern Construction Management System for Bangladesh** 🇧🇩
+**Version 2.1.0** &nbsp;|&nbsp; **License: Proprietary** &nbsp;|&nbsp; **© 2024–2025 ABO Enterprise**
 
-BD CR7 is a cutting-edge, mobile-first PWA-based construction management system. Built with FastAPI backend, Next.js frontend, and Supabase database. Features integrated AI assistance for smarter project management.
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-black?logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6?logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Supabase](https://img.shields.io/badge/Supabase-2.56-3ecf8e?logo=supabase&logoColor=white)](https://supabase.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Python_3.11-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
+[![PWA](https://img.shields.io/badge/PWA-Enabled-5a0fc8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
+[![pnpm](https://img.shields.io/badge/pnpm-10-f69220?logo=pnpm&logoColor=white)](https://pnpm.io)
 
-## ✨ Key Features
+</div>
 
-### 🏢 Project Management
-- Project creation, updates, and tracking
-- Milestone and deadline management
-- Progress reporting
+---
 
-### 👷 Workforce Management
-- Worker registration and profiles
-- Attendance tracking
-- Daily logs
+## Overview
 
-### 💰 Finance Management
-- Transaction recording
-- Budget management
-- Expense tracking
+**BD CR7 ERP** is a production-grade, AI-powered Enterprise Resource Planning system purpose-built for the construction and finance sector in Bangladesh. It delivers real-time project tracking, multi-account financial management, biometric authentication, role-based access control (RBAC), and offline-capable Progressive Web App (PWA) functionality.
 
-### 📦 Materials Management
-- Inventory tracking
-- Stock transactions
-- Supply chain management
+Developed and maintained by **Mumain Ahmed Sumon** under **ABO Enterprise**, powered by **SUMONIX AI**.
 
-### 📸 Evidence Management
-- Progress photo uploads
-- Cloud storage integration
-- Visual progress tracking
+> **বৈরাগী বাজার, বিয়ানীবাজার, সিলেট, বাংলাদেশ**
 
-### 🤖 AI-Powered Features
-- AI chatbot assistance
-- Smart project recommendations
-- Automated report generation
+---
 
-### 🔐 Security
-- JWT authentication
-- Role-based access control
-- Row-level security
+## Feature Modules
 
-## 🚀 Live Demo
+| Module | Description |
+|--------|-------------|
+| **Authentication** | Email/password · Google OAuth · WebAuthn biometric · Email OTP · Remember Me · App lock |
+| **Finance** | Multi-account ledger · Expense approval workflow · Fund transfers · AI risk scoring |
+| **Projects** | Construction tracking · Milestone management · Progress reporting |
+| **Workforce** | Attendance · Payroll · HR management · Role-based access |
+| **Materials** | Inventory management · In/out tracking · Procurement |
+| **Evidence** | Field photo/document upload via Cloudinary CDN |
+| **Audit** | Full activity logging · Security event tracking |
+| **Reports** | PDF/CSV export with Bengali font support · A4 formatting |
+| **AI Chat** | Integrated SUMONIX AI assistant for operational queries |
+| **Offline** | PWA with offline queue — operations sync when connectivity restores |
 
-| Service | URL | Status |
-|---------|-----|--------|
-| 🌐 **Frontend** | [https://bd-cr7.vercel.app](https://bd-cr7.vercel.app) | ✅ Live |
-| 🔧 **Backend API** | [https://bd-cr7.vercel.app/api](https://bd-cr7.vercel.app/api) | ✅ Live |
-| 📚 **API Documentation** | [https://bd-cr7.vercel.app/api/docs](https://bd-cr7.vercel.app/api/docs) | ✅ Live |
+---
 
-## 📱 Technology Stack
+## Technology Stack
 
-### Frontend
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: Zustand
-- **PWA**: next-pwa
-- **Deployment**: Vercel
+### Frontend (`apps/web`)
 
-### Backend
-- **Framework**: FastAPI
-- **Language**: Python 3.12+
-- **Database**: Supabase PostgreSQL
-- **Authentication**: Supabase Auth
-- **Deployment**: Vercel Serverless
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Next.js | 15.5 | App Router, SSR, API routes |
+| React | 18.3 | UI component model |
+| TypeScript | 5.4 | Type safety |
+| Tailwind CSS | 3.4 | Utility-first styling |
+| Radix UI | latest | Accessible UI primitives |
+| Framer Motion | 11.11 | Page and component animations |
+| Zustand | 4.5 | Client state management |
+| Supabase SSR | 0.5 | Session management, realtime |
+| next-pwa | 5.6 | Service worker, offline support |
+| WebAuthn / FIDO2 | — | Fingerprint / Face ID biometric |
+| html2pdf.js | 0.14 | A4 PDF generation with Bengali fonts |
+| Recharts | 2.12 | Data visualisation |
 
-### Integrations
-- **File Storage**: Cloudinary
-- **AI**: Custom AI integration
-- **Monorepo**: PNPM Workspaces + Turborepo
+### Backend (`api`)
 
-## 🏛️ Architecture Overview
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| FastAPI | 0.115 | REST API server |
+| Python | 3.11+ | Runtime |
+| Supabase | — | PostgreSQL + Auth + Realtime + RLS |
+| Cloudinary | — | Media storage and CDN |
 
-BD CR7 is built with a modular and scalable architecture. Each domain (projects, finance, workforce, etc.) exists as a separate module.
+### Infrastructure
 
-### Backend Modules
-- 🔐 Authentication (Login/Registration)
-- 👑 Admin (User Management)
-- 💰 Finance (Transactions/Budgets)
-- 🏗️ Projects (Project CRUD)
-- 👷 Workforce (Workers/Attendance)
-- 📦 Materials (Inventory)
-- 📸 Evidence (Photo Uploads)
-- 🤝 Contractors (Contractor Profiles)
-- 📊 Reports (Dashboard Metrics)
-- 📋 Audit (Audit Logs)
-- ⚙️ Settings (Configuration)
-- 🎯 Dynamic (Custom Fields)
-- 🤖 AI (AI Integration)
+| Service | Purpose |
+|---------|---------|
+| **Vercel** | Frontend + Python serverless deployment |
+| **Supabase Cloud** | Managed Postgres + Auth + Realtime |
+| **Cloudinary** | Media CDN |
+| **Turborepo** | Monorepo build orchestration |
+| **pnpm workspaces** | Dependency management |
 
-### Frontend Modules
-- 🔐 Auth (Login/Register Pages)
-- 👑 Admin (Admin Dashboard)
-- 💰 Finance (Finance Module)
-- 🏗️ Projects (Project Management)
-- 👷 Workforce (Workforce Dashboard)
-- 📦 Materials (Materials Management)
-- 📸 Evidence (Evidence Viewer)
-- 🤝 Contractors (Contractor Management)
-- 📊 Reports (Reports)
-- 📋 Audit (Audit Trail)
-- ⚙️ Settings (Settings)
-- 🎯 Dynamic (Dynamic Config)
+---
 
-## 🛠️ Installation & Setup
+## Project Structure
+
+```
+bd-cr7-project/
+├── apps/
+│   └── web/                    # Next.js 15 PWA application
+│       ├── app/                # App Router pages and API routes
+│       │   ├── (auth)/         # Login, register, forgot-password
+│       │   ├── (dashboard)/    # Protected dashboard modules
+│       │   └── auth/callback/  # OAuth code-exchange handler
+│       └── src/
+│           ├── components/     # Reusable UI components
+│           │   ├── auth/       # AppLockScreen, BiometricButton, etc.
+│           │   └── layout/     # MobileAppShell, AppShell
+│           ├── modules/        # Feature-scoped components
+│           ├── store/          # Zustand state stores
+│           ├── lib/            # Supabase client, WebAuthn, export utilities
+│           └── types/          # TypeScript declarations (html2pdf, etc.)
+├── api/                        # Python FastAPI backend
+├── packages/
+│   ├── core-logic/             # Shared business logic
+│   ├── media-engine/           # Cloudinary integration
+│   ├── rbac-engine/            # Role-based access control engine
+│   └── ui-system/              # Design system tokens
+├── supabase/                   # Database migrations and seed data
+├── vercel.json                 # Vercel deployment configuration
+├── turbo.json                  # Turborepo pipeline configuration
+├── pnpm-workspace.yaml         # pnpm workspace definition
+└── README.md                   # This file
+```
+
+---
+
+## Authentication & Security
+
+### Login Methods
+
+1. **Email + Password** — Supabase Auth with database role lookup
+2. **Google OAuth** — SSO via Supabase OAuth + `/auth/callback` code exchange
+3. **WebAuthn Biometric** — Fingerprint / Face ID via FIDO2 standard
+4. **Email OTP** — 6-digit magic code for passwordless access
+
+### App Lock (Biometric Security)
+
+When the app is **minimised or sent to the background**, an automatic lock activates after **10 seconds**. On return, the user must authenticate via:
+
+- Fingerprint / Face ID biometric scan
+- Password fallback (email pre-filled from Remember Me)
+
+### Remember Me / Trusted Device
+
+- Supabase refresh tokens persist the session across browser restarts
+- With **Remember Me** enabled, the biometric prompt auto-triggers on the login screen — no need to re-enter email or password
+- Trusted device state is maintained in `localStorage` and verified on every app open
+
+### Security Headers (all routes)
+
+| Header | Value |
+|--------|-------|
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` |
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(self)` |
+| `Content-Security-Policy` | Strict allowlist (no unsafe-eval in production) |
+
+---
+
+## Environment Variables
+
+Create `apps/web/.env.local`:
+
+```env
+# Supabase (required)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Cloudinary (required for media upload)
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
+
+# App URL (used for OAuth redirect)
+NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Node.js 20+
-- PNPM 10+
-- Python 3.12+
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/masumon/bd-CR7.git
-cd bd-cr7
-```
-
-### 2. Install Dependencies
-```bash
-# Frontend and backend dependencies
-pnpm install
-
-# Python virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
-pip install -r requirements.txt
-```
-
-### 3. Set Environment Variables
-Copy `.env.example` to `.env` and fill in the values:
-
-```env
-# Supabase
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-
-# Cloudinary
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_preset
-
-# AI (Optional)
-AI_API_KEY=your_ai_key
-AI_ENDPOINT=your_ai_endpoint
-```
-
-### 4. Run Development Server
-```bash
-# Frontend (http://localhost:3000)
-pnpm --filter ./apps/web dev
-
-# Backend (http://localhost:8000)
-uvicorn main:app --app-dir apps/api --host 127.0.0.1 --port 8000 --reload
-```
-
-### 5. Database Setup
-Run the SQL migration files in Supabase SQL Editor in order:
-- `001_users_roles.sql`
-- `010_finance.sql`
-- `020_projects.sql`
-- `030_workforce.sql`
-- `040_materials.sql`
-- `050_evidence.sql`
-- `060_reports.sql`
-- `070_audit.sql`
-- `080_contractors.sql`
-- `090_settings.sql`
-
-## 📊 Roles & Permissions
-
-| Role | Access Level |
-|------|--------------|
-| 👑 **Super Admin** | Full system access, system settings |
-| 👨‍💼 **Admin** | All modules, custom fields, workflows |
-| 👨‍🔧 **Manager** | Projects, workforce, finance (read + write) |
-| 👷 **Site Engineer** | Construction, materials, evidence |
-| 💼 **Accountant** | Finance module only |
-| 👀 **Viewer** | Read-only access to assigned modules |
-
-## 🤝 Contributing
-
-We welcome contributions! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📞 Contact
-
-**👨‍💻 MUMAIN AHMED**  
-Full-stack architect, UI systems designer, and deployment lead
-
-- 📧 **Email**: [m.a.sumon92@gmail.com](mailto:m.a.sumon92@gmail.com)
-- 🌐 **Website**: [https://mumainsumon.netlify.app](https://mumainsumon.netlify.app)
-- 📘 **Facebook**: [https://www.facebook.com/sumon.mumain](https://www.facebook.com/sumon.mumain)
-- 💬 **WhatsApp**: [https://wa.me/8801825007977](https://wa.me/8801825007977)
-
-## 📄 License
-
-Private / Internal project — BD CR7 Construction Management System.
-
----
-
-**⭐ Star this repo if you find it useful!**
-
----
-
-## Architecture 2 — Modular Design
-
-Architecture 2 replaces the previous monolithic `features/` / `routers/` structure with a clean, domain-driven `modules/` layout on both frontend and backend. Every domain is self-contained: its own router, schema, service, and frontend view live together under one module folder.
-
-### Backend Modules (`apps/api/modules/`)
-
-| Module       | Route Prefix      | Responsibility                               |
-|--------------|-------------------|----------------------------------------------|
-| `auth`       | `/api/auth`       | Login, registration, token refresh           |
-| `admin`      | `/api/admin`      | User management, role assignments            |
-| `finance`    | `/api/finance`    | Transactions, budgets, expense tracking      |
-| `projects`   | `/api/projects`   | Project CRUD, status, milestones             |
-| `workforce`  | `/api/workforce`  | Workers, attendance, daily logs              |
-| `materials`  | `/api/materials`  | Inventory, stock transactions                |
-| `evidence`   | `/api/evidence`   | Progress photos, Cloudinary uploads          |
-| `contractor` | `/api/contractor` | Contractor profiles and contracts            |
-| `reports`    | `/api/reports`    | Dashboard metrics, finance/workforce summary |
-| `audit`      | `/api/audit`      | Immutable audit log, activity timeline       |
-| `settings`   | `/api/settings`   | System config, user preferences              |
-| `dynamic`    | `/api/dynamic`    | Custom fields, workflow configurations       |
-| `ai`         | `/api/ai`         | SUMONIX AI chat proxy, audit logging         |
-
-### Frontend Modules (`apps/web/src/modules/`)
-
-| Module         | Route                              |
-|----------------|------------------------------------|
-| `auth`         | `/login`, `/register`              |
-| `admin`        | `/dashboard/admin`                 |
-| `finance`      | `/dashboard/finance`               |
-| `projects`     | `/dashboard/construction/projects` |
-| `construction` | `/dashboard/construction`          |
-| `workforce`    | `/dashboard/workforce`             |
-| `materials`    | `/dashboard/materials`             |
-| `evidence`     | `/dashboard/evidence`              |
-| `contractor`   | `/dashboard/contractor`            |
-| `reports`      | `/dashboard/reports`               |
-| `audit`        | `/dashboard/audit`                 |
-| `settings`     | `/dashboard/settings`              |
-| `dynamic`      | `/dashboard/dynamic` (admin only)  |
-
----
-
-## Monorepo Layout
-
-```text
-apps/
-  api/                     FastAPI backend (Architecture 2)
-    core/                   Shared utilities (auth, supabase, config)
-    modules/                13 domain modules (router + schema + service)
-    main.py                 App entrypoint, CORS, module registration
-    requirements.txt
-  web/                     Next.js 15 App Router PWA
-    app/                    Next.js route tree
-      (dashboard)/          Authenticated layout shell
-        dashboard/          All protected pages
-    src/
-      modules/              13 frontend modules (views + components)
-      hooks/                Shared React hooks (useDashboardStats, etc.)
-      lib/                  API client, Supabase client, utilities
-      store/                Zustand state management
-packages/
-  core-logic/               Shared business logic
-  media-engine/             Cloudinary integration helpers
-  rbac-engine/              Role-based access control
-  ui-system/                Shared UI components
-supabase/
-  migrations/               SQL migration files (see below)
-api/
-  main.py                   Vercel Python entrypoint shim
-```
-
----
-
-## Database Migrations (Architecture 2)
-
-Run in Supabase SQL Editor **in order**. Each file is idempotent (`CREATE TABLE IF NOT EXISTS`, `CREATE POLICY IF NOT EXISTS`).
-
-| Order | File                            | Creates                              |
-|-------|---------------------------------|--------------------------------------|
-| 1     | `100_arch2_001_users_roles.sql` | `profiles`, `roles`, RLS policies    |
-| 2     | `100_arch2_010_finance.sql`     | `transactions`, `budgets`            |
-| 3     | `100_arch2_020_projects.sql`    | `projects`, `milestones`             |
-| 4     | `100_arch2_030_workforce.sql`   | `workers`, `attendance_logs`         |
-| 5     | `100_arch2_040_materials.sql`   | `materials`, `material_transactions` |
-| 6     | `100_arch2_050_evidence.sql`    | `evidence`, `evidence_reviews`       |
-| 7     | `100_arch2_060_reports.sql`     | Reporting views                      |
-| 8     | `100_arch2_070_audit.sql`       | `audit_logs`                         |
-| 9     | `100_arch2_080_contractor.sql`  | `contractors`, `contracts`           |
-| 10    | `100_arch2_090_settings.sql`    | `system_settings`, `user_preferences`|
-
-> **JWT note:** RLS policies use `auth.jwt() ->> 'role'` (text extraction) — not `->` (JSON).
-
----
-
-## Tech Stack
-
-| Layer           | Technology                                          |
-|-----------------|-----------------------------------------------------|
-| Frontend        | Next.js 15, React 19, TypeScript, Tailwind CSS      |
-| PWA             | next-pwa (service worker, offline cache)            |
-| Backend         | FastAPI, Python 3.11+, Pydantic v2                  |
-| Database        | Supabase PostgreSQL with Row Level Security         |
-| Auth            | Supabase Auth + JWT                                 |
-| File Storage    | Cloudinary (organized by entity type)               |
-| State           | Zustand                                             |
-| Monorepo        | PNPM workspaces + Turborepo                         |
-| Frontend Deploy | Vercel                                              |
-| Backend Deploy  | Vercel (serverless via `api/` entrypoint)           |
-
----
-
-## Prerequisites
 
 - Node.js 20+
-- PNPM 10+
-- Python 3.11+
+- pnpm 10+ (`npm install -g pnpm`)
+- Python 3.11+ (for API development)
 
----
-
-## Environment Setup
-
-Copy `.env.example` to `.env` and fill in all values:
+### Installation
 
 ```bash
-cp .env.example .env
-```
+# 1. Clone the repository
+git clone https://github.com/mumainsumon/bd-cr7-project.git
+cd bd-cr7-project
 
-Required variables:
-
-```env
-# Supabase
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-
-# Backend
-NEXT_PUBLIC_API_URL=
-
-# Cloudinary
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=
-
-# AI (optional)
-SUMONIX_AI_API_KEY=
-SUMONIX_AI_ENDPOINT=
-```
-
----
-
-## Local Development
-
-### Install dependencies
-
-```bash
+# 2. Install all workspace dependencies
 pnpm install
-python -m venv .venv
-source .venv/bin/activate          # Linux/macOS
-# .venv\Scripts\activate           # Windows
-pip install -r requirements.txt
+
+# 3. Configure environment
+cp apps/web/.env.example apps/web/.env.local
+# Edit .env.local with your Supabase and Cloudinary credentials
+
+# 4. Start development server
+pnpm dev
 ```
 
-### Run everything (frontend + backend)
+The app will be available at `http://localhost:3000`.
+
+### Build for Production
 
 ```bash
-# Frontend (Next.js dev server on http://localhost:3000)
-pnpm --filter ./apps/web-pwa dev
-
-# Backend (FastAPI on http://localhost:8000)
-uvicorn main:app --app-dir apps/api-core-python --host 127.0.0.1 --port 8000 --reload
+pnpm build
 ```
 
-### Type-check, lint, build
+### Type Check
 
 ```bash
-pnpm type-check        # TypeScript check across workspace
-pnpm lint              # ESLint across workspace
-pnpm build             # Production build (all apps)
-```
-
-### Frontend only
-
-```bash
-pnpm --filter ./apps/web-pwa type-check
-pnpm --filter ./apps/web lint
-pnpm --filter ./apps/web build
-```
-
-### Backend tests
-
-```bash
-python -m pytest apps/api/tests -q
-```
-
-### Backend health check
-
-```bash
-curl http://localhost:8000/health
-# Expected: {"status":"ok"}
+pnpm type-check
 ```
 
 ---
 
 ## Deployment
 
-### Frontend → Vercel
+This project deploys to **Vercel** as a monorepo:
 
-Vercel auto-deploys on every push to `main`. No manual steps required.
-Environment variables are managed in the Vercel project dashboard.
+- **Next.js** app built via `@vercel/next`
+- **Python FastAPI** deployed as serverless functions via `@vercel/python`
 
-### Backend → Vercel
+### Required Vercel Environment Variables
 
-Backend is deployed as a Vercel serverless function. Push to `main` triggers auto-deploy.
-Environment variables are managed in the Vercel project dashboard.
+Set in **Vercel → Project Settings → Environment Variables**:
 
----
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+- `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`
 
-## Roles and Access
+### Supabase OAuth Configuration
 
-| Role            | Access Level                                    |
-|-----------------|-------------------------------------------------|
-| `super_admin`   | Full system access, system settings             |
-| `admin`         | All modules, custom fields, workflows           |
-| `manager`       | Projects, workforce, finance (read + write)     |
-| `site_engineer` | Construction, materials, evidence               |
-| `accountant`    | Finance module only                             |
-| `viewer`        | Read-only access to assigned modules            |
+In **Supabase Dashboard → Authentication → URL Configuration**:
 
----
+- **Site URL**: `https://your-domain.vercel.app`
+- **Redirect URLs**: `https://your-domain.vercel.app/auth/callback`
 
-## Validation Status
-
-| Check                           | Status                                    |
-|---------------------------------|-------------------------------------------|
-| Backend module imports (13/13)  | Pass                                      |
-| Frontend TypeScript check       | Pass                                      |
-| Frontend production build       | Pass                                      |
-| Backend `/health` endpoint      | Pass                                      |
-| All `@/features/` refs removed  | Done                                      |
-| SQL migrations (Architecture 2) | Ready — run manually in Supabase          |
+> Note: The redirect URL **must** point to `/auth/callback`, not directly to `/dashboard`. The callback route exchanges the OAuth code for a session before redirecting.
 
 ---
 
-## Security Conventions
+## Cookie & Storage Policy
 
-- Never commit `.env` or real secrets — only `.env.example`
-- All FastAPI endpoints require JWT via `Depends(get_current_user)`
-- Supabase RLS enforces row-level access by user role
-- Cloudinary uploads scoped by entity type (projects, evidence, workers)
-- No hardcoded data in frontend — all values come from API or show empty state
+BD CR7 ERP uses the following browser storage (no third-party tracking):
+
+| Key | Storage | Purpose | Lifetime |
+|-----|---------|---------|---------|
+| `bdcr7-auth` | localStorage | Auth state (role, userId) | Session |
+| `bdcr7-remember-me` | localStorage | Trusted device flag | Persistent |
+| `bdcr7-remember-email` | localStorage | Login email pre-fill | Persistent |
+| `bdcr7-theme` | localStorage | Dark/light preference | Persistent |
+| `bdcr7-language` | localStorage | UI language (en/bn) | Persistent |
+| `bdcr7-app-locked` | sessionStorage | App lock state | Tab session |
+| `sb-*` | localStorage | Supabase Auth tokens | Per Supabase config |
+
+All storage entries serve **operational purposes only**. No analytics or advertising cookies are used.
 
 ---
 
-## Developer
+## Roles & Access Control
 
-**MUMAIN AHMED**
-Full-stack architect, UI systems designer, and deployment lead for BD CR7
-
-- Email: <m.a.sumon92@gmail.com>
-- Website: <https://mumainsumon.netlify.app>
-- Facebook: <https://www.facebook.com/sumon.mumain>
-- WhatsApp: <https://wa.me/8801825007977>
+| Role | Access Level |
+|------|-------------|
+| `admin` | Full system access — users, settings, audit, all modules |
+| `manager` | Projects, finance, workforce, reports, audit |
+| `accountant` | Finance, reports, audit |
+| `supervisor` | Workforce, materials, evidence, projects |
+| `worker` | Workforce, evidence (own records) |
+| `viewer` | Read-only — dashboard, reports, projects |
 
 ---
 
 ## License
 
-Private / Internal project — BD CR7 Construction Management System.
+**Proprietary Software — All Rights Reserved**
+
+Copyright © 2024–2025 **ABO Enterprise**, Bangladesh.
+
+This software and its source code are the exclusive intellectual property of ABO Enterprise. Unauthorised copying, distribution, modification, sublicensing, or use of this software — in whole or in part — without the express written permission of ABO Enterprise is strictly prohibited and may be subject to legal action.
+
+For licensing enquiries: [m.a.sumon92@gmail.com](mailto:m.a.sumon92@gmail.com)
+
+---
+
+## Developer
+
+| | |
+|---|---|
+| **Name** | Mumain Ahmed Sumon |
+| **Title** | Full-Stack Engineer & Systems Architect |
+| **Portfolio** | [mumainsumon.netlify.app](https://mumainsumon.netlify.app) |
+| **Email** | [m.a.sumon92@gmail.com](mailto:m.a.sumon92@gmail.com) |
+| **Facebook** | [facebook.com/sumon.mumain](https://www.facebook.com/sumon.mumain) |
+| **WhatsApp** | [+880 1825-007977](https://wa.me/8801825007977) |
+| **Company** | ABO Enterprise |
+| **Location** | বৈরাগী বাজার, বিয়ানীবাজার, সিলেট, বাংলাদেশ |
+
+---
+
+*Powered by **SUMONIX AI** · Built for **ABO Enterprise***
+
+---
+
+## Changelog
+
+### v2.1.0 — 2025-04
+
+- App lock screen with biometric / password unlock on app minimise
+- Remember Me trusted device: auto-triggers biometric on next open
+- Fixed: Google OAuth `validation_failed 400` — corrected `redirectTo` to `/auth/callback`
+- Fixed: OTP "Unsupported phone provider" — user-friendly Bengali error with email fallback
+- Fixed: TypeScript `html2pdf()` chain type error (`Object is of type 'unknown'`)
+- Fixed: Vercel `builds` config warning — migrated to `rewrites`
+- Updated `DEVELOPER_CONFIG` with full developer profile
+- Production README with cookie policy, RBAC table, license
+
+### v2.0.0 — 2025-03
+
+- Full RBAC engine with 6 roles and permission matrix
+- WebAuthn FIDO2 biometric enrollment and assertion
+- Multi-account finance with maker-checker approval workflow
+- Offline queue with automatic sync on reconnect
+- Bengali PDF export with Noto Sans Bengali typography
+
+### v1.0.0 — 2024-12
+
+- Initial release: authentication, dashboard, finance, projects, workforce

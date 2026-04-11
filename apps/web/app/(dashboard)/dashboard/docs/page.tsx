@@ -118,37 +118,39 @@ export default function DocsPage() {
 
   const guide = useMemo(() => ROLE_GUIDE[selectedRole], [selectedRole]);
 
+  // `pagebreak` is a valid html2pdf.js runtime option but missing from the
+  // bundled Html2PdfOptions interface — extend it locally.
+  type PdfOptions = {
+    margin?: number | [number, number, number, number];
+    filename?: string;
+    image?: { type?: "jpeg" | "png" | "webp"; quality?: number };
+    enableLinks?: boolean;
+    html2canvas?: object;
+    jsPDF?: { unit?: string; format?: string; orientation?: "portrait" | "landscape" };
+    pagebreak?: { mode?: string[]; before?: string[]; after?: string[]; avoid?: string[] };
+  };
+
   const buildPdfPreview = async () => {
     if (!guideRef.current) return;
     setPdfBusy(true);
     try {
-      const html2pdf = (await import("html2pdf.js")).default as {
-        (): {
-          set: (options: Record<string, unknown>) => unknown;
-          from: (element: HTMLElement) => unknown;
-          toPdf: () => { outputPdf: (type: string) => Promise<Blob> };
-          outputPdf: (type: string) => Promise<Blob>;
-          save: () => Promise<void>;
-        };
+      const html2pdf = (await import("html2pdf.js")).default;
+
+      const pdfOptions: PdfOptions = {
+        margin: [12, 12, 12, 12],
+        filename: `bd-cr7-role-guide-${selectedRole}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
       };
 
-      const worker = html2pdf()
-        .set({
-          margin: [12, 12, 12, 12],
-          filename: `bd-cr7-role-guide-${selectedRole}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"] },
-        })
-        .from(guideRef.current);
-
-      let blob: Blob;
-      try {
-        blob = await worker.toPdf().outputPdf("blob");
-      } catch {
-        blob = await worker.outputPdf("blob");
-      }
+      const blob = await html2pdf()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .set(pdfOptions as any)
+        .from(guideRef.current)
+        .toPdf()
+        .outputPdf("blob");
 
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
       setPdfUrl(URL.createObjectURL(blob));
@@ -160,15 +162,17 @@ export default function DocsPage() {
   const downloadPdf = async () => {
     if (!guideRef.current) return;
     const html2pdf = (await import("html2pdf.js")).default;
+    const pdfOptions: PdfOptions = {
+      margin: [12, 12, 12, 12],
+      filename: `bd-cr7-role-guide-${selectedRole}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ["css", "legacy"] },
+    };
     await html2pdf()
-      .set({
-        margin: [12, 12, 12, 12],
-        filename: `bd-cr7-role-guide-${selectedRole}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] },
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .set(pdfOptions as any)
       .from(guideRef.current)
       .save();
   };
