@@ -19,6 +19,7 @@ export interface ProjectFile {
   file_url: string;
   thumbnail_url: string | null;
   file_name: string | null;
+  description: string | null;
   file_size_bytes: number | null;
   extracted_text: string | null;
   tags: string[];
@@ -42,6 +43,7 @@ export interface InsertProjectFile {
   file_url: string;
   thumbnail_url?: string | null;
   file_name?: string | null;
+  description?: string | null;
   file_size_bytes?: number | null;
   extracted_text?: string | null;
   tags?: string[];
@@ -91,9 +93,13 @@ export function useProjectFiles(filters?: {
 
   const insertFile = useCallback(
     async (payload: InsertProjectFile): Promise<ProjectFile> => {
+      if (!userId) {
+        throw new Error("Login required before uploading files.");
+      }
+
       const { data, error: err } = await supabase
         .from("project_files")
-        .insert({ ...payload, uploaded_by: userId ?? null })
+        .insert({ ...payload, uploaded_by: userId })
         .select()
         .single();
       if (err) {

@@ -2,9 +2,9 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { detectFileType } from "@/components/ui/FilePreviewInline";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
-import { createClient } from "@/lib/supabase/client";
-import { useAuthStore } from "@/store/authStore";
+import { useProjectFiles } from "@/hooks/useProjectFiles";
 import { PermissionGate } from "@/components/ui/PermissionGate";
 
 const PHASES = ["Foundation", "Structure", "Finishing", "Handover"];
@@ -17,41 +17,33 @@ type ProgressEntry = {
 };
 
 export function ProgressCamFeature() {
-  const supabase = useMemo(() => createClient(), []);
-  const userId = useAuthStore((state) => state.userId);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [phaseCategory, setPhaseCategory] = useState(PHASES[0]);
   const [caption, setCaption] = useState("");
-  const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    const loadExisting = async () => {
-      const { data, error } = await supabase
-        .from("progress_cam")
-        .select("photo_url,phase_tag,caption,created_at")
-        .order("created_at", { ascending: false })
-        .limit(20);
+  const {
+    files,
+    error: filesError,
+    insertFile,
+  } = useProjectFiles({
+    module: "evidence",
+    category: "progress",
+    limit: 20,
+  });
 
-      if (error || !data) {
-        return;
-      }
-
-      const mapped = data
-        .filter((row) => row.photo_url)
-        .map((row) => ({
-          media_url: String(row.photo_url),
-          phase_category: String(row.phase_tag || "Uncategorized"),
-          caption: String(row.caption || ""),
-          created_at: row.created_at ? String(row.created_at) : undefined,
-        }));
-
-      setEntries(mapped);
-    };
-
-    void loadExisting();
-  }, [supabase]);
+  const entries = useMemo<ProgressEntry[]>(
+    () =>
+      files.map((row) => ({
+        media_url: row.file_url,
+        phase_category: row.subcategory || "Uncategorized",
+        caption: row.description || "",
+        created_at: row.created_at,
+      })),
+    [files]
+  );
 
   useEffect(() => {
     return () => {
@@ -73,24 +65,21 @@ export function ProgressCamFeature() {
       return;
     }
 
+    setUploading(true);
     try {
       const mediaUrl = await uploadToCloudinary(file);
 
-      // Save to Supabase progress_cam table
-      await supabase.from("progress_cam").insert({
-        photo_url: mediaUrl,
-        phase_tag: phaseCategory,
-        caption,
-        uploaded_by: userId ?? null,
+      await insertFile({
+        module: "evidence",
+        category: "progress",
+        subcategory: phaseCategory,
+        file_type: detectFileType(file.name),
+        file_url: mediaUrl,
+        file_name: file.name,
+        description: caption.trim() || null,
+        file_size_bytes: file.size,
       });
 
-      const next: ProgressEntry = {
-        media_url: mediaUrl,
-        phase_category: phaseCategory,
-        caption,
-        created_at: new Date().toISOString(),
-      };
-      setEntries((prev) => [next, ...prev]);
       setMessage("Progress media uploaded");
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
@@ -100,6 +89,8 @@ export function ProgressCamFeature() {
       setCaption("");
     } catch (error) {
       setMessage((error as Error).message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -169,7 +160,13 @@ export function ProgressCamFeature() {
             )}
           </div>
         ) : null}
-        <button className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 md:col-span-2" type="submit">Upload Progress Media</button>
+        <button
+          className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
+          type="submit"
+          disabled={uploading}
+        >
+          {uploading ? "Uploading..." : "Upload Progress Media"}
+        </button>
       </form>
 
       <div className="mt-4 space-y-2 text-sm text-muted-foreground">
@@ -190,6 +187,7 @@ export function ProgressCamFeature() {
           </div>
         ))}
       </div>
+      {filesError ? <p className="mt-3 text-sm text-rose-500">{filesError}</p> : null}
       {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
     </section>
   );
