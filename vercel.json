@@ -20,6 +20,10 @@
     {
       "source": "/api/:path*",
       "destination": "/api/main.py"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/apps/web/:path*"
     }
   ],
   "headers": [
