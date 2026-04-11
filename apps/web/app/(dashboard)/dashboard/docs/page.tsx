@@ -118,36 +118,27 @@ export default function DocsPage() {
 
   const guide = useMemo(() => ROLE_GUIDE[selectedRole], [selectedRole]);
 
-  // `pagebreak` is a valid html2pdf.js runtime option but missing from the
-  // bundled Html2PdfOptions interface — extend it locally.
-  type PdfOptions = {
-    margin?: number | [number, number, number, number];
-    filename?: string;
-    image?: { type?: "jpeg" | "png" | "webp"; quality?: number };
-    enableLinks?: boolean;
-    html2canvas?: object;
-    jsPDF?: { unit?: string; format?: string; orientation?: "portrait" | "landscape" };
-    pagebreak?: { mode?: string[]; before?: string[]; after?: string[]; avoid?: string[] };
-  };
-
   const buildPdfPreview = async () => {
     if (!guideRef.current) return;
     setPdfBusy(true);
     try {
       const html2pdf = (await import("html2pdf.js")).default;
 
-      const pdfOptions: PdfOptions = {
-        margin: [12, 12, 12, 12],
+      // TypeScript only excess-property-checks fresh object literals, not
+      // variables. Declaring opts without an explicit type annotation lets us
+      // include the runtime-valid `pagebreak` option without any cast or lint
+      // suppression, while still satisfying the set() parameter type check.
+      const opts = {
+        margin: [12, 12, 12, 12] as [number, number, number, number],
         filename: `bd-cr7-role-guide-${selectedRole}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
+        image: { type: "jpeg" as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
         pagebreak: { mode: ["css", "legacy"] },
       };
 
       const blob = await html2pdf()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .set(pdfOptions as any)
+        .set(opts)
         .from(guideRef.current)
         .toPdf()
         .outputPdf("blob");
@@ -162,17 +153,18 @@ export default function DocsPage() {
   const downloadPdf = async () => {
     if (!guideRef.current) return;
     const html2pdf = (await import("html2pdf.js")).default;
-    const pdfOptions: PdfOptions = {
-      margin: [12, 12, 12, 12],
+
+    const opts = {
+      margin: [12, 12, 12, 12] as [number, number, number, number],
       filename: `bd-cr7-role-guide-${selectedRole}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
+      image: { type: "jpeg" as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
       pagebreak: { mode: ["css", "legacy"] },
     };
+
     await html2pdf()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .set(pdfOptions as any)
+      .set(opts)
       .from(guideRef.current)
       .save();
   };
