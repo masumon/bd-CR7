@@ -38,6 +38,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.upstash_url = (upstash_redis_rest_url or "").rstrip("/")
         self.upstash_token = (upstash_redis_rest_token or "").strip()
         self.http = httpx.AsyncClient(timeout=1.5)
+        # Circuit-breaker window for Redis/Upstash failures.
+        self._redis_disabled_until = 0.0
 
         if self.use_redis and redis_url and Redis is not None:
             try:
@@ -81,7 +83,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         client_ip = request.client.host if request.client else "unknown"
 
-        if self.use_redis:
+        if self.use_redis and time.time() >= self._redis_disabled_until:
             key = f"bdcr7:rate-limit:{client_ip}:{int(time.time() // 60)}"
             try:
                 if self.redis is not None:
@@ -103,6 +105,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     return await call_next(request)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("redis_rate_limit_fallback ip=%s error=%s", client_ip, exc)
+                # Avoid paying remote timeout cost on every request when backend is down.
+                self._redis_disabled_until = time.time() + 60
 
         now = time.time()
         cutoff = now - 60
