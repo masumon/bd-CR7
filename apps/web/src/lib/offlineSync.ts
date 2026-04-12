@@ -1,5 +1,6 @@
 import useOfflineQueue from '@/store/offlineQueue';
 import { useAuthStore } from '@/store/authStore';
+import { getErrorMessage } from '@/lib/errorUtils';
 
 const MAX_ATTEMPTS = 5;
 let flushInProgress = false;
@@ -56,7 +57,7 @@ async function flushQueueOnce(): Promise<void> {
       } catch (error) {
         const attempts = (item.attempts || 0) + 1;
         if (attempts < MAX_ATTEMPTS) {
-          useOfflineQueue.getState().requeue({ ...item, attempts, lastError: (error as Error).message });
+          useOfflineQueue.getState().requeue({ ...item, attempts, lastError: getErrorMessage(error) });
         }
       }
     }

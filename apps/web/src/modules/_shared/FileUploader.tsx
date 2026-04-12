@@ -6,6 +6,7 @@ import { UploadCloud, Loader2 } from "lucide-react";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { useProjectFiles } from "@/hooks/useProjectFiles";
 import { Button } from "@/components/ui/button";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 interface FileUploaderProps {
   module: string;
@@ -46,7 +47,7 @@ export function FileUploader({ module, category, subcategory, projectId, refTabl
       setMessage("Upload complete");
       onUploaded?.(url, saved.id);
     } catch (error) {
-      setMessage((error as Error).message || "Upload failed");
+      setMessage(getErrorMessage(error) || "Upload failed");
     } finally {
       setLoading(false);
     }

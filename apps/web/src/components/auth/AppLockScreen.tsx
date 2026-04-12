@@ -5,6 +5,7 @@ import { Fingerprint, KeyRound, Loader2, ShieldCheck, ShieldX } from "lucide-rea
 import { ensureBiometricCredential, isWebAuthnSupported, verifyBiometricAssertion } from "@/lib/webauthn";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 /* ── Constants ──────────────────────────────────────────────────── */
 const LOCK_KEY = "bdcr7-app-locked";
@@ -146,7 +147,7 @@ export function AppLockScreen({ onUnlock }: Props) {
       setStep("success");
       setTimeout(onUnlock, 600);
     } catch (err) {
-      setError((err as Error).message || "বায়োমেট্রিক যাচাই ব্যর্থ হয়েছে।");
+      setError(getErrorMessage(err) || "বায়োমেট্রিক যাচাই ব্যর্থ হয়েছে।");
       setStep("failed");
     }
   }, [token, userId, onUnlock]);
@@ -164,7 +165,7 @@ export function AppLockScreen({ onUnlock }: Props) {
       setStep("success");
       setTimeout(onUnlock, 600);
     } catch (err) {
-      setError((err as Error).message || "পাসওয়ার্ড ভুল হয়েছে।");
+      setError(getErrorMessage(err) || "পাসওয়ার্ড ভুল হয়েছে।");
     } finally {
       setPwLoading(false);
     }

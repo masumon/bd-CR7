@@ -26,6 +26,7 @@ import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { PreviewModal } from "@/modules/_shared";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 const STATUS_OPTIONS = ["Planning", "Active", "Paused", "Completed", "Cancelled"] as const;
 type ProjectStatus = (typeof STATUS_OPTIONS)[number];
@@ -360,7 +361,7 @@ export function ProjectsFeature() {
       setAttachmentCaption("");
       await fetchProjectDetails(selectedProjectId);
     } catch (uploadError) {
-      setDetailsError((uploadError as Error).message);
+      setDetailsError(getErrorMessage(uploadError));
     } finally {
       setAttachmentSaving(false);
     }
@@ -818,7 +819,7 @@ export function ProjectsFeature() {
                           const url = await uploadToCloudinary(file);
                           setForm((f) => ({ ...f, cover_photo_url: url }));
                         } catch (uploadErr) {
-                          setError((uploadErr as Error).message || "Cover photo upload failed.");
+                          setError(getErrorMessage(uploadErr) || "Cover photo upload failed.");
                         } finally {
                           setCoverPhotoUploading(false);
                         }

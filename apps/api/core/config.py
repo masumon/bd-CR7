@@ -93,6 +93,11 @@ class Settings:
             )
         )
 
+        # ── Email (Resend) ────────────────────────────────────────────────────
+        self.resend_api_key = env.get("RESEND_API_KEY", "").strip()
+        self.email_from = env.get("EMAIL_FROM", "").strip()
+        self.has_email = bool(self.resend_api_key)
+
         self.is_production = self.env in {"production", "staging"}
         self.database_url = self._resolve_database_url()
         self._validate()

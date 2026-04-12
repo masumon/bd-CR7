@@ -5,6 +5,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 type RoleLabel = "Super Admin" | "Owner" | "Worker";
 
@@ -36,7 +37,7 @@ export function AuthFeature() {
       await login(email, password);
       setMessage("Email login successful");
     } catch (error) {
-      setMessage((error as Error).message);
+      setMessage(getErrorMessage(error));
     }
   };
 
@@ -54,7 +55,7 @@ export function AuthFeature() {
       await register(email, password, fullName, "viewer");
       setMessage("Registration successful");
     } catch (error) {
-      setMessage((error as Error).message);
+      setMessage(getErrorMessage(error));
     }
   };
 
@@ -99,7 +100,7 @@ export function AuthFeature() {
       });
       setMessage("WebAuthn verification successful");
     } catch (error) {
-      setMessage((error as Error).message || "WebAuthn failed");
+      setMessage(getErrorMessage(error) || "WebAuthn failed");
     }
   };
 

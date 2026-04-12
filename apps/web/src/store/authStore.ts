@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 import { supabase } from "@/lib/supabase";
 import useOfflineQueue from "@/store/offlineQueue";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 const VALID_ROLES = new Set([
   "super_admin", "admin", "checker", "maker",
@@ -156,7 +157,7 @@ export const useAuthStore = create<AuthState>()(
             userId: null,
             loading: false,
             hydrated: true,
-            error: (err as Error).message,
+            error: getErrorMessage(err),
           });
         }
       },
@@ -170,7 +171,7 @@ export const useAuthStore = create<AuthState>()(
           const roleName = await fetchUserRole(state.userId);
           set({ role: roleName, loading: false, hydrated: true });
         } catch (err) {
-          set({ loading: false, hydrated: true, error: (err as Error).message });
+          set({ loading: false, hydrated: true, error: getErrorMessage(err) });
           throw err;
         }
       },
@@ -188,7 +189,7 @@ export const useAuthStore = create<AuthState>()(
           const roleName = await fetchUserRole(data.user.id);
           set({ token: data.session.access_token, role: roleName, userId: data.user.id, loading: false, hydrated: true });
         } catch (err) {
-          set({ loading: false, error: (err as Error).message });
+          set({ loading: false, error: getErrorMessage(err) });
           throw err;
         }
       },

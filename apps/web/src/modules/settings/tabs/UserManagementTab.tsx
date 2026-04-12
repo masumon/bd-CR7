@@ -11,6 +11,7 @@ import { ShieldCheck, UserCheck, UserX, RefreshCw, AlertCircle, Trash2 } from "l
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 type ManagedUser = {
   id: string;
@@ -63,7 +64,7 @@ export function UserManagementTab() {
       const data = await apiClient<ManagedUser[]>("/api/users/list", { method: "GET" }, token);
       setUsers(data ?? []);
     } catch (err) {
-      setError((err as Error).message || "Failed to load users");
+      setError(getErrorMessage(err) || "Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ export function UserManagementTab() {
       setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role: newRole } : u));
       setMessage(`Role updated to ${ROLE_LABELS[newRole] ?? newRole}`);
     } catch (err) {
-      setError((err as Error).message || "Role update failed");
+      setError(getErrorMessage(err) || "Role update failed");
     } finally {
       setSaving(null);
     }
@@ -107,7 +108,7 @@ export function UserManagementTab() {
       setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, is_active: !isActive } : u));
       setMessage(!isActive ? "User activated" : "User deactivated");
     } catch (err) {
-      setError((err as Error).message || "Status update failed");
+      setError(getErrorMessage(err) || "Status update failed");
     } finally {
       setSaving(null);
     }
@@ -126,7 +127,7 @@ export function UserManagementTab() {
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       setMessage("User deleted successfully");
     } catch (err) {
-      setError((err as Error).message || "Delete failed");
+      setError(getErrorMessage(err) || "Delete failed");
     } finally {
       setSaving(null);
     }

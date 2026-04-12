@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 
 import { apiClient } from "@/lib/apiClient";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
+import { getErrorMessage } from "@/lib/errorUtils";
 import { useAuthStore } from "@/store/authStore";
 import {
   DEFAULT_SETTING_ITEMS,
@@ -179,7 +180,7 @@ export function SettingsFeature() {
     try {
       data = await apiClient<UserProfile>("/api/users/me/profile", { method: "GET" }, token);
     } catch (loadError) {
-      setError((loadError as Error).message || "Profile not found.");
+      setError(getErrorMessage(loadError) || "Profile not found.");
       setLoading(false);
       return;
     }
@@ -212,7 +213,7 @@ export function SettingsFeature() {
         setMessage("Profile photo uploaded. Click Save Profile to apply.");
       }
     } catch (uploadError) {
-      setError((uploadError as Error).message || "Image upload failed.");
+      setError(getErrorMessage(uploadError) || "Image upload failed.");
     } finally {
       setUploadingImage(false);
     }
@@ -248,7 +249,7 @@ export function SettingsFeature() {
         token,
       );
     } catch (err) {
-      saveError = (err as Error).message;
+      saveError = getErrorMessage(err);
     }
     setSaving(false);
     if (saveError) {

@@ -1,6 +1,7 @@
 // Pagination store for expenses
 import { create } from "zustand";
 import { apiRequest } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 export type Expense = {
   id: string;
@@ -47,7 +48,7 @@ export const useExpensesStore = create<ExpensesState>((set, get) => ({
         loading: false,
       });
     } catch (error) {
-      set({ error: (error as Error).message, loading: false });
+      set({ error: getErrorMessage(error), loading: false });
     }
   },
   loadMoreExpenses: async (token) => {
@@ -69,7 +70,7 @@ export const useExpensesStore = create<ExpensesState>((set, get) => ({
         loading: false,
       });
     } catch (error) {
-      set({ error: (error as Error).message, loading: false });
+      set({ error: getErrorMessage(error), loading: false });
     }
   },
   clearExpenses: () => set({ expenses: [], hasMore: true, cursor: null, error: null }),

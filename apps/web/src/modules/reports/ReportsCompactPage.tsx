@@ -36,7 +36,7 @@ export function ReportsCompactPage() {
   const fetchNumericSum = useCallback(async (table: string, column: string) => {
     const { data, error } = await supabase.from(table).select(column);
     if (error || !data) return null;
-    const rows = data as unknown as Array<Record<string, unknown>>;
+    const rows = (data as unknown) as Array<Record<string, unknown>>;
     return rows.reduce((sum, row) => sum + Number(row[column] || 0), 0);
   }, [supabase]);
 

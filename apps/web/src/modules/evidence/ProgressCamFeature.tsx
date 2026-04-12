@@ -7,6 +7,7 @@ import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { useProjectFiles } from "@/hooks/useProjectFiles";
 import { PermissionGate } from "@/components/ui/PermissionGate";
 import { FileUploader, PreviewModal } from "@/modules/_shared";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 const PHASES = ["Foundation", "Structure", "Finishing", "Handover"];
 
@@ -91,7 +92,7 @@ export function ProgressCamFeature() {
       setFile(null);
       setCaption("");
     } catch (error) {
-      setMessage((error as Error).message);
+      setMessage(getErrorMessage(error));
     } finally {
       setUploading(false);
     }

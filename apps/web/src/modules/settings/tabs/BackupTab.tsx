@@ -6,6 +6,7 @@ import { Download, Upload, Cloud, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/apiClient";
 import { normalizeRoleName } from "@/lib/rbac";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 type BackupTabProps = {
   token?: string;
@@ -57,7 +58,7 @@ export function BackupTab({ token, role }: BackupTabProps) {
       downloadJson(`bd-cr7-backup-${payload.scope}-${ts}.json`, payload);
       setMessage("Backup exported successfully. You can upload this file to Google Drive, OneDrive, or any cloud drive.");
     } catch (err) {
-      setError((err as Error).message || "Backup export failed");
+      setError(getErrorMessage(err) || "Backup export failed");
     } finally {
       setBusy(false);
     }
@@ -78,7 +79,7 @@ export function BackupTab({ token, role }: BackupTabProps) {
       );
       setMessage(`Backup restored. users=${result.counts.users ?? 0}, prefs=${result.counts.workspace_preferences ?? 0}, biometrics=${result.counts.biometric_credentials ?? 0}`);
     } catch (err) {
-      setError((err as Error).message || "Backup restore failed");
+      setError(getErrorMessage(err) || "Backup restore failed");
     } finally {
       setBusy(false);
     }
@@ -103,7 +104,7 @@ export function BackupTab({ token, role }: BackupTabProps) {
       );
       setMessage(`Cloud backup restored. users=${result.counts.users ?? 0}, prefs=${result.counts.workspace_preferences ?? 0}, biometrics=${result.counts.biometric_credentials ?? 0}`);
     } catch (err) {
-      setError((err as Error).message || "Cloud restore failed");
+      setError(getErrorMessage(err) || "Cloud restore failed");
     } finally {
       setBusy(false);
     }
