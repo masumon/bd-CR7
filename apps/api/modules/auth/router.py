@@ -13,7 +13,6 @@ from core.config import settings
 from core.supabase import supabase_anon, supabase_service
 from core.exceptions import AuthError
 from schemas.auth import AuthResponse, LoginRequest, RegisterRequest
-from webauthn import base64url_to_bytes, verify_authentication_response
 from modules.auth.phone_otp_service import OtpError, send_phone_otp, verify_phone_otp
 
 router = APIRouter()
@@ -450,6 +449,8 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
     }
 
     try:
+        from webauthn import base64url_to_bytes, verify_authentication_response
+
         verification = verify_authentication_response(
             credential=credential,
             expected_challenge=base64url_to_bytes(expected_challenge),
@@ -531,6 +532,8 @@ async def login_with_passkey(payload: dict, request: Request):
     }
 
     try:
+        from webauthn import base64url_to_bytes, verify_authentication_response
+
         verification = verify_authentication_response(
             credential=credential,
             expected_challenge=base64url_to_bytes(expected_challenge),

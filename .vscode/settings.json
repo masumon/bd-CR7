@@ -1,4 +1,8 @@
 {
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "python.analysis.extraPaths": [
+        "./apps/api"
+    ],
     "chat.tools.terminal.autoApprove": {
         "/^Set-Location \"d:\\\\BD CR7 Project\"; if \\(Get-Command rg -ErrorAction SilentlyContinue\\) \\{ rg --files \\} else \\{ Get-ChildItem -Recurse -File \\| ForEach-Object \\{ \\$_\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\\\\\',''\\) \\} \\}$/": {
             "approve": true,

@@ -3,16 +3,12 @@
 import logging
 import time
 from collections import defaultdict
+from typing import Any
 
 import httpx
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-
-try:
-    from redis.asyncio import Redis
-except Exception:  # noqa: BLE001
-    Redis = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +30,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests_per_minute = requests_per_minute
         self.ip_requests: dict[str, list[float]] = defaultdict(list)
         self.use_redis = use_redis
-        self.redis: Redis | None = None
+        self.redis: Any = None
         self.upstash_url = (upstash_redis_rest_url or "").rstrip("/")
         self.upstash_token = (upstash_redis_rest_token or "").strip()
         self.http = httpx.AsyncClient(timeout=1.5)
         # Circuit-breaker window for Redis/Upstash failures.
         self._redis_disabled_until = 0.0
 
-        if self.use_redis and redis_url and Redis is not None:
+        if self.use_redis and redis_url:
             try:
-                self.redis = Redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+                from redis.asyncio import Redis as AsyncRedis
+
+                self.redis = AsyncRedis.from_url(redis_url, encoding="utf-8", decode_responses=True)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("redis_init_failed error=%s", exc)
                 self.redis = None

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { apiClient } from "@/lib/apiClient";
@@ -71,6 +71,9 @@ export function SettingsFeature() {
   const [integrationState, setIntegrationState] = useState<IntegrationState>({ cloudinary: true, realtime: true, aiVoice: true, offlineSync: true });
   const [settingItems, setSettingItems] = useState<SettingItem[]>(DEFAULT_SETTING_ITEMS);
   const [settingsQuery, setSettingsQuery] = useState("");
+  const lastSyncedThemeRef = useRef<string | null>(null);
+  const lastSyncedLanguageRef = useRef<"en" | "bn" | null>(null);
+  const localPreferencesHydratedRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -89,6 +92,8 @@ export function SettingsFeature() {
     } catch {
       setIntegrationState((prev) => prev);
     }
+
+    localPreferencesHydratedRef.current = true;
   }, []);
 
   const saveWorkspacePreferences = useCallback(async (patch: { theme?: string; language?: string; integrations?: Partial<IntegrationState> }) => {
@@ -100,18 +105,27 @@ export function SettingsFeature() {
     if (!userId) return;
     let cancelled = false;
     const loadWorkspacePreferences = async () => {
-      if (!token) return;
+      const currentTheme = dark ? "dark" : "light";
+      if (!token) {
+        lastSyncedThemeRef.current = currentTheme;
+        lastSyncedLanguageRef.current = language;
+        return;
+      }
       const data = await apiClient<{ theme?: string; language?: string; integrations?: Partial<IntegrationState> }>("/api/users/me/preferences", { method: "GET" }, token);
       if (cancelled || !data) return;
-      if (data.theme === "dark" || data.theme === "light") setDark(data.theme === "dark");
-      if (data.language === "bn" || data.language === "en") setLanguage(data.language);
+      const resolvedTheme = data.theme === "dark" || data.theme === "light" ? data.theme : currentTheme;
+      const resolvedLanguage = data.language === "bn" || data.language === "en" ? data.language : language;
+      lastSyncedThemeRef.current = resolvedTheme;
+      lastSyncedLanguageRef.current = resolvedLanguage;
+      if (resolvedTheme !== currentTheme) setDark(resolvedTheme === "dark");
+      if (resolvedLanguage !== language) setLanguage(resolvedLanguage);
       if (data.integrations) setIntegrationState((prev) => ({ ...prev, ...data.integrations }));
     };
     void loadWorkspacePreferences();
     return () => {
       cancelled = true;
     };
-  }, [token, userId]);
+  }, [dark, language, token, userId]);
 
   const persistSettings = useCallback((next: SettingItem[]) => {
     const merged = mergeSettingCatalog(next);
@@ -153,15 +167,30 @@ export function SettingsFeature() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    window.localStorage.setItem("bdcr7-theme", dark ? "dark" : "light");
-    void saveWorkspacePreferences({ theme: dark ? "dark" : "light" });
-  }, [dark, saveWorkspacePreferences]);
+    const nextTheme = dark ? "dark" : "light";
+    window.localStorage.setItem("bdcr7-theme", nextTheme);
+    if (!localPreferencesHydratedRef.current) return;
+    if (!userId || !token) {
+      lastSyncedThemeRef.current = nextTheme;
+      return;
+    }
+    if (lastSyncedThemeRef.current === nextTheme) return;
+    lastSyncedThemeRef.current = nextTheme;
+    void saveWorkspacePreferences({ theme: nextTheme });
+  }, [dark, saveWorkspacePreferences, token, userId]);
 
   useEffect(() => {
     document.documentElement.lang = language;
     window.localStorage.setItem("bdcr7-language", language);
+    if (!localPreferencesHydratedRef.current) return;
+    if (!userId || !token) {
+      lastSyncedLanguageRef.current = language;
+      return;
+    }
+    if (lastSyncedLanguageRef.current === language) return;
+    lastSyncedLanguageRef.current = language;
     void saveWorkspacePreferences({ language });
-  }, [language, saveWorkspacePreferences]);
+  }, [language, saveWorkspacePreferences, token, userId]);
 
   const loadProfile = useCallback(async () => {
     if (!userId) {

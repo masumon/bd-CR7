@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -351,7 +352,7 @@ async def get_expense(expense_id: str, user: UserContext = Depends(get_current_u
         raise HTTPException(status_code=500, detail="Supabase service client is not configured")
     row = (
         supabase_service.table("expenses")
-        .select("id,account_id,category_id,amount,description,status,maker_id,checker_id,risk_level,risk_score,approval_note,approved_at,created_at")
+        .select("id,account_id,category,amount,description,status,created_by,approved_by,risk_score,metadata,created_at")
         .eq("id", expense_id)
         .limit(1)
         .execute()
@@ -359,7 +360,7 @@ async def get_expense(expense_id: str, user: UserContext = Depends(get_current_u
     if not row.data:
         raise HTTPException(status_code=404, detail="Expense not found")
     expense = row.data[0]
-    if user.role not in ("admin", "checker") and user.user_id not in (str(expense.get("maker_id")), str(expense.get("checker_id"))):
+    if user.role not in ("admin", "checker") and user.user_id not in (str(expense.get("created_by")), str(expense.get("approved_by"))):
         raise HTTPException(status_code=403, detail="Insufficient role")
     return expense
 
@@ -383,7 +384,7 @@ async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserCont
     if payload.subcategory:
         metadata["subcategory"] = payload.subcategory
 
-    update_payload: dict[str, str | int | Decimal] = {
+    update_payload: dict[str, Any] = {
         "amount": str(payload.amount),
         "status": payload.status,
         "description": payload.description,
@@ -467,7 +468,6 @@ async def delete_expense(expense_id: str, user: UserContext = Depends(require_ro
             }
         _mark_sensitive_approved(str(approval.get("id")), user.user_id)
 
-    supabase_service.table("approvals").delete().eq("entity_type", "expense").eq("entity_id", expense_id).execute()
     supabase_service.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_delete").eq("entity_id", expense_id).execute()
     supabase_service.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_update").eq("entity_id", expense_id).execute()
     supabase_service.table("expenses").delete().eq("id", expense_id).execute()

@@ -1,0 +1,21 @@
+{
+  "include": [
+    "apps/api"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    ".venv",
+    "node_modules",
+    ".next"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": "apps/api",
+      "extraPaths": [
+        "apps/api"
+      ]
+    }
+  ]
+}
