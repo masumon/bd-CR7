@@ -8,6 +8,7 @@ import { ArrowDownToLine, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
+import { getErrorMessage } from "@/lib/errorUtils";
 import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
 
 const ROLES = [
@@ -163,7 +164,7 @@ export function WorkerLogsFeature() {
       toast.info("Worker log synced", result.message || "API fallback used");
       fetchLogs();
     } catch (err) {
-      toast.error("Failed to save worker log", (err as Error).message);
+      toast.error("Failed to save worker log", getErrorMessage(err));
     }
   };
 

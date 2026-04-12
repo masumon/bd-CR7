@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 type FundPayload = {
   account_id: string;
@@ -46,7 +47,7 @@ export function useFinance(): UseFinanceReturn {
       setMessage("Fund saved");
       return true;
     } catch (err) {
-      setMessage((err as Error).message || "Fund save failed");
+      setMessage(getErrorMessage(err) || "Fund save failed");
       return false;
     } finally {
       setLoading(false);
@@ -69,7 +70,7 @@ export function useFinance(): UseFinanceReturn {
       setMessage("Expense saved");
       return true;
     } catch (err) {
-      setMessage((err as Error).message || "Expense save failed");
+      setMessage(getErrorMessage(err) || "Expense save failed");
       return false;
     } finally {
       setLoading(false);

@@ -1,6 +1,7 @@
 // MODULE LOCKED: HIGH RISK (NO AUTO REFACTOR ALLOWED)
 // ONLY MANUAL VERIFIED CHANGES PERMITTED
 import { apiClient } from "@/lib/apiClient";
+import { getErrorMessage } from "@/lib/errorUtils";
 import type { ExpenseEditForm, ExpenseRow } from "@/modules/finance/types";
 
 type ExpensesListResponse = {
@@ -30,7 +31,7 @@ export async function updateExpense(id: string, form: ExpenseEditForm, token?: s
     );
     return null;
   } catch (error) {
-    return (error as Error).message;
+    return getErrorMessage(error);
   }
 }
 
@@ -39,7 +40,7 @@ export async function deleteExpense(id: string, token?: string): Promise<string 
     await apiClient<{ message: string }>(`/api/finance/expenses/${id}`, { method: "DELETE" }, token);
     return null;
   } catch (error) {
-    return (error as Error).message;
+    return getErrorMessage(error);
   }
 }
 
@@ -60,6 +61,6 @@ export async function approveExpense(
     );
     return null;
   } catch (error) {
-    return (error as Error).message;
+    return getErrorMessage(error);
   }
 }

@@ -7,6 +7,7 @@ import { CalendarDays, Landmark, Link2, WalletCards } from "lucide-react";
 
 import { apiClient } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 const SOURCE_OPTIONS = ["Client", "Owner", "Bank", "Investor", "Other"];
 const METHOD_OPTIONS = [
@@ -76,7 +77,7 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
       setReceiptUrl("");
       onSaved?.();
     } catch (err) {
-      setMessage((err as Error).message);
+      setMessage(getErrorMessage(err));
     }
   };
 

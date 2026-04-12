@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { apiRequest } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 type AttendancePayload = {
   worker_id: string;
@@ -39,7 +40,7 @@ export function useWorkers(): UseWorkersReturn {
       setMessage(`Worker log synced (${response.message ?? "ok"})`);
       return true;
     } catch (err) {
-      setMessage((err as Error).message || "Worker log failed");
+      setMessage(getErrorMessage(err) || "Worker log failed");
       return false;
     } finally {
       setLoading(false);

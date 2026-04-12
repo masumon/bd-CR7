@@ -9,6 +9,7 @@ import { apiClient } from "@/lib/apiClient";
 import { validateDualApproval } from "@bdcr7/rbac-engine";
 import { useToast } from "@/components/ui/toast";
 import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 const USERS = ["Owner", "Supervisor", "Accountant", "Worker"];
 const CATEGORIES = ["Materials", "Labor", "Transport", "Utility", "Misc"];
@@ -116,7 +117,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
       setProofFileUrl(null);
       onSaved?.();
     } catch (error) {
-      toast.error("Failed to save expense", (error as Error).message);
+      toast.error("Failed to save expense", getErrorMessage(error));
     }
   };
 
