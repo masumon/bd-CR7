@@ -33,7 +33,7 @@ def _extract_role_name(user_row: dict) -> str:
         role_name = role_obj.get("name")
         if isinstance(role_name, str) and role_name.strip():
             return role_name.strip().lower()
-    return "worker"
+    return "viewer"
 
 
 def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> UserContext:
@@ -59,7 +59,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     user_res = (
         supabase_service.table("users")
         .select("id,is_active,role")
-        .eq("id", supabase_user_id)
+        .eq("id", str(supabase_user_id))
         .limit(1)
         .execute()
     )

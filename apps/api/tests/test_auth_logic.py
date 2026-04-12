@@ -7,13 +7,10 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 API_ROOT = Path(__file__).resolve().parents[1]
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-
-from fastapi import HTTPException
 
 from core.auth import (
     UserContext,
@@ -55,22 +52,17 @@ class ExtractRoleNameTests(unittest.TestCase):
         row = {"roles": {"name": "  Checker  "}}
         self.assertEqual(_extract_role_name(row), "checker")
 
-    def test_missing_roles_key_raises(self) -> None:
-        with self.assertRaises(HTTPException) as ctx:
-            _extract_role_name({})
-        self.assertEqual(ctx.exception.status_code, 500)
+    def test_missing_roles_key_falls_back_to_viewer(self) -> None:
+        self.assertEqual(_extract_role_name({}), "viewer")
 
-    def test_roles_not_dict_raises(self) -> None:
-        with self.assertRaises(HTTPException):
-            _extract_role_name({"roles": "admin"})
+    def test_roles_not_dict_falls_back_to_viewer(self) -> None:
+        self.assertEqual(_extract_role_name({"roles": "admin"}), "viewer")
 
-    def test_roles_name_empty_raises(self) -> None:
-        with self.assertRaises(HTTPException):
-            _extract_role_name({"roles": {"name": ""}})
+    def test_roles_name_empty_falls_back_to_viewer(self) -> None:
+        self.assertEqual(_extract_role_name({"roles": {"name": ""}}), "viewer")
 
-    def test_roles_name_none_raises(self) -> None:
-        with self.assertRaises(HTTPException):
-            _extract_role_name({"roles": {"name": None}})
+    def test_roles_name_none_falls_back_to_viewer(self) -> None:
+        self.assertEqual(_extract_role_name({"roles": {"name": None}}), "viewer")
 
 
 class UserContextTests(unittest.TestCase):
@@ -99,27 +91,25 @@ class RequireRolesTests(unittest.TestCase):
     def test_allowed_role_passes(self) -> None:
         checker = require_roles("admin", "maker")
         user = self._make_user("admin")
-        result = checker.__wrapped__(user) if hasattr(checker, "__wrapped__") else None
-        # Direct call via the inner function
-        inner = checker.__closure__[0].cell_contents if checker.__closure__ else None
-        # Test by verifying the logic manually
-        if user.role == "super_admin" or user.role in {"admin", "maker"}:
-            self.assertIn(user.role, {"admin", "maker", "super_admin"})
+        result = checker(user)
+        self.assertEqual(result, user)
 
     def test_super_admin_always_passes(self) -> None:
+        checker = require_roles("admin")
         user = self._make_user("super_admin")
-        # super_admin bypasses all role checks
-        self.assertEqual(user.role, "super_admin")
+        result = checker(user)
+        self.assertEqual(result.role, "super_admin")
 
-    def test_forbidden_role_would_raise(self) -> None:
+    def test_forbidden_role_raises_403(self) -> None:
+        from fastapi import HTTPException
+
+        checker = require_roles("admin", "maker")
         user = self._make_user("viewer")
-        allowed = {"admin", "maker"}
-        # viewer is not in allowed and not super_admin
-        self.assertNotIn(user.role, allowed)
-        self.assertNotEqual(user.role, "super_admin")
+        with self.assertRaises(HTTPException) as ctx:
+            checker(user)
+        self.assertEqual(ctx.exception.status_code, 403)
 
     def test_role_comparison_is_case_insensitive_by_convention(self) -> None:
-        # Roles stored lowercase after normalization
         user = self._make_user("checker")
         allowed = {"checker", "admin"}
         self.assertIn(user.role.lower(), {r.lower() for r in allowed})
