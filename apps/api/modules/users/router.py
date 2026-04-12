@@ -17,10 +17,21 @@ def _client_or_503():
 
 
 @router.get("/users")
-async def list_users(user: UserContext = Depends(get_current_user)) -> list[dict[str, Any]]:
+async def list_users(user: UserContext = Depends(require_roles("super_admin", "admin"))) -> list[dict[str, Any]]:
     client = _client_or_503()
-    rows = client.table("users").select("id,email,full_name,is_active").limit(100).execute()
+    rows = (
+        client.table("users")
+        .select("id,email,full_name,role,is_active,user_code")
+        .limit(500)
+        .execute()
+    )
     return rows.data or []
+
+
+@router.get("/users/list")
+async def list_users_compat(user: UserContext = Depends(require_roles("super_admin", "admin"))) -> list[dict[str, Any]]:
+    # Backward-compatible alias used by the settings User Management tab.
+    return await list_users(user)
 
 
 @router.post("/users")
@@ -45,6 +56,33 @@ async def update_user(user_id: str, payload: dict[str, Any], user: UserContext =
     client = _client_or_503()
     updated = client.table("users").update(payload).eq("id", user_id).execute()
     return {"updated": bool(updated.data), "data": (updated.data or [{}])[0]}
+
+
+@router.patch("/users/{user_id}/role")
+async def update_user_role(user_id: str, payload: dict[str, Any], user: UserContext = Depends(require_roles("super_admin", "admin"))) -> dict[str, Any]:
+    client = _client_or_503()
+    role = str(payload.get("role") or "").strip().lower()
+    allowed_roles = {"super_admin", "admin", "supervisor", "engineer", "maker", "checker", "viewer", "worker"}
+    if role not in allowed_roles:
+        raise HTTPException(status_code=422, detail="Invalid role")
+
+    updated = client.table("users").update({"role": role}).eq("id", user_id).execute()
+    if not updated.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"updated": True, "data": updated.data[0]}
+
+
+@router.patch("/users/{user_id}/status")
+async def update_user_status(user_id: str, payload: dict[str, Any], user: UserContext = Depends(require_roles("super_admin", "admin"))) -> dict[str, Any]:
+    client = _client_or_503()
+    if "is_active" not in payload:
+        raise HTTPException(status_code=422, detail="is_active is required")
+
+    is_active = bool(payload.get("is_active"))
+    updated = client.table("users").update({"is_active": is_active}).eq("id", user_id).execute()
+    if not updated.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"updated": True, "data": updated.data[0]}
 
 
 @router.delete("/users/{user_id}")

@@ -179,6 +179,18 @@ class UsersEndpointAuthTests(unittest.TestCase):
         r = client.get("/api/users/me/preferences")
         self.assertEqual(r.status_code, 401)
 
+    def test_users_list_alias_no_token_401(self) -> None:
+        r = client.get("/api/users/list")
+        self.assertEqual(r.status_code, 401)
+
+    def test_update_user_role_no_token_401(self) -> None:
+        r = client.patch("/api/users/some-user-id/role", json={"role": "viewer"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_update_user_status_no_token_401(self) -> None:
+        r = client.patch("/api/users/some-user-id/status", json={"is_active": False})
+        self.assertEqual(r.status_code, 401)
+
 
 
 @unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
