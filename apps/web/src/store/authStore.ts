@@ -4,6 +4,11 @@ import { persist } from "zustand/middleware";
 import { supabase } from "@/lib/supabase";
 import useOfflineQueue from "@/store/offlineQueue";
 
+const VALID_ROLES = new Set([
+  "super_admin", "admin", "checker", "maker",
+  "supervisor", "engineer", "mason", "worker", "viewer",
+]);
+
 async function fetchUserRole(userId: string): Promise<string> {
   if (!supabase) {
     throw new Error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
@@ -17,9 +22,51 @@ async function fetchUserRole(userId: string): Promise<string> {
   if (error) {
     throw new Error(error.message || "Failed to load user profile");
   }
+
+  // Profile missing: auto-create from auth session metadata.
+  // Covers Google OAuth first-login and email-confirmed users where the DB
+  // trigger may not have run (e.g. accounts created before the migration).
   if (!data) {
-    throw new Error("User profile missing. Please contact your administrator.");
+    const { data: authData } = await supabase.auth.getUser();
+    const authUser = authData?.user;
+    if (!authUser?.email) {
+      throw new Error("User profile missing. Please contact your administrator.");
+    }
+    const fullName =
+      (authUser.user_metadata?.full_name as string | undefined) ||
+      authUser.email.split("@")[0];
+    const roleMeta = (authUser.user_metadata?.role_name as string | undefined) || "viewer";
+    const role = VALID_ROLES.has(roleMeta) ? roleMeta : "viewer";
+
+    // Insert with RLS: users_self_insert policy allows auth.uid() = id.
+    const { error: insertError } = await supabase.from("users").insert({
+      id: authUser.id,
+      email: authUser.email,
+      auth_email: authUser.email,
+      full_name: fullName,
+      role,
+      is_active: true,
+    });
+
+    if (insertError) {
+      // Insert failed (RLS or conflict). Try reading again — the row may
+      // have been created by the DB trigger concurrently.
+      const { data: retry } = await supabase
+        .from("users")
+        .select("role,is_active")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      if (retry) {
+        if (retry.is_active === false) throw new Error("User account is inactive.");
+        const retryRole = (retry as { role?: string }).role;
+        if (typeof retryRole === "string" && retryRole.trim()) return retryRole.trim().toLowerCase();
+      }
+      throw new Error("User profile missing. Please contact your administrator.");
+    }
+
+    return role;
   }
+
   if (data.is_active === false) {
     throw new Error("User account is inactive.");
   }

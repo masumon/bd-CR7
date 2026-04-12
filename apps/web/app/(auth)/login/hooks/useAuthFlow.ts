@@ -173,15 +173,24 @@ export function useAuthFlow(router: RouterLike) {
     e.preventDefault();
     setSuError("");
     setSuLoading(true);
-    setShowOverlay(true);
     try {
       await register(suEmail, suPassword, suFullName, "viewer");
       setSuSuccess(true);
-      setAuthDone(true);
+
+      // Only redirect immediately when Supabase auto-confirms the session
+      // (e.g. email confirmation disabled in settings).
+      // When email confirmation IS required, data.session is null and we must
+      // NOT push to /dashboard — the user must click the confirmation link first.
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setShowOverlay(true);
+          setAuthDone(true);
+        }
+        // else: stay on signup view showing the success message ("Check your inbox")
+      }
     } catch (err) {
       setSuError((err as Error).message);
-      setShowOverlay(false);
-      setAuthDone(false);
     } finally {
       setSuLoading(false);
     }
