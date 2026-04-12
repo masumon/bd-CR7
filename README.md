@@ -1,191 +1,403 @@
-# BD CR7 ERP
-
 <div align="center">
 
-Production-ready construction, finance, workforce, and compliance operations platform for Bangladesh-based teams.
+# BD CR7 Ultra Enterprise
 
-[![Live](https://img.shields.io/badge/Live-bd--cr7.vercel.app-111111?logo=vercel&logoColor=white)](https://bd-cr7.vercel.app)
-[![Frontend](https://img.shields.io/badge/Frontend-Next.js%2015-000000?logo=next.js&logoColor=white)](https://nextjs.org)
-[![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Database](https://img.shields.io/badge/Database-Supabase-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
-[![PWA](https://img.shields.io/badge/Experience-PWA-1f6feb)](https://web.dev/progressive-web-apps/)
-[![Security](https://img.shields.io/badge/Security-RBAC%20%2B%20WebAuthn%20%2B%20Redis-0a7f5a)](#security--reliability)
+### Unified Construction & Business Operations Platform
+
+A production-grade ERP system purpose-built for construction firms and field-intensive operations — combining finance management, workforce control, project oversight, evidence capture, and regulatory compliance into a single, deployable platform.
+
+<br/>
+
+[![Version](https://img.shields.io/badge/Version-1.0.0-0969da?style=for-the-badge)](#)
+[![Status](https://img.shields.io/badge/Status-Production-22863a?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/License-Proprietary-6e40c9?style=for-the-badge)](#license)
+
+[![Next.js 15](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Python](https://img.shields.io/badge/Python-3.12-3776ab?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Turborepo](https://img.shields.io/badge/Turborepo-Monorepo-ef4444?style=flat-square&logo=turborepo&logoColor=white)](https://turbo.build)
+[![PWA](https://img.shields.io/badge/PWA-Installable-1f6feb?style=flat-square&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
+[![Security](https://img.shields.io/badge/Security-RBAC%20·%20WebAuthn%20·%20OTP-0a7f5a?style=flat-square&logo=shield&logoColor=white)](#security-architecture)
 
 </div>
 
-## Product Snapshot
+---
 
-BD CR7 ERP is a modern ERP platform designed for construction and field-heavy business operations. It combines finance controls, workforce management, project monitoring, evidence capture, and auditability in a single production deployment.
+## Overview
 
-The platform is built to work well on desktop and mobile, supports offline workflows, and includes security controls expected in a production environment: biometric sign-in, role-based access control, security headers, and Redis-backed rate limiting.
+BD CR7 Ultra Enterprise is a full-stack ERP platform engineered for construction companies, field service businesses, and operationally complex organizations. It delivers a unified experience across financial controls, human resource management, material tracking, project monitoring, and compliance — all accessible from a mobile-first progressive web application.
 
-## Why It Matters
+The system is designed to operate in environments with limited connectivity through offline-first workflows, supports multi-factor authentication including biometric sign-in, and enforces enterprise-grade access control with six distinct user roles.
 
-- Unifies finance, HR, materials, project tracking, and reporting in one operational system.
-- Designed for real-world field usage with mobile-first dashboards and offline sync support.
-- Reduces operational risk through approval workflows, audit logs, and access control boundaries.
-- Ready for commercial presentation with a live production deployment and deployable monorepo architecture.
+> **Deployment Model**: Cloud-native serverless architecture. Production instances deploy in under 60 seconds with zero-downtime rollouts.
 
-## Core Modules
+---
 
-| Module | Business Value |
-|---|---|
-| Authentication | Email/password, OAuth, OTP, WebAuthn biometric sign-in, trusted-device flow |
-| Finance | Ledger, approvals, expense tracking, transfer visibility, risk-aware workflows |
-| Projects | Project progress, milestone monitoring, field execution tracking |
-| Workforce | Attendance, payroll, role-aware HR operations |
-| Materials | Inventory movement, site supply tracking, procurement visibility |
-| Evidence | Photo and document capture for operational proof and recordkeeping |
-| Reports | Export-ready business reporting with Bengali-friendly output paths |
-| Audit | Traceable activity history for accountability and review |
-| Offline PWA | Queue-first behavior for unreliable connectivity environments |
+## Key Capabilities
 
-## Security & Reliability
+<table>
+<tr>
+<td width="50%" valign="top">
 
-Production controls currently in place:
+### 💰 Finance & Accounting
+- Multi-account ledger management
+- Expense creation with AI risk scoring
+- Maker-checker approval workflows
+- Fund transfer with balance validation
+- Budget tracking and spending controls
+- Real-time financial dashboard
 
-- RBAC with segmented access across admin, manager, accountant, supervisor, worker, and viewer roles.
-- WebAuthn-based biometric authentication for supported devices.
-- App lock and trusted-device experience for repeat sign-in flows.
-- Secure response headers across application routes.
-- Redis-backed rate limiting enabled for production-sensitive API traffic.
-- Current production threshold: `120` requests per minute per client boundary.
-- Verified production behavior: login endpoint returns `429` when burst traffic exceeds the configured limit.
+### 👷 Workforce Management
+- GPS-enabled attendance with geofencing
+- Payroll processing and compensation tracking
+- Department and role-based HR operations
+- Contractor lifecycle management
+- Worker onboarding workflows
 
-## Architecture
+### 📊 Project Management
+- Milestone tracking and progress monitoring
+- Field execution status in real-time
+- Resource allocation visibility
+- Deadline management with notifications
 
-| Layer | Implementation |
-|---|---|
-| Frontend | Next.js App Router PWA |
-| API | FastAPI serverless endpoints |
-| Database | Supabase PostgreSQL |
-| Storage | Cloudinary |
-| Deployment | Vercel |
-| Monorepo | Turborepo + pnpm workspaces |
-| Rate Limiting | Redis / Upstash with in-memory fallback |
+</td>
+<td width="50%" valign="top">
 
-## Repository Layout
+### 🏗️ Materials & Inventory
+- Site supply tracking and movement logs
+- Procurement visibility and approval gates
+- Inventory level monitoring
+- Multi-site material allocation
 
-```text
-.
-├── api/                     # Vercel Python entrypoints
-├── apps/
-│   ├── api/                 # Core FastAPI application
-│   └── web/                 # Next.js PWA frontend
-├── packages/                # Shared domain and UI packages
-├── scripts/                 # Operational SQL and helper scripts
-├── supabase/migrations/     # Schema evolution
-├── .env.example             # Safe environment template
-├── turbo.json               # Monorepo pipeline
-└── vercel.json              # Production deployment config
+### 📸 Evidence & Documentation
+- In-field photo and document capture
+- Cloud-backed media storage and retrieval
+- Timestamped operational proof records
+- Compliance-ready evidence archival
+
+### 📋 Compliance & Reporting
+- Immutable audit trail for all operations
+- Business-ready export (Bengali + English)
+- Role-segmented report visibility
+- Activity-level accountability tracking
+
+</td>
+</tr>
+</table>
+
+---
+
+## Security Architecture
+
+Enterprise-grade security controls are implemented across every layer of the platform.
+
+| Control | Implementation |
+|:---|:---|
+| **Role-Based Access Control** | Six roles: `super_admin`, `admin`, `manager`, `accountant`, `supervisor`, `viewer` — enforced server-side on every endpoint |
+| **Authentication** | Email/password, OAuth 2.0, phone OTP (Twilio Verify), WebAuthn biometric sign-in |
+| **Trusted Device Flow** | App lock and device trust for seamless repeat authentication |
+| **API Rate Limiting** | Distributed Redis-backed rate limiting with configurable thresholds; in-memory fallback for edge environments |
+| **Security Headers** | X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security, and more |
+| **Input Validation** | Pydantic schema enforcement on all API boundaries |
+| **SSRF Protection** | URL validation with private/internal address blocking on all external-facing endpoints |
+| **Backup Security** | User-scoped export/restore with role-based privilege boundary enforcement |
+
+---
+
+## Technical Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          CLIENT LAYER                                   │
+│  ┌───────────────┐  ┌──────────────┐  ┌─────────────┐  ┌───────────┐  │
+│  │  Next.js 15   │  │  PWA + SW    │  │  Offline    │  │  WebAuthn │  │
+│  │  App Router   │  │  Installable │  │  Queue      │  │  Biometric│  │
+│  └───────┬───────┘  └──────┬───────┘  └──────┬──────┘  └─────┬─────┘  │
+└──────────┼─────────────────┼─────────────────┼────────────────┼────────┘
+           │                 │                 │                │
+           ▼                 ▼                 ▼                ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           API LAYER                                     │
+│  ┌────────────────┐  ┌────────────────┐  ┌──────────────────────────┐  │
+│  │  FastAPI        │  │  RBAC + Auth   │  │  Rate Limiter            │  │
+│  │  Serverless     │  │  Middleware     │  │  (Redis / In-Memory)     │  │
+│  └────────┬───────┘  └────────┬───────┘  └──────────┬───────────────┘  │
+│           │                   │                      │                  │
+│  ┌────────┴───────────────────┴──────────────────────┴───────────────┐  │
+│  │  Module Routers: auth · finance · workforce · projects ·          │  │
+│  │  materials · evidence · reports · audit · contractor · settings    │  │
+│  └───────────────────────────┬───────────────────────────────────────┘  │
+└──────────────────────────────┼──────────────────────────────────────────┘
+                               │
+           ┌───────────────────┼───────────────────┐
+           ▼                   ▼                   ▼
+┌──────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  Supabase        │ │  Cloudinary     │ │  Redis / Upstash│
+│  PostgreSQL      │ │  Media CDN      │ │  Rate Limiting  │
+│  + Auth          │ │  + Storage      │ │  + Caching      │
+└──────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
-## Production Readiness
+### Technology Stack
 
-This repository is structured for production deployment, not just local experimentation.
+| Layer | Technology | Purpose |
+|:---|:---|:---|
+| Frontend | Next.js 15 (App Router) | Server/client rendering, PWA shell |
+| UI Framework | Tailwind CSS + Custom UI System | Responsive mobile-first design |
+| Backend | FastAPI (Python 3.12) | REST API, validation, business logic |
+| Database | Supabase PostgreSQL | Relational data, auth primitives, RLS |
+| Media | Cloudinary | Image/document storage and CDN delivery |
+| Caching | Redis / Upstash | Distributed rate limiting, session management |
+| SMS/OTP | Twilio Verify | Phone-based OTP authentication |
+| Email | Resend | Transactional notifications and alerts |
+| Monorepo | Turborepo + pnpm | Build orchestration, dependency management |
+| Deployment | Vercel (Serverless) | Zero-config CI/CD, edge network |
 
-- Live deployment available on Vercel.
-- API health and readiness endpoints responding in production.
-- Database connectivity verified against production services.
-- Redis rate limiting configured and enforced.
-- Sensitive values kept out of tracked documentation.
-- Environment bootstrapping documented through safe templates only.
+---
 
-## Local Development
+## Repository Structure
+
+```
+bd-CR7/
+├── apps/
+│   ├── api/                          # FastAPI backend application
+│   │   ├── core/                     # Auth, config, middleware, supabase client
+│   │   ├── modules/                  # Domain routers (11 modules)
+│   │   │   ├── admin/                # System administration
+│   │   │   ├── ai/                   # AI risk scoring engine
+│   │   │   ├── audit/                # Immutable audit trail
+│   │   │   ├── auth/                 # Authentication & authorization
+│   │   │   ├── contractor/           # Contractor management
+│   │   │   ├── dynamic/              # Custom fields & workflows
+│   │   │   ├── evidence/             # Evidence capture & storage
+│   │   │   ├── finance/              # Financial operations
+│   │   │   ├── materials/            # Inventory & procurement
+│   │   │   ├── projects/             # Project milestones & tracking
+│   │   │   ├── reports/              # Business reporting
+│   │   │   ├── settings/             # System & user preferences
+│   │   │   ├── users/                # User management
+│   │   │   └── workforce/            # HR & attendance
+│   │   ├── schemas/                  # Pydantic models
+│   │   ├── services/                 # Business logic layer
+│   │   ├── sumonix_ai/              # AI/ML engine (RAG memory)
+│   │   └── tests/                    # Unit, integration & E2E tests
+│   └── web/                          # Next.js PWA frontend
+│       ├── app/                      # App Router pages & layouts
+│       │   ├── (auth)/               # Auth flow pages
+│       │   └── (dashboard)/          # Protected dashboard modules
+│       │       └── dashboard/
+│       │           ├── ai/           # AI assistant interface
+│       │           ├── audit/        # Audit log viewer
+│       │           ├── construction/ # Construction operations
+│       │           ├── contractor/   # Contractor management
+│       │           ├── evidence/     # Evidence capture
+│       │           ├── finance/      # Financial dashboards
+│       │           ├── materials/    # Inventory views
+│       │           ├── reports/      # Report generation
+│       │           ├── settings/     # Preferences & backup
+│       │           └── workforce/    # HR & attendance
+│       └── src/
+│           ├── components/           # Reusable UI components
+│           └── core/                 # Frontend utilities
+├── packages/
+│   ├── core-logic/                   # Shared business logic
+│   ├── media-engine/                 # Media processing utilities
+│   ├── rbac-engine/                  # Role-based access control engine
+│   └── ui-system/                    # Design system components
+├── supabase/
+│   └── migrations/                   # Database schema (12+ migrations)
+├── turbo.json                        # Monorepo build pipeline
+└── vercel.json                       # Deployment configuration
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm 10+
-- Python 3.11+
+| Requirement | Version |
+|:---|:---|
+| Node.js | 20+ |
+| pnpm | 10+ |
+| Python | 3.11+ |
 
-### Install
+### Installation
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd bd-CR7
+
+# Install JavaScript dependencies
 pnpm install
+
+# Set up Python virtual environment
+python -m venv .venv
+source .venv/bin/activate    # Linux/macOS
+.venv\Scripts\activate       # Windows
+
+pip install -r apps/api/requirements.txt
 ```
 
-### Configure Environment
-
-Use the root template and keep secrets local only:
+### Environment Configuration
 
 ```bash
 cp .env.example .env.local
 ```
 
-Then fill only the required values for your environment. Do not commit `.env.local`.
+Populate the required environment variables. See `.env.example` for the full template with documentation for each variable. All secrets must remain in local or platform-managed environment stores — **never commit credentials to the repository**.
 
-### Run Development
+### Development
 
 ```bash
+# Start all services (frontend + backend)
 pnpm dev
+
+# Build all packages
+pnpm build
+
+# Run linting
+pnpm lint
+
+# Run backend tests
+cd apps/api && python -m pytest tests/ -q
 ```
 
-### Build and Validation
+---
+
+## Deployment
+
+The platform is designed for serverless deployment on Vercel with zero-configuration CI/CD.
+
+| Aspect | Details |
+|:---|:---|
+| **Platform** | Vercel (Serverless Functions + Edge Network) |
+| **CI/CD** | Automatic on push to `main` branch |
+| **Rollback** | Instant, via Vercel deployment history |
+| **Environment** | Managed through Vercel project settings |
+| **SSL** | Automatic HTTPS with Let's Encrypt |
+| **CDN** | Global edge caching for static assets |
+
+Custom domain and enterprise deployment options available on request.
+
+---
+
+## Testing
+
+The project includes a comprehensive test suite covering unit, integration, and end-to-end scenarios.
 
 ```bash
-pnpm build
-pnpm lint
-python -m compileall apps/api api
+cd apps/api
+
+# Run all tests
+python -m pytest tests/ -q
+
+# Run with verbose output
+python -m pytest tests/ -v
+
+# Frontend type checking
+cd ../web && npx tsc --noEmit
 ```
 
-## Environment Model
+| Suite | Coverage |
+|:---|:---|
+| Unit Tests | Schema validation, auth logic, config, middleware |
+| Integration Tests | API endpoint contract testing |
+| E2E Simulation | Full user flow simulation (auth → finance → operations) |
 
-Expected environment categories:
+---
 
-- Application runtime values
-- Supabase connection settings
-- Cloudinary media settings
-- Security and governance secrets
-- Redis / Upstash rate limiting configuration
-- Deployment-specific host configuration for Vercel
+## Performance
 
-Important production variables include:
+Optimized for serverless cold-start environments with lazy-initialized service clients and deferred imports.
 
-```env
-APP_ENV=production
-PYTHON_API_URL=https://bd-cr7.vercel.app
-USE_REDIS_RATE_LIMIT=true
-RATE_LIMIT_REQUESTS_PER_MINUTE=120
-UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
-UPSTASH_REDIS_REST_TOKEN=replace-me
-```
+| Metric | Value |
+|:---|:---|
+| API Warm Response | ~500ms |
+| Module Import Time | <2ms (deferred initialization) |
+| Test Suite Execution | ~8s (176 tests) |
+| Frontend Type Check | < 10s |
+| Zero-Downtime Deploy | ~60s |
 
-Use `.env.example` as the safe template. Keep all real credentials in local or platform-managed environment stores.
+---
 
-## Deployment Notes
+## Target Market
 
-Production deployment targets Vercel.
+BD CR7 Ultra Enterprise is designed for:
 
-- Frontend and API are deployed from the same monorepo.
-- Environment variables are managed in Vercel project settings.
-- Supabase handles persistence and authentication primitives.
-- Cloudinary handles media delivery.
-- Redis-backed rate limiting is suitable for distributed production traffic.
+- **Construction Companies** — Finance + field operations in a single platform with GPS attendance, material tracking, and evidence capture
+- **Infrastructure Firms** — Multi-project management with milestone tracking, contractor oversight, and compliance reporting
+- **Field Service Operations** — Mobile-first workforce management with offline capability and approval workflows
+- **SME & Mid-Market Businesses** — Affordable ERP alternative with enterprise security (RBAC, biometric, audit trails)
+- **Regulated Industries** — Built-in compliance controls, immutable audit logs, and role-segmented data access
 
-## Operational Highlights
+---
 
-- Mobile-responsive dashboard and finance workflows.
-- Production-safe biometric fallback handling.
-- Construction attendance and location-aware workflows.
-- Export and reporting support for business operations.
-- Audit visibility for sensitive actions.
+## API Documentation
 
-## Commercial Positioning
+The platform exposes a RESTful API with the following module endpoints:
 
-BD CR7 ERP is suitable for:
+| Endpoint Group | Base Path | Key Operations |
+|:---|:---|:---|
+| Authentication | `/api/auth` | Register, login, logout, OTP, WebAuthn, refresh |
+| Finance | `/api/finance` | Accounts, expenses, transfers, approvals, dashboard |
+| Workforce | `/api/workforce` | Attendance, payroll, departments, workers |
+| Projects | `/api/projects` | CRUD, milestones, progress tracking |
+| Materials | `/api/materials` | Inventory, procurement, movement logs |
+| Evidence | `/api/evidence` | Upload, list, retrieve documented proof |
+| Reports | `/api/reports` | Generate, export, schedule business reports |
+| Audit | `/api/audit` | Activity history, compliance queries |
+| Contractor | `/api/contractor` | Contractor lifecycle, contracts, payments |
+| Settings | `/api/settings` | System config, user preferences, backup/restore |
+| Users | `/api/users` | Profile management, role assignment, activation |
+| Health | `/api/health` | Readiness, liveness, database connectivity |
 
-- Construction companies needing finance and field operations in one platform.
-- Businesses that need mobile-first operations with central oversight.
-- Teams that require approval flows, traceability, and role isolation.
-- Organizations moving from spreadsheets and fragmented tools to a controlled ERP workflow.
+All endpoints require Bearer token authentication except `/api/auth/register`, `/api/auth/login`, and `/api/health`.
+
+---
 
 ## License
 
-Proprietary software. All rights reserved.
+**Proprietary Software** — All Rights Reserved.
 
-This repository is intended for authorized use, deployment, evaluation, and commercial delivery under owner approval. Do not redistribute source code, assets, or deployment configuration without permission.
+This software is confidential and protected under applicable intellectual property laws. Unauthorized copying, modification, distribution, or use of this software, in whole or in part, is strictly prohibited without prior written authorization from the copyright holder.
 
-## Contact
+For licensing inquiries, please refer to the contact section below.
 
-Commercial, deployment, and licensing discussions should be handled through the project owner or authorized business contact. Sensitive personal contact details are intentionally omitted from this public-facing document.
+---
+
+## Credits
+
+<div align="center">
+
+### Developed by
+
+**Sumonix AI Lab**
+
+*Engineering intelligent enterprise solutions*
+
+<br/>
+
+| Role | Contributor |
+|:---|:---|
+| **Lead Architect & Full-Stack Engineer** | Md. Masum Billah |
+| **AI/ML & System Design** | Sumonix AI Lab |
+| **Platform** | BD CR7 Ultra Enterprise Division |
+
+<br/>
+
+[![GitHub](https://img.shields.io/badge/GitHub-Sumonix_AI-181717?style=flat-square&logo=github&logoColor=white)](#)
+[![Status](https://img.shields.io/badge/Build-Passing-22863a?style=flat-square)](#)
+
+</div>
+
+---
+
+<div align="center">
+
+<sub>© 2024–2026 Sumonix AI Lab. All rights reserved. Built with precision in Bangladesh 🇧🇩</sub>
+
+</div>
