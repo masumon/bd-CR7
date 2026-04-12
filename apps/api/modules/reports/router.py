@@ -132,7 +132,7 @@ async def workforce_report(
     """Workforce summary: headcount, active workers, recent attendance."""
     client = _require_supabase()
     try:
-        workers_res = client.table("workers").select("id,full_name,trade,is_active").execute()
+        workers_res = client.table("workers").select("id,full_name,designation,is_active").execute()
         attendance_res = (
             client.table("attendance")
             .select("worker_id,attendance_date")
@@ -148,7 +148,7 @@ async def workforce_report(
 
     by_trade: dict = {}
     for w in workers:
-        trade = w.get("trade", "general")
+        trade = w.get("designation", "general") or "general"
         by_trade[trade] = by_trade.get(trade, 0) + 1
 
     attended_ids = {a.get("worker_id") for a in attendance}
@@ -168,7 +168,7 @@ async def materials_report(
     """Materials inventory summary."""
     client = _require_supabase()
     try:
-        result = client.table("materials").select("id,name,category,current_stock,reorder_point,unit").execute()
+        result = client.table("materials").select("id,material_name,category,quantity,metadata,unit").execute()
         rows = result.data or []
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail="Failed to fetch materials report") from exc
@@ -178,12 +178,15 @@ async def materials_report(
     for r in rows:
         cat = r.get("category", "other")
         by_category[cat] = by_category.get(cat, 0) + 1
-        if (r.get("current_stock") or 0) <= (r.get("reorder_point") or 0):
+        current_stock = float(r.get("quantity") or 0)
+        metadata = r.get("metadata") if isinstance(r.get("metadata"), dict) else {}
+        reorder_point = float((metadata or {}).get("reorder_point") or 0)
+        if reorder_point > 0 and current_stock <= reorder_point:
             low_stock_items.append({
                 "id": r.get("id"),
-                "name": r.get("name"),
-                "current_stock": r.get("current_stock"),
-                "reorder_point": r.get("reorder_point"),
+                "name": r.get("material_name"),
+                "current_stock": current_stock,
+                "reorder_point": reorder_point,
                 "unit": r.get("unit"),
             })
 

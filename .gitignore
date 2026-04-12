@@ -49,3 +49,5 @@ VALIDATION_DEPLOYMENT_CHECKLIST.md
 build_fix_report.md
 full_system_upgrade_report.md
 surgical_audit_report_last.bn.md
+.env*.local
+.google console

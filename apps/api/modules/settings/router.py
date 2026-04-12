@@ -6,7 +6,10 @@ System configuration and user preferences API endpoints
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Any, List
 from datetime import datetime, timezone
+import ipaddress
 import json
+import socket
+import urllib.parse
 import urllib.request
 from core.auth import UserContext, get_current_user
 from core.supabase import supabase_service
@@ -225,14 +228,30 @@ async def restore_backup(payload: dict[str, Any], current_user: UserContext = De
     }
 
 
+def _assert_public_url(url: str) -> None:
+    """Raise HTTPException if the URL resolves to a private/internal address (SSRF guard)."""
+    parsed = urllib.parse.urlparse(url)
+    hostname = parsed.hostname or ""
+    if not hostname:
+        raise HTTPException(status_code=422, detail="A valid backup URL is required")
+    try:
+        ip = ipaddress.ip_address(socket.gethostbyname(hostname))
+    except (socket.gaierror, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="Could not resolve backup URL host") from exc
+    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+        raise HTTPException(status_code=422, detail="Backup URL must point to a public host")
+
+
 @router.post("/backup/restore/from-url")
 async def restore_backup_from_url(payload: dict[str, Any], current_user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     backup_url = str(payload.get("url") or "").strip()
-    if not backup_url.lower().startswith(("https://", "http://")):
-        raise HTTPException(status_code=422, detail="A valid backup URL is required")
+    if not backup_url.lower().startswith("https://"):
+        raise HTTPException(status_code=422, detail="A valid HTTPS backup URL is required")
+
+    _assert_public_url(backup_url)
 
     try:
-        with urllib.request.urlopen(backup_url, timeout=20) as response:
+        with urllib.request.urlopen(backup_url, timeout=20) as response:  # noqa: S310
             raw = response.read().decode("utf-8")
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Failed to fetch backup URL: {exc}") from exc
