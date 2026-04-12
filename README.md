@@ -1,327 +1,191 @@
-# BD CR7 ERP — Enterprise Construction & Finance Management System
+# BD CR7 ERP
 
 <div align="center">
 
-**Version 2.1.0** &nbsp;|&nbsp; **License: Proprietary** &nbsp;|&nbsp; **© 2024–2025 ABO Enterprise**
+Production-ready construction, finance, workforce, and compliance operations platform for Bangladesh-based teams.
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.5-black?logo=next.js&logoColor=white)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6?logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![Supabase](https://img.shields.io/badge/Supabase-2.56-3ecf8e?logo=supabase&logoColor=white)](https://supabase.com)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Python_3.11-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
-[![PWA](https://img.shields.io/badge/PWA-Enabled-5a0fc8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-[![pnpm](https://img.shields.io/badge/pnpm-10-f69220?logo=pnpm&logoColor=white)](https://pnpm.io)
+[![Live](https://img.shields.io/badge/Live-bd--cr7.vercel.app-111111?logo=vercel&logoColor=white)](https://bd-cr7.vercel.app)
+[![Frontend](https://img.shields.io/badge/Frontend-Next.js%2015-000000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Database](https://img.shields.io/badge/Database-Supabase-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![PWA](https://img.shields.io/badge/Experience-PWA-1f6feb)](https://web.dev/progressive-web-apps/)
+[![Security](https://img.shields.io/badge/Security-RBAC%20%2B%20WebAuthn%20%2B%20Redis-0a7f5a)](#security--reliability)
 
 </div>
 
----
+## Product Snapshot
 
-## Overview
+BD CR7 ERP is a modern ERP platform designed for construction and field-heavy business operations. It combines finance controls, workforce management, project monitoring, evidence capture, and auditability in a single production deployment.
 
-**BD CR7 ERP** is a production-grade, AI-powered Enterprise Resource Planning system purpose-built for the construction and finance sector in Bangladesh. It delivers real-time project tracking, multi-account financial management, biometric authentication, role-based access control (RBAC), and offline-capable Progressive Web App (PWA) functionality.
+The platform is built to work well on desktop and mobile, supports offline workflows, and includes security controls expected in a production environment: biometric sign-in, role-based access control, security headers, and Redis-backed rate limiting.
 
-Developed and maintained by **Mumain Ahmed Sumon** under **ABO Enterprise**, powered by **SUMONIX AI**.
+## Why It Matters
 
-> **বৈরাগী বাজার, বিয়ানীবাজার, সিলেট, বাংলাদেশ**
+- Unifies finance, HR, materials, project tracking, and reporting in one operational system.
+- Designed for real-world field usage with mobile-first dashboards and offline sync support.
+- Reduces operational risk through approval workflows, audit logs, and access control boundaries.
+- Ready for commercial presentation with a live production deployment and deployable monorepo architecture.
 
----
+## Core Modules
 
-## Feature Modules
+| Module | Business Value |
+|---|---|
+| Authentication | Email/password, OAuth, OTP, WebAuthn biometric sign-in, trusted-device flow |
+| Finance | Ledger, approvals, expense tracking, transfer visibility, risk-aware workflows |
+| Projects | Project progress, milestone monitoring, field execution tracking |
+| Workforce | Attendance, payroll, role-aware HR operations |
+| Materials | Inventory movement, site supply tracking, procurement visibility |
+| Evidence | Photo and document capture for operational proof and recordkeeping |
+| Reports | Export-ready business reporting with Bengali-friendly output paths |
+| Audit | Traceable activity history for accountability and review |
+| Offline PWA | Queue-first behavior for unreliable connectivity environments |
 
-| Module | Description |
-|--------|-------------|
-| **Authentication** | Email/password · Google OAuth · WebAuthn biometric · Email OTP · Remember Me · App lock |
-| **Finance** | Multi-account ledger · Expense approval workflow · Fund transfers · AI risk scoring |
-| **Projects** | Construction tracking · Milestone management · Progress reporting |
-| **Workforce** | Attendance · Payroll · HR management · Role-based access |
-| **Materials** | Inventory management · In/out tracking · Procurement |
-| **Evidence** | Field photo/document upload via Cloudinary CDN |
-| **Audit** | Full activity logging · Security event tracking |
-| **Reports** | PDF/CSV export with Bengali font support · A4 formatting |
-| **AI Chat** | Integrated SUMONIX AI assistant for operational queries |
-| **Offline** | PWA with offline queue — operations sync when connectivity restores |
+## Security & Reliability
 
----
+Production controls currently in place:
 
-## Technology Stack
+- RBAC with segmented access across admin, manager, accountant, supervisor, worker, and viewer roles.
+- WebAuthn-based biometric authentication for supported devices.
+- App lock and trusted-device experience for repeat sign-in flows.
+- Secure response headers across application routes.
+- Redis-backed rate limiting enabled for production-sensitive API traffic.
+- Current production threshold: `120` requests per minute per client boundary.
+- Verified production behavior: login endpoint returns `429` when burst traffic exceeds the configured limit.
 
-### Frontend (`apps/web`)
+## Architecture
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Next.js | 15.5 | App Router, SSR, API routes |
-| React | 18.3 | UI component model |
-| TypeScript | 5.4 | Type safety |
-| Tailwind CSS | 3.4 | Utility-first styling |
-| Radix UI | latest | Accessible UI primitives |
-| Framer Motion | 11.11 | Page and component animations |
-| Zustand | 4.5 | Client state management |
-| Supabase SSR | 0.5 | Session management, realtime |
-| next-pwa | 5.6 | Service worker, offline support |
-| WebAuthn / FIDO2 | — | Fingerprint / Face ID biometric |
-| html2pdf.js | 0.14 | A4 PDF generation with Bengali fonts |
-| Recharts | 2.12 | Data visualisation |
+| Layer | Implementation |
+|---|---|
+| Frontend | Next.js App Router PWA |
+| API | FastAPI serverless endpoints |
+| Database | Supabase PostgreSQL |
+| Storage | Cloudinary |
+| Deployment | Vercel |
+| Monorepo | Turborepo + pnpm workspaces |
+| Rate Limiting | Redis / Upstash with in-memory fallback |
 
-### Backend (`api`)
+## Repository Layout
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| FastAPI | 0.115 | REST API server |
-| Python | 3.11+ | Runtime |
-| Supabase | — | PostgreSQL + Auth + Realtime + RLS |
-| Cloudinary | — | Media storage and CDN |
-
-### Infrastructure
-
-| Service | Purpose |
-|---------|---------|
-| **Vercel** | Frontend + Python serverless deployment |
-| **Supabase Cloud** | Managed Postgres + Auth + Realtime |
-| **Cloudinary** | Media CDN |
-| **Turborepo** | Monorepo build orchestration |
-| **pnpm workspaces** | Dependency management |
-
----
-
-## Project Structure
-
-```
-bd-cr7-project/
+```text
+.
+├── api/                     # Vercel Python entrypoints
 ├── apps/
-│   └── web/                    # Next.js 15 PWA application
-│       ├── app/                # App Router pages and API routes
-│       │   ├── (auth)/         # Login, register, forgot-password
-│       │   ├── (dashboard)/    # Protected dashboard modules
-│       │   └── auth/callback/  # OAuth code-exchange handler
-│       └── src/
-│           ├── components/     # Reusable UI components
-│           │   ├── auth/       # AppLockScreen, BiometricButton, etc.
-│           │   └── layout/     # MobileAppShell, AppShell
-│           ├── modules/        # Feature-scoped components
-│           ├── store/          # Zustand state stores
-│           ├── lib/            # Supabase client, WebAuthn, export utilities
-│           └── types/          # TypeScript declarations (html2pdf, etc.)
-├── api/                        # Python FastAPI backend
-├── packages/
-│   ├── core-logic/             # Shared business logic
-│   ├── media-engine/           # Cloudinary integration
-│   ├── rbac-engine/            # Role-based access control engine
-│   └── ui-system/              # Design system tokens
-├── supabase/                   # Database migrations and seed data
-├── vercel.json                 # Vercel deployment configuration
-├── turbo.json                  # Turborepo pipeline configuration
-├── pnpm-workspace.yaml         # pnpm workspace definition
-└── README.md                   # This file
+│   ├── api/                 # Core FastAPI application
+│   └── web/                 # Next.js PWA frontend
+├── packages/                # Shared domain and UI packages
+├── scripts/                 # Operational SQL and helper scripts
+├── supabase/migrations/     # Schema evolution
+├── .env.example             # Safe environment template
+├── turbo.json               # Monorepo pipeline
+└── vercel.json              # Production deployment config
 ```
 
----
+## Production Readiness
 
-## Authentication & Security
+This repository is structured for production deployment, not just local experimentation.
 
-### Login Methods
+- Live deployment available on Vercel.
+- API health and readiness endpoints responding in production.
+- Database connectivity verified against production services.
+- Redis rate limiting configured and enforced.
+- Sensitive values kept out of tracked documentation.
+- Environment bootstrapping documented through safe templates only.
 
-1. **Email + Password** — Supabase Auth with database role lookup
-2. **Google OAuth** — SSO via Supabase OAuth + `/auth/callback` code exchange
-3. **WebAuthn Biometric** — Fingerprint / Face ID via FIDO2 standard
-4. **Email OTP** — 6-digit magic code for passwordless access
-
-### App Lock (Biometric Security)
-
-When the app is **minimised or sent to the background**, an automatic lock activates after **10 seconds**. On return, the user must authenticate via:
-
-- Fingerprint / Face ID biometric scan
-- Password fallback (email pre-filled from Remember Me)
-
-### Remember Me / Trusted Device
-
-- Supabase refresh tokens persist the session across browser restarts
-- With **Remember Me** enabled, the biometric prompt auto-triggers on the login screen — no need to re-enter email or password
-- Trusted device state is maintained in `localStorage` and verified on every app open
-
-### Security Headers (all routes)
-
-| Header | Value |
-|--------|-------|
-| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` |
-| `X-Frame-Options` | `DENY` |
-| `X-Content-Type-Options` | `nosniff` |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(self)` |
-| `Content-Security-Policy` | Strict allowlist (no unsafe-eval in production) |
-
----
-
-## Environment Variables
-
-Create `apps/web/.env.local`:
-
-```env
-# Supabase (required)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Cloudinary (required for media upload)
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-preset
-
-# App URL (used for OAuth redirect)
-NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
-```
-
----
-
-## Getting Started
+## Local Development
 
 ### Prerequisites
 
 - Node.js 20+
-- pnpm 10+ (`npm install -g pnpm`)
-- Python 3.11+ (for API development)
+- pnpm 10+
+- Python 3.11+
 
-### Installation
+### Install
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/mumainsumon/bd-cr7-project.git
-cd bd-cr7-project
-
-# 2. Install all workspace dependencies
 pnpm install
+```
 
-# 3. Configure environment
-cp apps/web/.env.example apps/web/.env.local
-# Edit .env.local with your Supabase and Cloudinary credentials
+### Configure Environment
 
-# 4. Start development server
+Use the root template and keep secrets local only:
+
+```bash
+cp .env.example .env.local
+```
+
+Then fill only the required values for your environment. Do not commit `.env.local`.
+
+### Run Development
+
+```bash
 pnpm dev
 ```
 
-The app will be available at `http://localhost:3000`.
-
-### Build for Production
+### Build and Validation
 
 ```bash
 pnpm build
+pnpm lint
+python -m compileall apps/api api
 ```
 
-### Type Check
+## Environment Model
 
-```bash
-pnpm type-check
+Expected environment categories:
+
+- Application runtime values
+- Supabase connection settings
+- Cloudinary media settings
+- Security and governance secrets
+- Redis / Upstash rate limiting configuration
+- Deployment-specific host configuration for Vercel
+
+Important production variables include:
+
+```env
+APP_ENV=production
+PYTHON_API_URL=https://bd-cr7.vercel.app
+USE_REDIS_RATE_LIMIT=true
+RATE_LIMIT_REQUESTS_PER_MINUTE=120
+UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
+UPSTASH_REDIS_REST_TOKEN=replace-me
 ```
 
----
+Use `.env.example` as the safe template. Keep all real credentials in local or platform-managed environment stores.
 
-## Deployment
+## Deployment Notes
 
-This project deploys to **Vercel** as a monorepo:
+Production deployment targets Vercel.
 
-- **Next.js** app built via `@vercel/next`
-- **Python FastAPI** deployed as serverless functions via `@vercel/python`
+- Frontend and API are deployed from the same monorepo.
+- Environment variables are managed in Vercel project settings.
+- Supabase handles persistence and authentication primitives.
+- Cloudinary handles media delivery.
+- Redis-backed rate limiting is suitable for distributed production traffic.
 
-### Required Vercel Environment Variables
+## Operational Highlights
 
-Set in **Vercel → Project Settings → Environment Variables**:
+- Mobile-responsive dashboard and finance workflows.
+- Production-safe biometric fallback handling.
+- Construction attendance and location-aware workflows.
+- Export and reporting support for business operations.
+- Audit visibility for sensitive actions.
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
-- `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`
+## Commercial Positioning
 
-### Supabase OAuth Configuration
+BD CR7 ERP is suitable for:
 
-In **Supabase Dashboard → Authentication → URL Configuration**:
-
-- **Site URL**: `https://your-domain.vercel.app`
-- **Redirect URLs**: `https://your-domain.vercel.app/auth/callback`
-
-> Note: The redirect URL **must** point to `/auth/callback`, not directly to `/dashboard`. The callback route exchanges the OAuth code for a session before redirecting.
-
----
-
-## Cookie & Storage Policy
-
-BD CR7 ERP uses the following browser storage (no third-party tracking):
-
-| Key | Storage | Purpose | Lifetime |
-|-----|---------|---------|---------|
-| `bdcr7-auth` | localStorage | Auth state (role, userId) | Session |
-| `bdcr7-remember-me` | localStorage | Trusted device flag | Persistent |
-| `bdcr7-remember-email` | localStorage | Login email pre-fill | Persistent |
-| `bdcr7-theme` | localStorage | Dark/light preference | Persistent |
-| `bdcr7-language` | localStorage | UI language (en/bn) | Persistent |
-| `bdcr7-app-locked` | sessionStorage | App lock state | Tab session |
-| `sb-*` | localStorage | Supabase Auth tokens | Per Supabase config |
-
-All storage entries serve **operational purposes only**. No analytics or advertising cookies are used.
-
----
-
-## Roles & Access Control
-
-| Role | Access Level |
-|------|-------------|
-| `admin` | Full system access — users, settings, audit, all modules |
-| `manager` | Projects, finance, workforce, reports, audit |
-| `accountant` | Finance, reports, audit |
-| `supervisor` | Workforce, materials, evidence, projects |
-| `worker` | Workforce, evidence (own records) |
-| `viewer` | Read-only — dashboard, reports, projects |
-
----
+- Construction companies needing finance and field operations in one platform.
+- Businesses that need mobile-first operations with central oversight.
+- Teams that require approval flows, traceability, and role isolation.
+- Organizations moving from spreadsheets and fragmented tools to a controlled ERP workflow.
 
 ## License
 
-**Proprietary Software — All Rights Reserved**
+Proprietary software. All rights reserved.
 
-Copyright © 2024–2025 **ABO Enterprise**, Bangladesh.
+This repository is intended for authorized use, deployment, evaluation, and commercial delivery under owner approval. Do not redistribute source code, assets, or deployment configuration without permission.
 
-This software and its source code are the exclusive intellectual property of ABO Enterprise. Unauthorised copying, distribution, modification, sublicensing, or use of this software — in whole or in part — without the express written permission of ABO Enterprise is strictly prohibited and may be subject to legal action.
+## Contact
 
-For licensing enquiries: [m.a.sumon92@gmail.com](mailto:m.a.sumon92@gmail.com)
-
----
-
-## Developer
-
-| | |
-|---|---|
-| **Name** | Mumain Ahmed Sumon |
-| **Title** | Full-Stack Engineer & Systems Architect |
-| **Portfolio** | [mumainsumon.netlify.app](https://mumainsumon.netlify.app) |
-| **Email** | [m.a.sumon92@gmail.com](mailto:m.a.sumon92@gmail.com) |
-| **Facebook** | [facebook.com/sumon.mumain](https://www.facebook.com/sumon.mumain) |
-| **WhatsApp** | [+880 1825-007977](https://wa.me/8801825007977) |
-| **Company** | ABO Enterprise |
-| **Location** | বৈরাগী বাজার, বিয়ানীবাজার, সিলেট, বাংলাদেশ |
-
----
-
-*Powered by **SUMONIX AI** · Built for **ABO Enterprise***
-
----
-
-## Changelog
-
-### v2.1.0 — 2025-04
-
-- App lock screen with biometric / password unlock on app minimise
-- Remember Me trusted device: auto-triggers biometric on next open
-- Fixed: Google OAuth `validation_failed 400` — corrected `redirectTo` to `/auth/callback`
-- Fixed: OTP "Unsupported phone provider" — user-friendly Bengali error with email fallback
-- Fixed: TypeScript `html2pdf()` chain type error (`Object is of type 'unknown'`)
-- Fixed: Vercel `builds` config warning — migrated to `rewrites`
-- Updated `DEVELOPER_CONFIG` with full developer profile
-- Production README with cookie policy, RBAC table, license
-
-### v2.0.0 — 2025-03
-
-- Full RBAC engine with 6 roles and permission matrix
-- WebAuthn FIDO2 biometric enrollment and assertion
-- Multi-account finance with maker-checker approval workflow
-- Offline queue with automatic sync on reconnect
-- Bengali PDF export with Noto Sans Bengali typography
-
-### v1.0.0 — 2024-12
-
-- Initial release: authentication, dashboard, finance, projects, workforce
+Commercial, deployment, and licensing discussions should be handled through the project owner or authorized business contact. Sensitive personal contact details are intentionally omitted from this public-facing document.
