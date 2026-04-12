@@ -18,7 +18,7 @@ from modules.auth.phone_otp_service import OtpError, send_phone_otp, verify_phon
 
 router = APIRouter()
 
-SELF_SERVICE_ROLE = "worker"
+SELF_SERVICE_ROLE = "viewer"
 WEBAUTHN_CHALLENGE_TTL_SECONDS = 120
 
 
