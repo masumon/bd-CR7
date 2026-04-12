@@ -36,7 +36,7 @@ async def create_worker(payload: WorkerCreate, user: UserContext = Depends(requi
         {
             "id": worker_id,
             "full_name": payload.full_name,
-            "trade": payload.trade,
+            "designation": payload.trade,
             "daily_rate": str(Decimal(payload.daily_rate)),
             "created_by": user.user_id,
         }
@@ -47,8 +47,22 @@ async def create_worker(payload: WorkerCreate, user: UserContext = Depends(requi
 @router.get("/workers")
 async def list_workers(user: UserContext = Depends(get_current_user)):
     client = _require_supabase()
-    rows = client.table("workers").select("id,full_name,trade,daily_rate,is_active").order("full_name").execute()
-    return rows.data or []
+    try:
+        rows = client.table("workers").select("id,full_name,designation,daily_rate,is_active").order("full_name").execute()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail="Failed to fetch workers") from exc
+
+    data = rows.data or []
+    return [
+        {
+            "id": row.get("id"),
+            "full_name": row.get("full_name"),
+            "trade": row.get("designation"),
+            "daily_rate": row.get("daily_rate"),
+            "is_active": row.get("is_active", True),
+        }
+        for row in data
+    ]
 
 
 @router.post("/attendance")

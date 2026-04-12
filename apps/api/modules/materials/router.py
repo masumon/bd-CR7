@@ -36,8 +36,8 @@ async def list_materials(
     client = _require_supabase()
     q = (
         client.table("materials")
-        .select("id,name,description,unit,category,current_stock,reorder_point,supplier_id,created_at")
-        .order("name")
+        .select("id,material_name,notes,unit,category,quantity,supplier_id,created_at,metadata")
+        .order("material_name")
         .limit(limit)
     )
     if category:
@@ -51,9 +51,26 @@ async def list_materials(
         raise HTTPException(status_code=502, detail="Failed to fetch materials") from exc
 
     if low_stock_only:
-        rows = [r for r in rows if (r.get("current_stock") or 0) <= (r.get("reorder_point") or 0)]
+        rows = [
+            r for r in rows
+            if float(r.get("quantity") or 0)
+            <= float(((r.get("metadata") if isinstance(r.get("metadata"), dict) else {}) or {}).get("reorder_point") or 0)
+        ]
 
-    return rows
+    return [
+        {
+            "id": r.get("id"),
+            "name": r.get("material_name"),
+            "description": r.get("notes") or "",
+            "unit": r.get("unit"),
+            "category": r.get("category"),
+            "current_stock": r.get("quantity") or 0,
+            "reorder_point": (((r.get("metadata") if isinstance(r.get("metadata"), dict) else {}) or {}).get("reorder_point") or 0),
+            "supplier_id": r.get("supplier_id"),
+            "created_at": r.get("created_at"),
+        }
+        for r in rows
+    ]
 
 
 @router.get("/{material_id}")
@@ -66,7 +83,7 @@ async def get_material(
     try:
         result = (
             client.table("materials")
-            .select("*")
+            .select("id,material_name,notes,unit,category,quantity,supplier_id,created_at,updated_at,metadata")
             .eq("id", material_id)
             .maybe_single()
             .execute()
@@ -76,7 +93,19 @@ async def get_material(
 
     if not result.data:
         raise HTTPException(status_code=404, detail="Material not found")
-    return result.data
+    row = result.data
+    return {
+        "id": row.get("id"),
+        "name": row.get("material_name"),
+        "description": row.get("notes") or "",
+        "unit": row.get("unit"),
+        "category": row.get("category"),
+        "current_stock": row.get("quantity") or 0,
+        "reorder_point": (((row.get("metadata") if isinstance(row.get("metadata"), dict) else {}) or {}).get("reorder_point") or 0),
+        "supplier_id": row.get("supplier_id"),
+        "created_at": row.get("created_at"),
+        "updated_at": row.get("updated_at"),
+    }
 
 
 @router.post("")
@@ -90,14 +119,14 @@ async def add_material(
     try:
         result = client.table("materials").insert({
             "id": material_id,
-            "name": payload.name,
-            "description": payload.description,
+            "material_name": payload.name,
+            "notes": payload.description,
             "unit": payload.unit,
             "category": payload.category.value,
-            "reorder_point": payload.reorder_point,
-            "current_stock": 0,
+            "quantity": 0,
             "supplier_id": payload.supplier_id,
             "created_by": user.user_id,
+            "metadata": {"reorder_point": payload.reorder_point},
         }).execute()
     except Exception as exc:  # noqa: BLE001
         logger.error("material_add_failed error=%s", exc)
@@ -127,7 +156,7 @@ async def update_stock(
 
     material = (
         client.table("materials")
-        .select("id,current_stock,name")
+        .select("id,quantity,material_name")
         .eq("id", material_id)
         .maybe_single()
         .execute()
@@ -135,7 +164,7 @@ async def update_stock(
     if not material.data:
         raise HTTPException(status_code=404, detail="Material not found")
 
-    current = float(material.data.get("current_stock") or 0)
+    current = float(material.data.get("quantity") or 0)
     new_stock = current + payload.quantity_change
 
     if new_stock < 0:
@@ -146,18 +175,17 @@ async def update_stock(
 
     try:
         # Update stock level
-        client.table("materials").update({"current_stock": new_stock}).eq("id", material_id).execute()
+        client.table("materials").update({"quantity": new_stock}).eq("id", material_id).execute()
         # Log the transaction
         tx_id = str(uuid4())
         client.table("material_movements").insert({
             "id": tx_id,
             "material_id": material_id,
-            "quantity_change": payload.quantity_change,
-            "transaction_type": payload.transaction_type.value,
-            "reference_id": payload.reference_id,
-            "notes": payload.notes,
-            "stock_after": new_stock,
-            "recorded_by": user.user_id,
+            "quantity_moved": payload.quantity_change,
+            "movement_type": payload.transaction_type.value,
+            "reason": payload.notes,
+            "created_by": user.user_id,
+            "metadata": {"reference_id": payload.reference_id, "stock_after": new_stock},
         }).execute()
     except Exception as exc:  # noqa: BLE001
         logger.error("stock_update_failed material_id=%s error=%s", material_id, exc)
@@ -180,7 +208,7 @@ async def inventory_summary(
     """Return a high-level inventory summary: total items, low-stock count, by category."""
     client = _require_supabase()
     try:
-        result = client.table("materials").select("category,current_stock,reorder_point").execute()
+        result = client.table("materials").select("category,quantity,metadata").execute()
         rows = result.data or []
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail="Failed to fetch inventory summary") from exc
@@ -190,7 +218,9 @@ async def inventory_summary(
     for r in rows:
         cat = r.get("category", "other")
         category_counts[cat] = category_counts.get(cat, 0) + 1
-        if (r.get("current_stock") or 0) <= (r.get("reorder_point") or 0):
+        metadata = r.get("metadata") if isinstance(r.get("metadata"), dict) else {}
+        reorder_point = float(metadata.get("reorder_point") or 0)
+        if reorder_point > 0 and float(r.get("quantity") or 0) <= reorder_point:
             low_stock += 1
 
     return {

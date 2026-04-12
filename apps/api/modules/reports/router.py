@@ -41,7 +41,7 @@ async def dashboard_stats(
             .eq("is_deleted", False)
             .execute()
         )
-        materials_res = client.table("materials").select("id,current_stock,reorder_point").execute()
+        materials_res = client.table("materials").select("id,category,quantity,metadata").execute()
     except Exception as exc:  # noqa: BLE001
         logger.error("dashboard_stats_failed error=%s", exc)
         raise HTTPException(status_code=502, detail="Failed to fetch dashboard statistics") from exc
@@ -60,10 +60,13 @@ async def dashboard_stats(
     total_budget = sum(float(e.get("amount") or 0) for e in expenses)
     approved_spend = sum(float(e.get("amount") or 0) for e in expenses if e.get("status") == "approved")
     active_workers = sum(1 for w in workers if w.get("is_active", True))
-    low_stock = sum(
-        1 for m in materials
-        if (m.get("current_stock") or 0) <= (m.get("reorder_point") or 0)
-    )
+    low_stock = 0
+    for m in materials:
+        qty = float(m.get("quantity") or 0)
+        metadata = m.get("metadata") if isinstance(m.get("metadata"), dict) else {}
+        reorder_point = float(metadata.get("reorder_point") or 0)
+        if reorder_point > 0 and qty <= reorder_point:
+            low_stock += 1
 
     return {
         "projects": project_counts,

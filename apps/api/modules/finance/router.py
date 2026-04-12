@@ -305,15 +305,38 @@ async def list_expenses(user: UserContext = Depends(get_current_user), limit: in
         offset = 0
     query = (
         supabase_service.table("expenses")
-        .select("id,account_id,category_id,amount,description,status,maker_id,checker_id,risk_level,risk_score,created_at,metadata,receipt_url")
+        .select("id,account_id,amount,category,description,status,created_by,approved_by,risk_score,created_at,metadata,receipt_url,is_deleted")
+        .eq("is_deleted", False)
         .order("created_at", desc=True)
         .limit(limit + 1)
         .offset(offset)
     )
     if user.role not in ("admin", "checker"):
-        query = query.eq("maker_id", user.user_id)
-    rows = query.execute()
-    data = rows.data or []
+        query = query.eq("created_by", user.user_id)
+    try:
+        rows = query.execute()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail="Failed to fetch expenses") from exc
+
+    raw_data = rows.data or []
+    data = [
+        {
+            "id": row.get("id"),
+            "account_id": row.get("account_id"),
+            "category_id": row.get("category"),
+            "amount": row.get("amount"),
+            "description": row.get("description"),
+            "status": row.get("status"),
+            "maker_id": row.get("created_by"),
+            "checker_id": row.get("approved_by"),
+            "risk_level": row.get("metadata", {}).get("risk_level") if isinstance(row.get("metadata"), dict) else None,
+            "risk_score": row.get("risk_score"),
+            "created_at": row.get("created_at"),
+            "metadata": row.get("metadata") or {},
+            "receipt_url": row.get("receipt_url"),
+        }
+        for row in raw_data
+    ]
     has_more = len(data) > limit
     return {
         "expenses": data[:limit],
