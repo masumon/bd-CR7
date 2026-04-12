@@ -19,13 +19,26 @@ def _client_or_503():
 @router.get("/users")
 async def list_users(user: UserContext = Depends(require_roles("super_admin", "admin"))) -> list[dict[str, Any]]:
     client = _client_or_503()
-    rows = (
-        client.table("users")
-        .select("id,email,full_name,role,is_active,user_code")
-        .limit(500)
-        .execute()
-    )
-    return rows.data or []
+    try:
+        rows = (
+            client.table("users")
+            .select("id,email,full_name,role,is_active,user_code")
+            .limit(500)
+            .execute()
+        )
+        data = rows.data or []
+    except Exception:
+        # Some environments may not have user_code yet.
+        rows = (
+            client.table("users")
+            .select("id,email,full_name,role,is_active")
+            .limit(500)
+            .execute()
+        )
+        data = rows.data or []
+        for row in data:
+            row.setdefault("user_code", None)
+    return data
 
 
 @router.get("/users/list")
@@ -88,6 +101,8 @@ async def update_user_status(user_id: str, payload: dict[str, Any], user: UserCo
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: str, user: UserContext = Depends(require_roles("super_admin", "admin"))) -> dict[str, bool]:
     client = _client_or_503()
+    if user_id == user.user_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account")
     client.table("users").delete().eq("id", user_id).execute()
     return {"deleted": True}
 

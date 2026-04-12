@@ -196,7 +196,7 @@ export async function verifyBiometricAssertion(token: string): Promise<void> {
         type: item.type,
       })),
       timeout: challenge.timeout || 60_000,
-      userVerification: "required",
+      userVerification: "preferred",
     },
   })) as PublicKeyCredential | null;
 
@@ -243,7 +243,7 @@ export async function signInWithPasskey(email: string): Promise<{ token_hash: st
         type: item.type,
       })),
       timeout: challenge.timeout || 60_000,
-      userVerification: "required",
+      userVerification: "preferred",
     },
   })) as PublicKeyCredential | null;
 

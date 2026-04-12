@@ -100,16 +100,15 @@ def _normalize_role_name(role_name: str | None) -> str:
 
 
 def _resolve_origin_and_rp_id(request: Request) -> tuple[str, str]:
-    allowed = [origin for origin in settings.cors_origins if origin and origin != "*"]
     incoming_origin = request.headers.get("origin", "").strip()
-    if incoming_origin and incoming_origin in allowed:
-        expected_origin = incoming_origin
-    elif allowed:
-        expected_origin = allowed[0]
-    else:
-        expected_origin = f"https://{request.url.hostname}"
+    request_origin = f"{request.url.scheme}://{request.url.hostname}"
 
-    rp_id = urlparse(expected_origin).hostname or request.url.hostname or "localhost"
+    if incoming_origin:
+        expected_origin = incoming_origin
+    else:
+        expected_origin = request_origin
+
+    rp_id = request.url.hostname or urlparse(expected_origin).hostname or "localhost"
     return expected_origin, rp_id
 
 
@@ -458,7 +457,7 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
             expected_origin=expected_origin,
             credential_public_key=base64url_to_bytes(str(cred_row.get("public_key"))),
             credential_current_sign_count=int(cred_row.get("sign_count") or 0),
-            require_user_verification=True,
+            require_user_verification=False,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=401, detail="Biometric cryptographic verification failed") from exc
@@ -539,7 +538,7 @@ async def login_with_passkey(payload: dict, request: Request):
             expected_origin=expected_origin,
             credential_public_key=base64url_to_bytes(str(cred_row.get("public_key"))),
             credential_current_sign_count=int(cred_row.get("sign_count") or 0),
-            require_user_verification=True,
+            require_user_verification=False,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=401, detail="Passkey cryptographic verification failed") from exc

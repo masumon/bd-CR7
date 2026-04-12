@@ -25,6 +25,7 @@ import { SettingsTabsNav } from "@/modules/settings/tabs/SettingsTabsNav";
 import { WorkspaceTab } from "@/modules/settings/tabs/WorkspaceTab";
 import { UserManagementTab } from "@/modules/settings/tabs/UserManagementTab";
 import { normalizeRoleName } from "@/lib/rbac";
+import { BackupTab } from "@/modules/settings/tabs/BackupTab";
 
 function mergeSettingCatalog(stored: SettingItem[] | null): SettingItem[] {
   if (!stored || stored.length === 0) return DEFAULT_SETTING_ITEMS;
@@ -325,6 +326,7 @@ export function SettingsFeature() {
       ) : null}
 
       {activeTab === "Sync" ? <SyncControlPanel language={language} /> : null}
+      {activeTab === "Backup" ? <BackupTab token={token} role={role} /> : null}
       {activeTab === "Advanced" ? <AdvancedTab onReset={resetWorkspacePreferences} /> : null}
       {activeTab === "Users" && isSuperAdmin ? <UserManagementTab /> : null}
 

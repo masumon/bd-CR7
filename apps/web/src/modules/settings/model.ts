@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { Bell, CloudUpload, Database, Globe, Layers, Settings2, Shield, UserRound, Users } from "lucide-react";
+import { Bell, CloudUpload, Database, Globe, HardDriveDownload, Layers, Settings2, Shield, UserRound, Users } from "lucide-react";
 
 export interface UserProfile {
   id: string;
@@ -11,7 +11,7 @@ export interface UserProfile {
 }
 
 export type SettingCategory = "Workspace" | "Notifications" | "Security" | "Data";
-export type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Sync" | "Advanced" | "Users";
+export type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security" | "Data" | "Integrations" | "Sync" | "Backup" | "Advanced" | "Users";
 
 export type IntegrationState = {
   cloudinary: boolean;
@@ -44,6 +44,7 @@ export const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
     Data: "Categories",
     Integrations: "Integrations",
     Sync: "Sync",
+    Backup: "Backup",
     Advanced: "About",
     Users: "Users",
   },
@@ -55,14 +56,15 @@ export const TAB_LABELS: Record<"en" | "bn", Record<SettingsTab, string>> = {
     Data: "ক্যাটাগরি",
     Integrations: "ইন্টিগ্রেশন",
     Sync: "সিঙ্ক",
+    Backup: "ব্যাকআপ",
     Advanced: "তথ্য",
     Users: "ব্যবহারকারী",
   },
 };
 
-export const SETTINGS_TABS: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Sync", "Advanced"];
+export const SETTINGS_TABS: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Sync", "Backup", "Advanced"];
 /** Super-admin gets an extra Users management tab */
-export const SETTINGS_TABS_SUPER_ADMIN: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Sync", "Users", "Advanced"];
+export const SETTINGS_TABS_SUPER_ADMIN: SettingsTab[] = ["Profile", "Workspace", "Notifications", "Security", "Data", "Integrations", "Sync", "Backup", "Users", "Advanced"];
 
 export const TAB_META: Record<SettingsTab, { Icon: ElementType; desc: string }> = {
   Profile: { Icon: UserRound, desc: "আপনার তথ্য" },
@@ -72,6 +74,7 @@ export const TAB_META: Record<SettingsTab, { Icon: ElementType; desc: string }> 
   Data: { Icon: Database, desc: "ডেটা ম্যানেজ" },
   Integrations: { Icon: Globe, desc: "API কানেকশন" },
   Sync: { Icon: CloudUpload, desc: "সিঙ্ক কন্ট্রোল" },
+  Backup: { Icon: HardDriveDownload, desc: "ব্যাকআপ ও রিস্টোর" },
   Advanced: { Icon: Settings2, desc: "অ্যাডভান্সড" },
   Users: { Icon: Users, desc: "ব্যবহারকারী" },
 };

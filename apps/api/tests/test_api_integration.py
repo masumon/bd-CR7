@@ -192,6 +192,21 @@ class UsersEndpointAuthTests(unittest.TestCase):
         self.assertEqual(r.status_code, 401)
 
 
+@unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
+class SettingsBackupAuthTests(unittest.TestCase):
+    def test_backup_export_no_token_401(self) -> None:
+        r = client.post("/api/settings/backup/export", json={"scope": "personal"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_backup_restore_no_token_401(self) -> None:
+        r = client.post("/api/settings/backup/restore", json={"tables": {}})
+        self.assertEqual(r.status_code, 401)
+
+    def test_backup_restore_url_no_token_401(self) -> None:
+        r = client.post("/api/settings/backup/restore/from-url", json={"url": "https://example.com/backup.json"})
+        self.assertEqual(r.status_code, 401)
+
+
 
 @unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
 class ValidationErrorFormatTests(unittest.TestCase):

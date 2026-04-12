@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ShieldCheck, UserCheck, UserX, RefreshCw, AlertCircle } from "lucide-react";
+import { ShieldCheck, UserCheck, UserX, RefreshCw, AlertCircle, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/apiClient";
@@ -108,6 +108,25 @@ export function UserManagementTab() {
       setMessage(!isActive ? "User activated" : "User deactivated");
     } catch (err) {
       setError((err as Error).message || "Status update failed");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    if (!token) return;
+    const confirmed = window.confirm("Delete this user permanently? / এই ব্যবহারকারীকে স্থায়ীভাবে ডিলিট করবেন?");
+    if (!confirmed) return;
+
+    setSaving(userId);
+    setMessage("");
+    setError("");
+    try {
+      await apiClient(`/api/users/${userId}`, { method: "DELETE" }, token);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      setMessage("User deleted successfully");
+    } catch (err) {
+      setError((err as Error).message || "Delete failed");
     } finally {
       setSaving(null);
     }
@@ -225,6 +244,17 @@ export function UserManagementTab() {
                       ) : (
                         <><UserCheck className="h-3.5 w-3.5" /> Activate</>
                       )}
+                    </button>
+                  )}
+
+                  {!isSelf && (
+                    <button
+                      onClick={() => void deleteUser(user.id)}
+                      disabled={isBusy}
+                      className="flex h-8 items-center gap-1.5 rounded-xl border border-rose-500/30 px-2.5 text-[11px] font-medium text-rose-400 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
+                      title="Delete user"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
                     </button>
                   )}
 
