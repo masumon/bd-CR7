@@ -383,7 +383,7 @@ For licensing inquiries, please refer to the contact section below.
 
 | Role | Contributor |
 |:---|:---|
-| **Lead Architect & Full-Stack Engineer** | Md. Masum Billah |
+| **Lead Architect & Full-Stack Engineer** | MUMAIN AHMED SUMON |
 | **AI/ML & System Design** | Sumonix AI Lab |
 | **Platform** | BD CR7 Ultra Enterprise Division |
 
