@@ -44,8 +44,9 @@ def create_app() -> Any:
     from core.config import settings
     from core.logging import configure_logging
     from core.middleware import RateLimitMiddleware
-    from core.supabase import supabase_service
-    
+    from core.supabase import get_supabase_service, require_supabase_service
+    from postgrest.types import CountMethod
+
     # Import module routers
     from modules.auth.router import router as auth_router
     from modules.admin.router import router as admin_router
@@ -211,11 +212,12 @@ def create_app() -> Any:
 
     @app.get("/api/ready")
     async def readiness(response: Response) -> dict[str, str]:
-        if supabase_service is None:
+        svc = get_supabase_service()
+        if svc is None:
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             return {"status": "error", "reason": "supabase_service_not_configured"}
         try:
-            supabase_service.table("users").select("id", count="exact").limit(1).execute()
+            svc.table("users").select("id", count=CountMethod.exact).limit(1).execute()
         except Exception:  # noqa: BLE001
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             return {"status": "error", "reason": "dependency_check_failed"}
@@ -223,10 +225,11 @@ def create_app() -> Any:
 
     @app.get("/api/health/db")
     async def health_db() -> dict[str, str | int]:
-        if supabase_service is None:
+        svc = get_supabase_service()
+        if svc is None:
             return {"status": "error", "roles": 0}
         try:
-            roles = supabase_service.table("users").select("id", count="exact").limit(1).execute()
+            roles = svc.table("users").select("id", count=CountMethod.exact).limit(1).execute()
             return {"status": "ok", "users": int(roles.count or 0)}
         except Exception:  # noqa: BLE001
             return {"status": "error", "roles": 0}

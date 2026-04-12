@@ -3,7 +3,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user, require_roles
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 from schemas.construction import ProjectAttachmentCreate, ProjectTimelineEventCreate
 
 router = APIRouter()
@@ -11,11 +11,10 @@ router = APIRouter()
 
 @router.get("/projects/{project_id}/timeline")
 async def list_project_timeline(project_id: str, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     project = (
-        supabase_service.table("projects")
+        svc.table("projects")
         .select("id,project_timeline_events(id,project_id,title,description,event_date,status,created_by,created_at,updated_at)")
         .eq("id", project_id)
         .maybe_single()
@@ -34,12 +33,11 @@ async def create_project_timeline(
     payload: ProjectTimelineEventCreate,
     user: UserContext = Depends(require_roles("admin", "maker", "checker")),
 ):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     timeline_id = str(uuid4())
     try:
-        insert_res = supabase_service.table("project_timeline_events").insert(
+        insert_res = svc.table("project_timeline_events").insert(
             {
                 "id": timeline_id,
                 "project_id": project_id,
@@ -64,11 +62,10 @@ async def create_project_timeline(
 
 @router.get("/projects/{project_id}/attachments")
 async def list_project_attachments(project_id: str, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     project = (
-        supabase_service.table("projects")
+        svc.table("projects")
         .select("id,project_attachments(id,project_id,file_url,file_type,file_name,caption,uploaded_by,created_at)")
         .eq("id", project_id)
         .maybe_single()
@@ -87,15 +84,14 @@ async def create_project_attachment(
     payload: ProjectAttachmentCreate,
     user: UserContext = Depends(require_roles("admin", "maker", "checker")),
 ):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     if not payload.file_url.startswith("https://res.cloudinary.com/"):
         raise HTTPException(status_code=400, detail="file_url must be a Cloudinary URL")
 
     attachment_id = str(uuid4())
     try:
-        insert_res = supabase_service.table("project_attachments").insert(
+        insert_res = svc.table("project_attachments").insert(
             {
                 "id": attachment_id,
                 "project_id": project_id,

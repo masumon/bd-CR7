@@ -12,17 +12,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.audit import audit_log
 from core.auth import UserContext, get_current_user, require_roles
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 from modules.materials.schema import AddMaterialRequest, UpdateStockRequest, AllocateMaterialRequest
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _require_supabase():
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    return supabase_service
 
 
 @router.get("")
@@ -33,7 +29,7 @@ async def list_materials(
     user: UserContext = Depends(get_current_user),
 ):
     """List all materials, optionally filtered by category or low-stock flag."""
-    client = _require_supabase()
+    client = require_supabase_service()
     q = (
         client.table("materials")
         .select("id,material_name,notes,unit,category,quantity,supplier_id,created_at,metadata")
@@ -79,7 +75,7 @@ async def get_material(
     user: UserContext = Depends(get_current_user),
 ):
     """Retrieve a single material record."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         result = (
             client.table("materials")
@@ -114,7 +110,7 @@ async def add_material(
     user: UserContext = Depends(require_roles("admin", "maker")),
 ):
     """Add a new material to inventory."""
-    client = _require_supabase()
+    client = require_supabase_service()
     material_id = str(uuid4())
     try:
         result = client.table("materials").insert({
@@ -152,7 +148,7 @@ async def update_stock(
     user: UserContext = Depends(require_roles("admin", "maker")),
 ):
     """Record a stock movement (purchase, allocation, adjustment, waste)."""
-    client = _require_supabase()
+    client = require_supabase_service()
 
     material = (
         client.table("materials")
@@ -206,7 +202,7 @@ async def inventory_summary(
     user: UserContext = Depends(get_current_user),
 ):
     """Return a high-level inventory summary: total items, low-stock count, by category."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         result = client.table("materials").select("category,quantity,metadata").execute()
         rows = result.data or []

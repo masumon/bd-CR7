@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from core.audit import audit_log
 from core.auth import UserContext, require_roles
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -49,10 +49,11 @@ ALLOWED_SCOPES = {"test_data", "all_expenses", "all_worker_logs"}
 
 def _snapshot_table(table: str, filters: list[tuple[str, str, Any]] | None = None) -> list[dict]:
     """Return up to 1000 rows from a table as a plain list (for export)."""
-    if supabase_service is None:
+    client = get_supabase_service()
+    if client is None:
         return []
     try:
-        q = supabase_service.table(table).select("*").limit(1000)
+        q = client.table(table).select("*").limit(1000)
         if filters:
             for col, op, val in filters:
                 if op == "eq":
@@ -68,10 +69,11 @@ def _snapshot_table(table: str, filters: list[tuple[str, str, Any]] | None = Non
 
 def _soft_delete(table: str, ids: list[str]) -> int:
     """Mark rows as is_deleted=true. Returns count of updated rows."""
-    if not ids or supabase_service is None:
+    client = get_supabase_service()
+    if not ids or client is None:
         return 0
     try:
-        supabase_service.table(table).update(
+        client.table(table).update(
             {"is_deleted": True, "updated_at": datetime.now(timezone.utc).isoformat()}
         ).in_("id", ids).execute()
         return len(ids)
@@ -90,8 +92,7 @@ async def soft_reset(
     Returns a JSON snapshot of affected rows BEFORE deletion (for manual recovery).
     No data is permanently removed.
     """
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     if payload.scope not in ALLOWED_SCOPES:
         raise HTTPException(status_code=400, detail=f"scope must be one of: {', '.join(ALLOWED_SCOPES)}")
@@ -135,7 +136,7 @@ async def soft_reset(
         if ids:
             # worker_logs may not have is_deleted; update cautiously
             try:
-                supabase_service.table("worker_logs").update(
+                svc.table("worker_logs").update(
                     {"is_deleted": True}
                 ).in_("id", ids).execute()
                 deleted_counts["worker_logs"] = len(ids)

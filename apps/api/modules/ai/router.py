@@ -41,7 +41,7 @@ async def ai_chat(
     """
     try:
         # Import lazily to avoid startup failures if AI deps are missing
-        from core.supabase import supabase_service
+        from core.supabase import get_supabase_service, require_supabase_service
 
         # Log the chat interaction
         audit_log(

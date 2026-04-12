@@ -7,16 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import UserContext, get_current_user, require_roles
 from core.config import settings
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 from schemas.construction import AttendanceMark, MaterialMovement, WorkerCreate
 
 router = APIRouter()
 
 
-def _require_supabase():
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    return supabase_service
 
 
 def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -30,7 +26,7 @@ def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 @router.post("/workers")
 async def create_worker(payload: WorkerCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
-    client = _require_supabase()
+    client = require_supabase_service()
     worker_id = str(uuid4())
     client.table("workers").insert(
         {
@@ -46,7 +42,7 @@ async def create_worker(payload: WorkerCreate, user: UserContext = Depends(requi
 
 @router.get("/workers")
 async def list_workers(user: UserContext = Depends(get_current_user)):
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         rows = client.table("workers").select("id,full_name,designation,daily_rate,is_active").order("full_name").execute()
     except Exception as exc:  # noqa: BLE001
@@ -67,7 +63,7 @@ async def list_workers(user: UserContext = Depends(get_current_user)):
 
 @router.post("/attendance")
 async def mark_attendance(payload: AttendanceMark, user: UserContext = Depends(require_roles("admin", "maker", "checker"))):
-    client = _require_supabase()
+    client = require_supabase_service()
     worker = client.table("workers").select("id").eq("id", payload.worker_id).limit(1).execute()
     if not worker.data:
         raise HTTPException(status_code=404, detail="Worker not found")
@@ -96,7 +92,7 @@ async def mark_attendance(payload: AttendanceMark, user: UserContext = Depends(r
 
 @router.post("/materials")
 async def material_movement(payload: MaterialMovement, user: UserContext = Depends(require_roles("admin", "maker"))):
-    client = _require_supabase()
+    client = require_supabase_service()
     rpc = client.rpc(
         "record_material_movement_atomic",
         {

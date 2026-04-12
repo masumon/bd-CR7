@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.audit import audit_log
 from core.auth import UserContext, get_current_user, require_roles
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 from schemas.finance import ApprovalAction, ExpenseCreate, ExpenseUpdate, FundEntryCreate, FundTransfer, ManualExpenseCreate
 from services.finance import approve_expense_atomic, create_expense_atomic, dashboard_metrics, score_risk, transfer_funds_atomic
 
@@ -24,10 +24,9 @@ def _is_sensitive_expense(expense_row: dict) -> bool:
 
 
 def _find_sensitive_approval(entity_type: str, expense_id: str):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     return (
-        supabase_service.table("pending_approvals")
+        svc.table("pending_approvals")
         .select("id,status,required_approvals,approval_count,first_approver_id,second_approver_id,operation,operation_payload")
         .eq("entity_type", entity_type)
         .eq("entity_id", expense_id)
@@ -37,10 +36,9 @@ def _find_sensitive_approval(entity_type: str, expense_id: str):
 
 
 def _create_sensitive_approval(entity_type: str, expense_id: str, actor_id: str, operation: str, payload: dict):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     approval_id = str(uuid4())
-    supabase_service.table("pending_approvals").upsert(
+    svc.table("pending_approvals").upsert(
         {
             "id": approval_id,
             "entity_type": entity_type,
@@ -66,9 +64,8 @@ def _create_sensitive_approval(entity_type: str, expense_id: str, actor_id: str,
 
 
 def _mark_sensitive_approved(approval_id: str, actor_id: str):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    supabase_service.table("pending_approvals").update(
+    svc = require_supabase_service()
+    svc.table("pending_approvals").update(
         {
             "approval_count": 2,
             "second_approver_id": actor_id,
@@ -81,10 +78,9 @@ def _mark_sensitive_approved(approval_id: str, actor_id: str):
 
 @router.get("/accounts")
 async def list_accounts(user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     query = (
-        supabase_service.table("fund_accounts")
+        svc.table("fund_accounts")
         .select("id,account_name,currency,balance,owner_user_id")
         .order("account_name")
     )
@@ -112,11 +108,10 @@ async def transfer_funds(payload: FundTransfer, user: UserContext = Depends(requ
 
 @router.post("/fund-entries")
 async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     account = (
-        supabase_service.table("fund_accounts")
+        svc.table("fund_accounts")
         .select("id,owner_user_id")
         .eq("id", payload.account_id)
         .limit(1)
@@ -135,7 +130,7 @@ async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depend
     try:
         # Credit the account balance atomically via RPC, then record the transaction.
         # This ensures the balance update and the transaction log are consistent.
-        supabase_service.rpc(
+        svc.rpc(
             "credit_fund_account",
             {
                 "p_account_id": payload.account_id,
@@ -146,7 +141,7 @@ async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depend
     except Exception as exc:  # noqa: BLE001
         # Fallback: update balance directly if RPC is not yet deployed
         existing_account = (
-            supabase_service.table("fund_accounts")
+            svc.table("fund_accounts")
             .select("balance")
             .eq("id", payload.account_id)
             .limit(1)
@@ -156,11 +151,11 @@ async def create_fund_entry(payload: FundEntryCreate, user: UserContext = Depend
             raise HTTPException(status_code=404, detail="Account not found") from exc
         current_balance = Decimal(str(existing_account.data[0].get("balance") or 0))
         new_balance = current_balance + amount
-        supabase_service.table("fund_accounts").update(
+        svc.table("fund_accounts").update(
             {"balance": str(new_balance)}
         ).eq("id", payload.account_id).execute()
 
-    supabase_service.table("fund_transactions").insert(
+    svc.table("fund_transactions").insert(
         {
             "id": transaction_id,
             "from_account_id": None,
@@ -206,11 +201,10 @@ async def create_expense(payload: ExpenseCreate, user: UserContext = Depends(req
 
 @router.post("/expenses/manual")
 async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext = Depends(require_roles("admin", "maker"))):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     account = (
-        supabase_service.table("fund_accounts")
+        svc.table("fund_accounts")
         .select("id,owner_user_id")
         .eq("id", payload.account_id)
         .limit(1)
@@ -251,7 +245,7 @@ async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext 
             "approved_by": payload.approved_by if payload.status == "approved" else None,
         },
     }
-    supabase_service.table("expenses").insert(row).execute()
+    svc.table("expenses").insert(row).execute()
 
     audit_log(
         user_id=user.user_id,
@@ -266,11 +260,10 @@ async def create_manual_expense(payload: ManualExpenseCreate, user: UserContext 
 
 @router.post("/expenses/{expense_id}/approve")
 async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserContext = Depends(require_roles("admin", "checker"))):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     expense_check = (
-        supabase_service.table("expenses")
+        svc.table("expenses")
         .select("id,maker_id,status")
         .eq("id", expense_id)
         .limit(1)
@@ -298,14 +291,13 @@ async def approve_expense(expense_id: str, payload: ApprovalAction, user: UserCo
 
 @router.get("/expenses")
 async def list_expenses(user: UserContext = Depends(get_current_user), limit: int = 20, offset: int = 0):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     if limit <= 0 or limit > 500:
         limit = 20
     if offset < 0:
         offset = 0
     query = (
-        supabase_service.table("expenses")
+        svc.table("expenses")
         .select("id,account_id,amount,category,description,status,created_by,approved_by,risk_score,created_at,metadata,receipt_url,is_deleted")
         .eq("is_deleted", False)
         .order("created_at", desc=True)
@@ -348,10 +340,9 @@ async def list_expenses(user: UserContext = Depends(get_current_user), limit: in
 
 @router.get("/expenses/{expense_id}")
 async def get_expense(expense_id: str, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     row = (
-        supabase_service.table("expenses")
+        svc.table("expenses")
         .select("id,account_id,category,amount,description,status,created_by,approved_by,risk_score,metadata,created_at")
         .eq("id", expense_id)
         .limit(1)
@@ -367,10 +358,9 @@ async def get_expense(expense_id: str, user: UserContext = Depends(get_current_u
 
 @router.patch("/expenses/{expense_id}")
 async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserContext = Depends(require_roles("admin"))):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
-    expense = supabase_service.table("expenses").select("id,maker_id,status,amount,risk_score").eq("id", expense_id).limit(1).execute()
+    expense = svc.table("expenses").select("id,maker_id,status,amount,risk_score").eq("id", expense_id).limit(1).execute()
     if not expense.data:
         raise HTTPException(status_code=404, detail="Expense not found")
     expense_row = expense.data[0]
@@ -422,7 +412,7 @@ async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserCont
             update_payload = stored_payload
         _mark_sensitive_approved(str(approval.get("id")), user.user_id)
 
-    supabase_service.table("expenses").update(
+    svc.table("expenses").update(
         update_payload
     ).eq("id", expense_id).execute()
 
@@ -439,10 +429,9 @@ async def update_expense(expense_id: str, payload: ExpenseUpdate, user: UserCont
 
 @router.delete("/expenses/{expense_id}")
 async def delete_expense(expense_id: str, user: UserContext = Depends(require_roles("admin"))):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
-    expense = supabase_service.table("expenses").select("id,maker_id,status,amount,risk_score").eq("id", expense_id).limit(1).execute()
+    expense = svc.table("expenses").select("id,maker_id,status,amount,risk_score").eq("id", expense_id).limit(1).execute()
     if not expense.data:
         raise HTTPException(status_code=404, detail="Expense not found")
     expense_row = expense.data[0]
@@ -468,9 +457,9 @@ async def delete_expense(expense_id: str, user: UserContext = Depends(require_ro
             }
         _mark_sensitive_approved(str(approval.get("id")), user.user_id)
 
-    supabase_service.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_delete").eq("entity_id", expense_id).execute()
-    supabase_service.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_update").eq("entity_id", expense_id).execute()
-    supabase_service.table("expenses").delete().eq("id", expense_id).execute()
+    svc.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_delete").eq("entity_id", expense_id).execute()
+    svc.table("pending_approvals").delete().eq("entity_type", "expense_sensitive_update").eq("entity_id", expense_id).execute()
+    svc.table("expenses").delete().eq("id", expense_id).execute()
     audit_log(
         user_id=user.user_id, action="expense.delete",
         entity_type="expense", entity_id=expense_id,
@@ -486,10 +475,9 @@ async def get_dashboard(user: UserContext = Depends(get_current_user)):
 
 @router.get("/balance/{account_id}")
 async def get_balance(account_id: str, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     query = (
-        supabase_service.table("fund_accounts")
+        svc.table("fund_accounts")
         .select("id,account_name,currency,balance,owner_user_id")
         .eq("id", account_id)
         .limit(1)

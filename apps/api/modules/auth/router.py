@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from core.audit import audit_log
 from core.auth import UserContext, get_current_user
 from core.config import settings
-from core.supabase import supabase_anon, supabase_service
+from core.supabase import get_supabase_anon, get_supabase_service, require_supabase_service
 from core.exceptions import AuthError
 from schemas.auth import AuthResponse, LoginRequest, RegisterRequest
 from modules.auth.phone_otp_service import OtpError, send_phone_otp, verify_phone_otp
@@ -34,13 +34,12 @@ def _parse_timestamp(raw: str | None) -> datetime | None:
 
 
 def _store_webauthn_challenge(user_id: str, challenge: str) -> None:
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     expires_at = datetime.now(timezone.utc).timestamp() + WEBAUTHN_CHALLENGE_TTL_SECONDS
     expires_at_iso = datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat()
 
-    supabase_service.table("webauthn_challenges").upsert(
+    svc.table("webauthn_challenges").upsert(
         {
             "user_id": user_id,
             "challenge": challenge,
@@ -52,11 +51,10 @@ def _store_webauthn_challenge(user_id: str, challenge: str) -> None:
 
 
 def _load_webauthn_challenge(user_id: str) -> tuple[str, datetime] | None:
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     row_res = (
-        supabase_service.table("webauthn_challenges")
+        svc.table("webauthn_challenges")
         .select("challenge,expires_at")
         .eq("user_id", user_id)
         .limit(1)
@@ -74,9 +72,8 @@ def _load_webauthn_challenge(user_id: str) -> tuple[str, datetime] | None:
 
 
 def _clear_webauthn_challenge(user_id: str) -> None:
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    supabase_service.table("webauthn_challenges").delete().eq("user_id", user_id).execute()
+    svc = require_supabase_service()
+    svc.table("webauthn_challenges").delete().eq("user_id", user_id).execute()
 
 
 def _extract_role_name(user_row: dict) -> str:
@@ -112,10 +109,11 @@ def _resolve_origin_and_rp_id(request: Request) -> tuple[str, str]:
 
 
 def _sync_auth_role_metadata(user_id: str, role_name: str) -> None:
-    if supabase_service is None:
+    client = get_supabase_service()
+    if client is None:
         return
     try:
-        supabase_service.auth.admin.update_user_by_id(
+        client.auth.admin.update_user_by_id(
             user_id,
             {
                 "app_metadata": {"role": _normalize_role_name(role_name)},
@@ -127,11 +125,10 @@ def _sync_auth_role_metadata(user_id: str, role_name: str) -> None:
 
 
 def _load_active_user_by_email(email: str) -> dict[str, Any]:
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     result = (
-        supabase_service.table("users")
+        svc.table("users")
         .select("id,email,full_name,role,is_active")
         .eq("email", email)
         .limit(1)
@@ -147,15 +144,14 @@ def _load_active_user_by_email(email: str) -> dict[str, Any]:
 
 
 def _create_magic_link_login_payload(user_row: dict[str, Any]) -> dict[str, str]:
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     user_email = str(user_row.get("email") or "").strip()
     if not user_email:
         raise HTTPException(status_code=400, detail="User account has no email address")
 
     try:
-        link_response = supabase_service.auth.admin.generate_link(
+        link_response = svc.auth.admin.generate_link(
             {
                 "type": "magiclink",
                 "email": user_email,
@@ -181,15 +177,14 @@ def _create_magic_link_login_payload(user_row: dict[str, Any]) -> dict[str, str]
 
 @router.post("/register", response_model=AuthResponse)
 async def register(payload: RegisterRequest):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
-    existing = supabase_service.table("users").select("id").eq("email", payload.email).limit(1).execute()
+    existing = svc.table("users").select("id").eq("email", payload.email).limit(1).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="Email already exists")
 
     try:
-        created = supabase_service.auth.admin.create_user(
+        created = svc.auth.admin.create_user(
             {
                 "email": payload.email,
                 "password": payload.password,
@@ -209,7 +204,7 @@ async def register(payload: RegisterRequest):
 
     user_id = str(user_obj.id)
 
-    supabase_service.table("users").upsert(
+    svc.table("users").upsert(
         {
             "id": user_id,
             "email": payload.email,
@@ -222,10 +217,10 @@ async def register(payload: RegisterRequest):
 
     _sync_auth_role_metadata(user_id, SELF_SERVICE_ROLE)
 
-    if supabase_anon is None:
+    if get_supabase_anon() is None:
         raise HTTPException(status_code=500, detail="Supabase client is not configured")
 
-    login_result = supabase_anon.auth.sign_in_with_password({"email": payload.email, "password": payload.password})
+    login_result = get_supabase_anon().auth.sign_in_with_password({"email": payload.email, "password": payload.password})
     if not login_result.session:
         raise HTTPException(status_code=500, detail="Registration succeeded but session creation failed")
 
@@ -235,13 +230,12 @@ async def register(payload: RegisterRequest):
 
 @router.post("/login", response_model=AuthResponse)
 async def login(payload: LoginRequest):
-    if supabase_anon is None:
+    if get_supabase_anon() is None:
         raise HTTPException(status_code=500, detail="Supabase client is not configured")
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     try:
-        auth_result = supabase_anon.auth.sign_in_with_password({"email": payload.email, "password": payload.password})
+        auth_result = get_supabase_anon().auth.sign_in_with_password({"email": payload.email, "password": payload.password})
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=401, detail="Invalid credentials") from exc
 
@@ -249,7 +243,7 @@ async def login(payload: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     local_user = (
-        supabase_service.table("users")
+        svc.table("users")
         .select("id,is_active,role")
         .eq("id", str(auth_result.user.id))
         .limit(1)
@@ -257,7 +251,7 @@ async def login(payload: LoginRequest):
     )
 
     if not local_user.data:
-        supabase_service.table("users").upsert(
+        svc.table("users").upsert(
             {
                 "id": str(auth_result.user.id),
                 "email": payload.email,
@@ -284,9 +278,10 @@ async def login(payload: LoginRequest):
 async def logout(user: UserContext = Depends(get_current_user)):
     # Revoke ALL active sessions for this user via the service-role client.
     # Without this call the bearer token remained valid until its natural expiry.
-    if supabase_service is not None:
+    client = get_supabase_service()
+    if client is not None:
         try:
-            supabase_service.auth.admin.sign_out(user.user_id)
+            client.auth.admin.sign_out(user.user_id)
         except Exception:  # noqa: BLE001
             # Non-fatal: local state is cleared on the client side regardless.
             pass
@@ -296,8 +291,7 @@ async def logout(user: UserContext = Depends(get_current_user)):
 
 @router.post("/webauthn/register")
 async def register_webauthn_credential(payload: dict, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     credential_id = str(payload.get("credential_id") or "").strip()
     public_key = str(payload.get("public_key") or "").strip()
@@ -314,17 +308,16 @@ async def register_webauthn_credential(payload: dict, user: UserContext = Depend
         "sign_count": int(payload.get("sign_count") or 0),
     }
 
-    result = supabase_service.table("biometric_credentials").upsert(row, on_conflict="user_id,credential_id").execute()
+    result = svc.table("biometric_credentials").upsert(row, on_conflict="user_id,credential_id").execute()
     return {"ok": True, "credential": (result.data or [row])[0]}
 
 
 @router.post("/webauthn/challenge")
 async def create_webauthn_challenge(request: Request, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     rows = (
-        supabase_service.table("biometric_credentials")
+        svc.table("biometric_credentials")
         .select("credential_id,public_key,is_active")
         .eq("user_id", user.user_id)
         .eq("is_active", True)
@@ -366,8 +359,9 @@ async def create_passkey_login_challenge(payload: dict, request: Request):
     if not user_id:
         raise HTTPException(status_code=400, detail="User account is missing id")
 
+    svc = require_supabase_service()
     rows = (
-        supabase_service.table("biometric_credentials")
+        svc.table("biometric_credentials")
         .select("credential_id,public_key,is_active")
         .eq("user_id", user_id)
         .eq("is_active", True)
@@ -396,8 +390,7 @@ async def create_passkey_login_challenge(payload: dict, request: Request):
 
 @router.post("/webauthn/verify")
 async def verify_webauthn_assertion(payload: dict, request: Request, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     challenge_state = _load_webauthn_challenge(user.user_id)
     if not challenge_state:
@@ -418,7 +411,7 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
         raise HTTPException(status_code=400, detail="Missing required WebAuthn assertion fields")
 
     row_res = (
-        supabase_service.table("biometric_credentials")
+        svc.table("biometric_credentials")
         .select("credential_id,public_key,sign_count,is_active")
         .eq("user_id", user.user_id)
         .eq("credential_id", credential_id)
@@ -465,7 +458,7 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
     finally:
         _clear_webauthn_challenge(user.user_id)
 
-    supabase_service.table("biometric_credentials").update({"sign_count": int(verification.new_sign_count)}).eq(
+    svc.table("biometric_credentials").update({"sign_count": int(verification.new_sign_count)}).eq(
         "user_id", user.user_id
     ).eq("credential_id", credential_id).execute()
 
@@ -482,6 +475,8 @@ async def login_with_passkey(payload: dict, request: Request):
     user_id = str(user_row.get("id") or "")
     if not user_id:
         raise HTTPException(status_code=400, detail="User account is missing id")
+
+    svc = require_supabase_service()
 
     challenge_state = _load_webauthn_challenge(user_id)
     if not challenge_state:
@@ -502,7 +497,7 @@ async def login_with_passkey(payload: dict, request: Request):
         raise HTTPException(status_code=400, detail="Missing required passkey assertion fields")
 
     row_res = (
-        supabase_service.table("biometric_credentials")
+        svc.table("biometric_credentials")
         .select("credential_id,public_key,sign_count,is_active")
         .eq("user_id", user_id)
         .eq("credential_id", credential_id)
@@ -548,7 +543,7 @@ async def login_with_passkey(payload: dict, request: Request):
     finally:
         _clear_webauthn_challenge(user_id)
 
-    supabase_service.table("biometric_credentials").update({"sign_count": int(verification.new_sign_count)}).eq(
+    svc.table("biometric_credentials").update({"sign_count": int(verification.new_sign_count)}).eq(
         "user_id", user_id
     ).eq("credential_id", credential_id).execute()
 
@@ -558,11 +553,10 @@ async def login_with_passkey(payload: dict, request: Request):
 
 @router.get("/me")
 async def me(user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     profile = (
-        supabase_service.table("users")
+        svc.table("users")
         .select("id,email,full_name,role")
         .eq("id", user.user_id)
         .limit(1)
@@ -582,10 +576,9 @@ async def me(user: UserContext = Depends(get_current_user)):
 
 @router.get("/biometric/credentials")
 async def list_biometric_credentials(user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     rows = (
-        supabase_service.table("biometric_credentials")
+        svc.table("biometric_credentials")
         .select("id,credential_id,device_name,transports,is_active,sign_count,created_at,updated_at")
         .eq("user_id", user.user_id)
         .order("created_at", desc=True)
@@ -596,8 +589,7 @@ async def list_biometric_credentials(user: UserContext = Depends(get_current_use
 
 @router.post("/biometric/credentials")
 async def register_biometric_credential_mgmt(payload: dict, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     credential_id = str(payload.get("credential_id") or "").strip()
     if not credential_id:
         raise HTTPException(status_code=400, detail="credential_id is required")
@@ -612,16 +604,15 @@ async def register_biometric_credential_mgmt(payload: dict, user: UserContext = 
         "is_active": True,
         "sign_count": int(payload.get("sign_count") or 0),
     }
-    res = supabase_service.table("biometric_credentials").upsert(row, on_conflict="user_id,credential_id").execute()
+    res = svc.table("biometric_credentials").upsert(row, on_conflict="user_id,credential_id").execute()
     return (res.data or [row])[0]
 
 
 @router.delete("/biometric/credentials/{credential_id}")
 async def deactivate_biometric_credential(credential_id: str, user: UserContext = Depends(get_current_user)):
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     res = (
-        supabase_service.table("biometric_credentials")
+        svc.table("biometric_credentials")
         .update({"is_active": False})
         .eq("user_id", user.user_id)
         .eq("credential_id", credential_id)

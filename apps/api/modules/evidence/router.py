@@ -13,17 +13,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.audit import audit_log
 from core.auth import UserContext, get_current_user, require_roles
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 from modules.evidence.schema import SubmitEvidenceRequest, ReviewEvidenceRequest
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _require_supabase():
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    return supabase_service
 
 
 @router.get("")
@@ -35,7 +31,7 @@ async def list_evidence(
     user: UserContext = Depends(get_current_user),
 ):
     """List evidence records, optionally filtered by project or type."""
-    client = _require_supabase()
+    client = require_supabase_service()
     q = (
         client.table("evidence")
         .select("id,project_id,evidence_type,title,description,files,submitted_by,status,submitted_at,reviewed_at")
@@ -63,7 +59,7 @@ async def get_evidence(
     user: UserContext = Depends(get_current_user),
 ):
     """Retrieve a single evidence record."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         result = (
             client.table("evidence")
@@ -86,7 +82,7 @@ async def submit_evidence(
     user: UserContext = Depends(require_roles("admin", "maker", "checker")),
 ):
     """Submit new evidence for a project."""
-    client = _require_supabase()
+    client = require_supabase_service()
     evidence_id = str(uuid4())
 
     for url in payload.files:
@@ -128,7 +124,7 @@ async def review_evidence(
     user: UserContext = Depends(require_roles("admin", "checker")),
 ):
     """Approve or reject an evidence record."""
-    client = _require_supabase()
+    client = require_supabase_service()
     from datetime import datetime, timezone
 
     new_status = "approved" if payload.approved else "rejected"

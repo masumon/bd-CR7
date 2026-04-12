@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from core.auth import UserContext
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 from schemas.finance import ApprovalAction, ExpenseCreate, FundTransfer
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,10 @@ def transfer_funds_atomic(payload: FundTransfer, user: UserContext) -> dict[str,
         raise ValueError("Amount must be greater than zero")
     if amount > Decimal("10000000"):
         raise ValueError("Amount exceeds maximum transfer limit")
-    if supabase_service is None:
-        raise RuntimeError("Supabase service client is not configured")
+    svc = require_supabase_service()
 
     try:
-        result = supabase_service.rpc(
+        result = svc.rpc(
             "transfer_funds_atomic",
             {
                 "p_from_account_id": payload.from_account_id,
@@ -73,12 +72,11 @@ def transfer_funds_atomic(payload: FundTransfer, user: UserContext) -> dict[str,
 
 
 def create_expense_atomic(payload: ExpenseCreate, user: UserContext) -> dict[str, object]:
-    if supabase_service is None:
-        raise RuntimeError("Supabase service client is not configured")
+    svc = require_supabase_service()
 
     risk = score_risk(Decimal(payload.amount))
     try:
-        result = supabase_service.rpc(
+        result = svc.rpc(
             "create_expense_atomic",
             {
                 "p_account_id": payload.account_id,
@@ -102,11 +100,10 @@ def create_expense_atomic(payload: ExpenseCreate, user: UserContext) -> dict[str
 
 
 def approve_expense_atomic(expense_id: str, payload: ApprovalAction, user: UserContext) -> dict[str, str]:
-    if supabase_service is None:
-        raise RuntimeError("Supabase service client is not configured")
+    svc = require_supabase_service()
 
     try:
-        supabase_service.rpc(
+        svc.rpc(
             "approve_expense_atomic",
             {
                 "p_expense_id": expense_id,
@@ -137,7 +134,8 @@ def _parse_dt(raw: str | None) -> datetime | None:
 
 def dashboard_metrics() -> dict:
     """Cross-module KPI summary for the ERP dashboard."""
-    if supabase_service is None:
+    client = get_supabase_service()
+    if client is None:
         return {
             "total_balance": 0,
             "fund_balance": 0,
@@ -150,7 +148,7 @@ def dashboard_metrics() -> dict:
         }
 
     try:
-        rpc = supabase_service.rpc("dashboard_metrics").execute()
+        rpc = client.rpc("dashboard_metrics").execute()
         payload = rpc.data
         if isinstance(payload, list):
             payload = payload[0] if payload else None
@@ -180,7 +178,7 @@ def dashboard_metrics() -> dict:
     }
 
     def _fallback_queries() -> dict:
-        _svc = supabase_service  # local ref, already checked non-None above
+        _svc = require_supabase_service()  # already checked non-None above
         accounts = _svc.table("fund_accounts").select("balance").limit(1000).execute()
         sales = _svc.table("sales").select("total_amount,created_at").limit(1000).execute()
         workers = _svc.table("workers").select("id").limit(1000).execute()

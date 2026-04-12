@@ -86,8 +86,9 @@ def _make_client():
             },
             clear=False,
         ),
-        patch("core.supabase.supabase_service", _mock_service),
-        patch("core.supabase.supabase_anon", _mock_anon),
+        patch("core.supabase.get_supabase_service", return_value=_mock_service),
+        patch("core.supabase.get_supabase_anon", return_value=_mock_anon),
+        patch("core.supabase.require_supabase_service", return_value=_mock_service),
     ):
         from fastapi.testclient import TestClient
         from main import create_app
@@ -476,7 +477,7 @@ class E2E_14_AuditLog(unittest.TestCase):
     """audit_log must never raise, even when Supabase is down."""
 
     def test_audit_log_with_supabase_none_silent(self):
-        with patch("core.supabase.supabase_service", None):
+        with patch("core.supabase.get_supabase_service", return_value=None):
             from core.audit import audit_log
             # Must not raise
             audit_log(user_id="u1", action="expense.create",
@@ -486,7 +487,7 @@ class E2E_14_AuditLog(unittest.TestCase):
     def test_audit_log_with_failing_supabase_silent(self):
         mock = MagicMock()
         mock.table.return_value.insert.return_value.execute.side_effect = RuntimeError("DB down")
-        with patch("core.supabase.supabase_service", mock):
+        with patch("core.supabase.get_supabase_service", return_value=mock):
             from core.audit import audit_log
             # Must not raise — swallows and logs warning
             audit_log(user_id="u1", action="fund.transfer")

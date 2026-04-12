@@ -69,10 +69,11 @@ def audit_log(
     Never raises — failures are swallowed and logged as warnings.
     """
     try:
-        from core.supabase import supabase_service
+        from core.supabase import get_supabase_service, require_supabase_service
         from core.logging import get_request_id
 
-        if supabase_service is None:
+        client = get_supabase_service()
+        if client is None:
             return
 
         row: dict[str, Any] = {
@@ -84,6 +85,6 @@ def audit_log(
             "request_id": request_id or get_request_id(),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        supabase_service.table("audit_logs").insert(row).execute()
+        client.table("audit_logs").insert(row).execute()
     except Exception as exc:  # noqa: BLE001
         logger.warning("audit_log_failed action=%s entity=%s error=%s", action, entity_id, exc)

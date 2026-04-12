@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from core.supabase import supabase_anon, supabase_service
+from core.supabase import get_supabase_anon, get_supabase_service, require_supabase_service
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -40,11 +40,11 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
 
-    if supabase_anon is None:
+    if get_supabase_anon() is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Supabase is not configured")
 
     try:
-        auth_user = supabase_anon.auth.get_user(credentials.credentials)
+        auth_user = get_supabase_anon().auth.get_user(credentials.credentials)
         supabase_user = auth_user.user if auth_user and auth_user.user else None
         supabase_user_id = supabase_user.id if supabase_user else None
     except Exception as exc:  # noqa: BLE001
@@ -53,11 +53,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     if not supabase_user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid bearer token")
 
-    if supabase_service is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
     user_res = (
-        supabase_service.table("users")
+        svc.table("users")
         .select("id,is_active,role")
         .eq("id", str(supabase_user_id))
         .limit(1)

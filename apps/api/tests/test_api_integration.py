@@ -39,7 +39,7 @@ def _create_test_client():
             "REQUIRE_SUPABASE_IN_PRODUCTION": "false",
         },
         clear=False,
-    ), patch("core.supabase.supabase_service", _supabase_mock), patch("core.supabase.supabase_anon", _supabase_mock):
+    ), patch("core.supabase.get_supabase_service", return_value=_supabase_mock), patch("core.supabase.get_supabase_anon", return_value=_supabase_mock), patch("core.supabase.require_supabase_service", return_value=_supabase_mock):
         from fastapi.testclient import TestClient
         from main import create_app
         app = create_app()

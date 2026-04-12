@@ -11,16 +11,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import UserContext, get_current_user, require_roles
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _require_supabase():
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    return supabase_service
 
 
 @router.get("/logs")
@@ -32,7 +28,7 @@ async def list_audit_logs(
     user: UserContext = Depends(require_roles("admin", "super_admin", "checker")),
 ):
     """Return audit log entries, newest first. Supports optional filters."""
-    client = _require_supabase()
+    client = require_supabase_service()
     q = (
         client.table("audit_logs")
         .select("id,actor_user_id,action,entity_type,entity_id,meta,created_at")
@@ -60,7 +56,7 @@ async def get_audit_log(
     user: UserContext = Depends(require_roles("admin", "super_admin", "checker")),
 ):
     """Retrieve a single audit log entry by ID."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         result = (
             client.table("audit_logs")
@@ -82,7 +78,7 @@ async def audit_summary(
     user: UserContext = Depends(require_roles("admin", "super_admin", "checker")),
 ):
     """Return a lightweight count summary of recent audit activity."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         result = (
             client.table("audit_logs")

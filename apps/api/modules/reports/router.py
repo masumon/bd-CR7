@@ -11,16 +11,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import UserContext, get_current_user, require_roles
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _require_supabase():
-    if supabase_service is None:
-        raise HTTPException(status_code=500, detail="Supabase service client is not configured")
-    return supabase_service
 
 
 @router.get("/dashboard")
@@ -31,7 +27,7 @@ async def dashboard_stats(
     Real-time dashboard KPIs.
     Returns empty/zero values when no data exists — no hardcoded fallbacks.
     """
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         projects_res = client.table("projects").select("id,status").execute()
         workers_res = client.table("workers").select("id,is_active").execute()
@@ -92,7 +88,7 @@ async def finance_report(
     user: UserContext = Depends(require_roles("admin", "checker", "accountant")),
 ):
     """Financial summary: total expenses by category, approval status breakdown."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         q = (
             client.table("expenses")
@@ -130,7 +126,7 @@ async def workforce_report(
     user: UserContext = Depends(require_roles("admin", "checker", "manager")),
 ):
     """Workforce summary: headcount, active workers, recent attendance."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         workers_res = client.table("workers").select("id,full_name,designation,is_active").execute()
         attendance_res = (
@@ -166,7 +162,7 @@ async def materials_report(
     user: UserContext = Depends(get_current_user),
 ):
     """Materials inventory summary."""
-    client = _require_supabase()
+    client = require_supabase_service()
     try:
         result = client.table("materials").select("id,material_name,category,quantity,metadata,unit").execute()
         rows = result.data or []

@@ -4,6 +4,7 @@ System configuration and user preferences API endpoints
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from functools import cache
 from typing import Any, List
 from datetime import datetime, timezone
 import ipaddress
@@ -12,7 +13,7 @@ import socket
 import urllib.parse
 import urllib.request
 from core.auth import UserContext, get_current_user
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 from .service import SettingsService
 from .schema import (
     SystemSettingCreate,
@@ -25,7 +26,11 @@ from .schema import (
 )
 
 router = APIRouter()
-settings_service = SettingsService(db_client=supabase_service)
+
+
+@cache
+def _svc() -> SettingsService:
+    return SettingsService(db_client=get_supabase_service())
 
 GLOBAL_BACKUP_TABLES = ("users", "workspace_preferences", "biometric_credentials")
 
@@ -35,10 +40,9 @@ def _is_admin(role: str | None) -> bool:
 
 
 def _load_rows_for_backup(table_name: str, user: UserContext) -> list[dict[str, Any]]:
-    if supabase_service is None:
-        raise HTTPException(status_code=503, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
 
-    query = supabase_service.table(table_name).select("*")
+    query = svc.table(table_name).select("*")
     if not _is_admin(user.get("role")):
         if table_name == "users":
             query = query.eq("id", user.user_id)
@@ -49,8 +53,7 @@ def _load_rows_for_backup(table_name: str, user: UserContext) -> list[dict[str, 
 
 
 def _restore_rows(table_name: str, rows: list[dict[str, Any]], user: UserContext) -> int:
-    if supabase_service is None:
-        raise HTTPException(status_code=503, detail="Supabase service client is not configured")
+    svc = require_supabase_service()
     if not rows:
         return 0
 
@@ -77,13 +80,13 @@ def _restore_rows(table_name: str, rows: list[dict[str, Any]], user: UserContext
         return 0
 
     if table_name == "users":
-        supabase_service.table("users").upsert(sanitized, on_conflict="id").execute()
+        svc.table("users").upsert(sanitized, on_conflict="id").execute()
         return len(sanitized)
     if table_name == "workspace_preferences":
-        supabase_service.table("workspace_preferences").upsert(sanitized, on_conflict="user_id").execute()
+        svc.table("workspace_preferences").upsert(sanitized, on_conflict="user_id").execute()
         return len(sanitized)
     if table_name == "biometric_credentials":
-        supabase_service.table("biometric_credentials").upsert(sanitized, on_conflict="user_id,credential_id").execute()
+        svc.table("biometric_credentials").upsert(sanitized, on_conflict="user_id,credential_id").execute()
         return len(sanitized)
     return 0
 
@@ -105,7 +108,7 @@ def _validate_backup_payload(payload: dict[str, Any]) -> dict[str, list[dict[str
 @router.get("/system", response_model=List[SystemSettingResponse])
 async def get_system_settings(current_user: dict = Depends(get_current_user)):
     """Get all system settings"""
-    return await settings_service.get_system_settings()
+    return await _svc().get_system_settings()
 
 @router.post("/system", response_model=SystemSettingResponse)
 async def create_system_setting(
@@ -115,7 +118,7 @@ async def create_system_setting(
     """Create a new system setting (admin only)"""
     if current_user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    return await settings_service.update_system_setting(setting.key, setting.value, current_user.user_id)
+    return await _svc().update_system_setting(setting.key, setting.value, current_user.user_id)
 
 @router.put("/system/{setting_key}", response_model=SystemSettingResponse)
 async def update_system_setting(
@@ -126,7 +129,7 @@ async def update_system_setting(
     """Update a system setting (admin only)"""
     if current_user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    return await settings_service.update_system_setting(setting_key, setting.value, current_user.user_id)
+    return await _svc().update_system_setting(setting_key, setting.value, current_user.user_id)
 
 @router.delete("/system/{setting_key}")
 async def delete_system_setting(
@@ -142,7 +145,7 @@ async def delete_system_setting(
 @router.get("/user")
 async def get_workspace_preferences(current_user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     """Get current user's preferences"""
-    return await settings_service.get_workspace_preferences(current_user.user_id)
+    return await _svc().get_workspace_preferences(current_user.user_id)
 
 @router.post("/user")
 async def create_user_preference(
@@ -150,7 +153,7 @@ async def create_user_preference(
     current_user: UserContext = Depends(get_current_user)
 ):
     """Create a user preference"""
-    return await settings_service.update_user_preference(current_user.user_id, preference.key, str(preference.value))
+    return await _svc().update_user_preference(current_user.user_id, preference.key, str(preference.value))
 
 @router.put("/user/{preference_key}")
 async def update_user_preference(
@@ -159,7 +162,7 @@ async def update_user_preference(
     current_user: UserContext = Depends(get_current_user)
 ):
     """Update a user preference"""
-    return await settings_service.update_user_preference(
+    return await _svc().update_user_preference(
         current_user.user_id, preference_key, str(preference.value)
     )
 

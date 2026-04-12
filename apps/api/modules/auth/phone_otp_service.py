@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 import httpx
 
 from core.config import settings
-from core.supabase import supabase_service
+from core.supabase import get_supabase_service, require_supabase_service
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 OTP_LENGTH = 6
@@ -158,7 +158,7 @@ def send_phone_otp(raw_phone: str) -> dict:
     Returns {"phone": normalized_phone, "expires_in": seconds}
     Raises OtpError or RuntimeError on failure.
     """
-    if supabase_service is None:
+    if get_supabase_service() is None:
         raise RuntimeError("Supabase service client not configured")
 
     if not settings.has_sms:
@@ -175,10 +175,12 @@ def send_phone_otp(raw_phone: str) -> dict:
         _send_verify_otp_twilio(phone)
         return {"phone": phone, "expires_in": settings.phone_otp_ttl_seconds}
 
+    svc = require_supabase_service()
+
     # Cleanup old OTPs for this number + expired rows globally
     try:
-        supabase_service.rpc("cleanup_expired_phone_otps", {}).execute()
-        supabase_service.table("phone_otp_verifications").delete().eq("phone", phone).execute()
+        svc.rpc("cleanup_expired_phone_otps", {}).execute()
+        svc.table("phone_otp_verifications").delete().eq("phone", phone).execute()
     except Exception:
         pass  # non-fatal — we will upsert a fresh row anyway
 
@@ -191,7 +193,7 @@ def send_phone_otp(raw_phone: str) -> dict:
     )
     expires_at_iso = datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat()
 
-    supabase_service.table("phone_otp_verifications").insert(
+    svc.table("phone_otp_verifications").insert(
         {
             "phone": phone,
             "otp_hash": otp_hash,
@@ -223,18 +225,20 @@ def verify_phone_otp(raw_phone: str, otp_input: str) -> dict:
     Raises OtpError on bad/expired/maxed codes.
     Raises RuntimeError on unexpected backend errors.
     """
-    if supabase_service is None:
+    if get_supabase_service() is None:
         raise RuntimeError("Supabase service client not configured")
 
     phone = _normalize_phone(raw_phone)
     otp_input = otp_input.strip()
+
+    svc = require_supabase_service()
 
     if settings.twilio_verify_service_sid:
         _check_verify_otp_twilio(phone, otp_input)
     else:
         # Load OTP row
         rows = (
-            supabase_service.table("phone_otp_verifications")
+            svc.table("phone_otp_verifications")
             .select("id,otp_hash,salt,expires_at,attempts,verified")
             .eq("phone", phone)
             .order("created_at", desc=True)
@@ -263,7 +267,7 @@ def verify_phone_otp(raw_phone: str, otp_input: str) -> dict:
         if attempts > settings.phone_otp_max_attempts:
             raise OtpError("অনেকবার ভুল OTP দেওয়া হয়েছে। নতুন OTP পাঠান।")
 
-        supabase_service.table("phone_otp_verifications").update(
+        svc.table("phone_otp_verifications").update(
             {"attempts": attempts}
         ).eq("id", row_id).execute()
 
@@ -273,13 +277,13 @@ def verify_phone_otp(raw_phone: str, otp_input: str) -> dict:
             raise OtpError(f"ভুল OTP। {settings.phone_otp_max_attempts - attempts} টি সুযোগ বাকি।")
 
         # Mark as verified
-        supabase_service.table("phone_otp_verifications").update(
+        svc.table("phone_otp_verifications").update(
             {"verified": True}
         ).eq("id", row_id).execute()
 
     # Look up user by phone in our users table
     user_rows = (
-        supabase_service.table("users")
+        svc.table("users")
         .select("id,email,role")
         .eq("phone", phone)
         .eq("is_active", True)
@@ -302,7 +306,7 @@ def verify_phone_otp(raw_phone: str, otp_input: str) -> dict:
     # can call supabase.auth.verifyOtp({token_hash, type: "magiclink"}) to
     # get a real session — no password required.
     try:
-        link_response = supabase_service.auth.admin.generate_link(
+        link_response = svc.auth.admin.generate_link(
             {
                 "type": "magiclink",
                 "email": user_email,
