@@ -82,7 +82,7 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
   };
 
   return (
-    <section className="module rounded-[1.5rem] border border-border/70 bg-white/80 p-5 shadow-soft dark:bg-slate-950/45">
+    <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-xl font-semibold text-foreground">Fund Management</h3>
@@ -94,7 +94,7 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
       </div>
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
           {noAccount && (
-            <div className="md:col-span-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+            <div className="md:col-span-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
               No fund account configured. Ask admin to create one before saving fund entries.
             </div>
           )}

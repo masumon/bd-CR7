@@ -122,7 +122,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   };
 
   return (
-    <section className="module rounded-[1.5rem] border border-border/70 bg-white/80 p-5 shadow-soft dark:bg-slate-950/45 space-y-5">
+    <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft space-y-5">
       <div>
         <h3 className="text-xl font-semibold text-foreground">Expense Tracking</h3>
         <p className="mt-1 text-sm text-muted-foreground">

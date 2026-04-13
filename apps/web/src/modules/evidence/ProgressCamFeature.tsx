@@ -115,7 +115,7 @@ export function ProgressCamFeature() {
   );
 
   return (
-    <section className="module rounded-[1.5rem] border border-border/70 bg-white/80 p-5 shadow-soft dark:bg-slate-950/45">
+    <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft">
       <div className="mb-4">
         <h3 className="text-xl font-semibold text-foreground">Progress Visualizer</h3>
         <p className="mt-1 text-sm text-muted-foreground">Upload image or video evidence by phase category with a clearer visual log.</p>
