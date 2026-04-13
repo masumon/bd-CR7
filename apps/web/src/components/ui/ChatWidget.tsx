@@ -198,8 +198,7 @@ export function ChatWidget() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.85, y: 20 }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="fixed bottom-[calc(78px+env(safe-area-inset-bottom))] right-4 z-[30] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-cyan-400/20 bg-card/95 shadow-2xl backdrop-blur-md lg:bottom-7"
-          style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.45)" }}
+          className="fixed bottom-[calc(78px+env(safe-area-inset-bottom))] right-4 z-[30] flex w-[350px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-cyan-400/20 bg-card/95 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-md lg:bottom-7"
         >
         {/* ── Header ── */}
         <div
@@ -219,7 +218,7 @@ export function ChatWidget() {
 
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-foreground leading-tight">SUMONIX AI</p>
-            <p className="text-[10px] text-muted-foreground leading-tight">
+            <p className="text-[11px] text-muted-foreground leading-tight">
               {!online
                 ? <span className="flex items-center gap-0.5 text-amber-400"><WifiOff className="inline h-2.5 w-2.5" /> Offline</span>
                 : mode === "flirt" ? "😊 Flirt Mode" : "🤖 Normal Mode"
@@ -231,7 +230,7 @@ export function ChatWidget() {
             {/* Language toggle */}
             <button
               onClick={() => setLang((l) => (l === "bn" ? "en" : "bn"))}
-              className="rounded-lg px-1.5 py-1 text-[10px] font-bold text-muted-foreground hover:bg-muted transition-colors"
+                className="rounded-lg px-2 py-1 text-[11px] font-bold text-muted-foreground hover:bg-muted transition-colors"
               title="Toggle language"
             >
               {lang === "bn" ? "EN" : "বাং"}

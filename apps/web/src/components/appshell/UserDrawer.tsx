@@ -154,7 +154,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                 <div className="flex items-center gap-3 rounded-xl px-3 py-3">
                   <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">{t.role}</p>
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{t.role}</p>
                     <p className="text-sm font-medium text-foreground">{role || t.unassigned}</p>
                   </div>
                 </div>
@@ -162,9 +162,9 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                 <div className="flex items-center gap-3 rounded-xl px-3 py-3">
                   <User className="h-4 w-4 shrink-0 text-primary" />
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Public User ID / পাবলিক ইউজার আইডি</p>
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Public User ID / পাবলিক ইউজার আইডি</p>
                     <p className="truncate font-mono text-xs text-foreground">{profile?.user_code || "—"}</p>
-                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Internal ID / ইন্টারনাল আইডি</p>
+                    <p className="mt-0.5 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Internal ID / ইন্টারনাল আইডি</p>
                     <p className="truncate font-mono text-xs text-muted-foreground">{userId || "—"}</p>
                   </div>
                 </div>
@@ -172,9 +172,9 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                 <div className="flex items-center gap-3 rounded-xl px-3 py-3">
                   <User className="h-4 w-4 shrink-0 text-primary" />
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Email / ইমেইল</p>
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Email / ইমেইল</p>
                     <p className="truncate text-xs text-foreground">{profile?.email || "—"}</p>
-                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Phone / ফোন</p>
+                    <p className="mt-0.5 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Phone / ফোন</p>
                     <p className="truncate text-xs text-foreground">{profile?.phone || "—"}</p>
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                 <div className="flex items-center gap-3 rounded-xl px-3 py-3">
                   <Activity className="h-4 w-4 shrink-0 text-emerald-500" />
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">{t.activity}</p>
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{t.activity}</p>
                     <p className="text-sm text-foreground">{t.activityBody}</p>
                   </div>
                 </div>

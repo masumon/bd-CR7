@@ -278,7 +278,7 @@ export function ERPModuleStatusGrid() {
                 {m.icon}
               </div>
               {m.alert && (
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
                   !
                 </span>
               )}
@@ -286,7 +286,7 @@ export function ERPModuleStatusGrid() {
             <p className="text-lg font-bold leading-none text-foreground">{m.value}</p>
             <p className="mt-1 text-xs font-medium text-muted-foreground">{m.label}</p>
             {m.sub && (
-              <p className="mt-0.5 text-[10px] text-muted-foreground/70">{m.sub}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground/75">{m.sub}</p>
             )}
           </div>
         ))}

@@ -129,8 +129,7 @@ export function ToastContainer() {
   return (
     <div
       aria-label="Notifications"
-      className="pointer-events-none fixed bottom-[calc(70px+env(safe-area-inset-bottom)+0.75rem)] right-3 z-[30] flex flex-col-reverse gap-2 sm:bottom-5 sm:right-5 lg:bottom-6 lg:right-6"
-      style={{ maxWidth: "min(calc(100vw - 1.5rem), 24rem)" }}
+      className="pointer-events-none fixed bottom-[calc(70px+env(safe-area-inset-bottom)+0.75rem)] right-3 z-[30] flex w-full max-w-[min(calc(100vw-1.5rem),24rem)] flex-col-reverse gap-2 sm:bottom-5 sm:right-5 lg:bottom-6 lg:right-6"
     >
       <AnimatePresence mode="popLayout" initial={false}>
         {toasts.map((t) => (
