@@ -102,14 +102,13 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-50 flex flex-col"
+        className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-md"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
-        style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(8px)" }}
       >
         {/* ── Top Bar ── */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 shrink-0">
+        <div className="shrink-0 border-b border-white/10 bg-black/40 px-4 py-3">
           <p className="truncate text-sm font-medium text-white/90 max-w-[60vw]">
             {item.fileName ?? "File Preview"}
           </p>
@@ -175,21 +174,20 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
             className="flex items-center justify-center"
           >
             {isImage && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                ref={imgRef}
-                src={safeSrc}
-                alt={item.fileName ?? "Preview"}
-                className="rounded-xl shadow-2xl object-contain transition-transform duration-200 select-none"
-                style={{
-                  maxHeight: "65vh",
-                  maxWidth: "90vw",
-                  transform: `scale(${zoom})`,
-                  transformOrigin: "center center",
-                  cursor: zoom > 1 ? "grab" : "default",
-                }}
-                draggable={false}
-              />
+              <motion.div
+                animate={{ scale: zoom }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className={zoom > 1 ? "cursor-grab" : "cursor-default"}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  ref={imgRef}
+                  src={safeSrc}
+                  alt={item.fileName ?? "Preview"}
+                  className="max-h-[65vh] max-w-[90vw] select-none rounded-xl object-contain shadow-2xl"
+                  draggable={false}
+                />
+              </motion.div>
             )}
 
             {isVideo && (
@@ -198,8 +196,7 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
                 controls
                 playsInline
                 preload="metadata"
-                className="rounded-xl shadow-2xl"
-                style={{ maxHeight: "65vh", maxWidth: "90vw" }}
+                className="max-h-[65vh] max-w-[90vw] rounded-xl shadow-2xl"
               />
             )}
 
@@ -207,14 +204,13 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
               <iframe
                 src={`${safeSrc}#toolbar=0&view=FitH`}
                 title={item.fileName ?? "PDF"}
-                className="rounded-xl border border-white/10"
-                style={{ width: "min(90vw, 800px)", height: "65vh" }}
+                className="h-[65vh] w-[min(90vw,800px)] rounded-xl border border-white/10"
                 sandbox="allow-same-origin"
               />
             )}
 
             {fileType === "audio" && (
-              <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-8">
+              <div className="flex flex-col items-center gap-4 rounded-2xl border border-border/70 bg-card/80 p-8">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/20">
                   <FileText className="h-10 w-10 text-primary" />
                 </div>
@@ -224,7 +220,7 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
             )}
 
             {fileType === "document" && (
-              <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-10">
+              <div className="flex flex-col items-center gap-4 rounded-2xl border border-border/70 bg-card/80 p-10">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/20">
                   <FileText className="h-10 w-10 text-primary" />
                 </div>

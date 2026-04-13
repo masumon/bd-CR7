@@ -51,7 +51,7 @@ export function CompactStatCard({
       <div className="mt-1.5 min-w-0">
         <p className="truncate text-[11px] font-bold leading-tight text-foreground">{value}</p>
         <p className="mt-0.5 truncate text-[10px] leading-tight text-muted-foreground">{label}</p>
-        {sub && <p className="mt-0.5 truncate text-[9px] text-muted-foreground/60">{sub}</p>}
+        {sub && <p className="mt-0.5 truncate text-[10px] text-muted-foreground/70">{sub}</p>}
       </div>
     </button>
   );

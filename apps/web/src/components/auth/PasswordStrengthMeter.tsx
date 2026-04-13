@@ -36,11 +36,11 @@ export function PasswordStrengthMeter({
             : "strong";
 
   const strengthColors = {
-    none: { bar: "bg-gray-300", text: "text-gray-600" },
-    weak: { bar: "bg-red-500", text: "text-red-600" },
-    fair: { bar: "bg-orange-500", text: "text-orange-600" },
-    good: { bar: "bg-yellow-500", text: "text-yellow-600" },
-    strong: { bar: "bg-green-500", text: "text-green-600" },
+    none: { bar: "bg-muted", text: "text-muted-foreground" },
+    weak: { bar: "bg-rose-500", text: "text-rose-400" },
+    fair: { bar: "bg-orange-500", text: "text-orange-400" },
+    good: { bar: "bg-amber-500", text: "text-amber-300" },
+    strong: { bar: "bg-emerald-500", text: "text-emerald-400" },
   };
 
   const strengthLabels = {
@@ -71,7 +71,7 @@ export function PasswordStrengthMeter({
               {strengthLabels[strength]}
             </span>
           </div>
-          <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted/80">
             {/* Strength meter with dynamic width */}
             <div
               className={`strength-meter-bar h-full transition-all duration-300 ${strengthColors[strength].bar}`}
@@ -119,9 +119,7 @@ export function PasswordStrengthMeter({
               <li
                 key={key}
                 className={`flex items-center gap-2 text-xs transition-colors ${
-                  met
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-muted-foreground"
+                  met ? "text-emerald-400" : "text-muted-foreground"
                 }`}
               >
                 {met ? (

@@ -150,7 +150,8 @@ export function useAuthFlow(router: RouterLike) {
       const result = await signInWithPasskey(candidateEmail);
       await completeMagicLinkLogin(result.token_hash, result.email, result.role || null, result.user_id || null);
     } catch (err) {
-      setPasskeyError((err as Error).message || "Passkey sign in failed.");
+      const message = (err as Error).message || "Passkey sign in failed.";
+      setPasskeyError(`${message} Use password or Email OTP fallback if this continues.`);
       setAuthDone(false);
       setShowOverlay(false);
     } finally {

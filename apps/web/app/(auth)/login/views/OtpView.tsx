@@ -43,11 +43,11 @@ export function OtpView({
   success,
 }: OtpViewProps) {
   return (
-    <motion.main key="otp" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
+    <motion.main key="otp" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="flex min-h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back"><ChevronLeft className="h-5 w-5" /></button>
-          <h1 className="font-[var(--font-outfit-var)] text-xl font-bold text-white">Email OTP Fallback</h1>
+          <h1 className="font-[var(--font-outfit-var)] text-xl font-bold text-foreground">Email OTP Fallback</h1>
         </header>
 
         <div className="flex-1 min-h-[1.5rem]" />
@@ -59,7 +59,7 @@ export function OtpView({
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="otp-step1" {...fadeUp} transition={{ duration: 0.28 }} className="space-y-3">
-                <p className="font-[var(--font-outfit-var)] text-sm text-white/60">OTP পেতে আপনার account email লিখুন</p>
+                <p className="font-[var(--font-outfit-var)] text-sm text-muted-foreground">OTP পেতে আপনার account email লিখুন</p>
                 <div className="bdcr7-input-wrap" data-filled={Boolean(contact)}>
                   <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
                   <label className="bdcr7-input-label">Email / ইমেইল</label>
@@ -75,7 +75,7 @@ export function OtpView({
             {step === 2 && (
               <motion.div key="otp-step2" {...fadeUp} transition={{ duration: 0.28 }} className="space-y-4">
                 <div className="text-center">
-                  <p className="text-sm text-white/60">ইমেইলে পাঠানো ৬ সংখ্যার কোড লিখুন</p>
+                  <p className="text-sm text-muted-foreground">ইমেইলে পাঠানো ৬ সংখ্যার কোড লিখুন</p>
                   <p className="mt-0.5 text-sm font-semibold text-amber-300">{contact}</p>
                 </div>
 
@@ -104,7 +104,7 @@ export function OtpView({
                 </button>
 
                 <div className="flex items-center justify-center gap-2">
-                  <button type="button" onClick={onResend} disabled={resendTimer > 0 || loading} className={`flex items-center gap-1.5 text-[12px] transition-colors disabled:opacity-40 ${resendTimer > 0 ? "text-white/35" : "text-amber-300/90"}`}>
+                  <button type="button" onClick={onResend} disabled={resendTimer > 0 || loading} className={`flex items-center gap-1.5 text-[12px] transition-colors disabled:opacity-40 ${resendTimer > 0 ? "text-muted-foreground" : "text-primary"}`}>
                     <RefreshCcw className="h-3.5 w-3.5" />
                     {resendTimer > 0 ? `${resendTimer} সেকেন্ড পর আবার পাঠান` : "আবার ওটিপি পাঠান"}
                   </button>
@@ -114,7 +114,7 @@ export function OtpView({
           </AnimatePresence>
         </div>
 
-        <p className="mt-3 pb-2 text-center text-[11px] text-white/40">
+        <p className="mt-3 pb-2 text-center text-[11px] text-muted-foreground">
           সমস্যা হচ্ছে? <a href="/forgot-password" className="font-medium text-amber-300/80 hover:underline">অন্য পদ্ধতি ব্যবহার করুন</a>
         </p>
       </div>

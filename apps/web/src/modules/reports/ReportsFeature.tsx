@@ -79,7 +79,7 @@ function MiniBarChart({ data }: { data: Array<{ label: string; value: number }> 
               className={`w-full rounded-t-sm bg-emerald-500/85 transition-all duration-500 ${getBarHeightClass(ratio)}`}
               title={`${d.label}: ${d.value}`}
             />
-            <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">{d.label}</span>
+            <span className="w-full truncate text-center text-[10px] leading-tight text-muted-foreground">{d.label}</span>
           </div>
         );
       })}

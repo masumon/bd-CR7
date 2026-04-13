@@ -173,7 +173,7 @@ export function AppLockScreen({ onUnlock }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0f1a16]/95 font-[var(--font-display)] backdrop-blur-lg"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/95 font-[var(--font-display)] text-foreground backdrop-blur-lg"
       role="dialog"
       aria-label="অ্যাপ লক স্ক্রিন"
     >
@@ -188,8 +188,8 @@ export function AppLockScreen({ onUnlock }: Props) {
             <Fingerprint className="h-8 w-8 text-amber-400" />
           )}
         </div>
-        <p className="text-base font-semibold tracking-wide text-white">BD CR7 ERP</p>
-        <p className="text-xs text-white/50">অ্যাপটি লক আছে। পরিচয় যাচাই করুন।</p>
+        <p className="text-base font-semibold tracking-wide text-foreground">BD CR7 ERP</p>
+        <p className="text-xs text-muted-foreground">অ্যাপটি লক আছে। পরিচয় যাচাই করুন।</p>
       </div>
 
       {/* Biometric section */}
@@ -214,7 +214,7 @@ export function AppLockScreen({ onUnlock }: Props) {
             )}
           </button>
 
-          <p className="mt-8 text-xs text-white/40">বা</p>
+          <p className="mt-8 text-xs text-muted-foreground">বা</p>
         </div>
       )}
 
@@ -227,7 +227,7 @@ export function AppLockScreen({ onUnlock }: Props) {
               placeholder="ইমেইল"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-amber-400/50"
+              className="h-11 w-full rounded-xl border border-border/70 bg-card/70 px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-amber-400/50"
             />
           )}
           <input
@@ -236,7 +236,7 @@ export function AppLockScreen({ onUnlock }: Props) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
-            className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-amber-400/50"
+            className="h-11 w-full rounded-xl border border-border/70 bg-card/70 px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-amber-400/50"
           />
           <button
             type="submit"
@@ -251,7 +251,7 @@ export function AppLockScreen({ onUnlock }: Props) {
         <button
           type="button"
           onClick={() => { setStep("password"); setError(""); }}
-          className="text-xs text-white/40 underline underline-offset-2 hover:text-white/60"
+          className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
         >
           পাসওয়ার্ড দিয়ে আনলক করুন
         </button>

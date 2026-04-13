@@ -115,10 +115,7 @@ export default function RegisterPage() {
 
   return (
     <main className="register-shell auth-bg-bdcr7 flex flex-col overflow-y-auto">
-      <div
-        className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5"
-        style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
-      >
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -128,10 +125,7 @@ export default function RegisterPage() {
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1
-              className="text-xl font-bold text-white"
-              style={{ fontFamily: "var(--font-outfit-var)" }}
-            >
+            <h1 className="font-[var(--font-outfit-var)] text-xl font-bold text-white">
               নতুন একাউন্ট তৈরি করুন
             </h1>
             <div className="secure-badge mt-0.5">
@@ -227,8 +221,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ minHeight: "unset" }}
-                className="shrink-0 text-white/40 hover:text-white/80 transition-colors disabled:opacity-50"
+                className="h-auto min-h-0 shrink-0 text-white/40 transition-colors hover:text-white/80 disabled:opacity-50"
                 disabled={loading}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -259,8 +252,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{ minHeight: "unset" }}
-                className="shrink-0 text-white/40 hover:text-white/80 transition-colors disabled:opacity-50"
+                className="h-auto min-h-0 shrink-0 text-white/40 transition-colors hover:text-white/80 disabled:opacity-50"
                 disabled={loading}
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -282,8 +274,7 @@ export default function RegisterPage() {
 
             <label
               htmlFor="terms"
-              className="flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2"
-              style={{ borderColor: "rgba(251,189,35,0.15)", background: "rgba(255,255,255,0.03)" }}
+              className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-300/20 bg-white/5 px-3 py-2"
             >
               <input
                 id="terms"
@@ -291,10 +282,9 @@ export default function RegisterPage() {
                 checked={agreeToTerms}
                 onChange={(e) => setAgreeToTerms(e.target.checked)}
                 disabled={loading}
-                className="mt-0.5 h-5 w-5 rounded accent-amber-400"
-                style={{ minHeight: "unset" }}
+                className="mt-0.5 h-5 w-5 min-h-0 rounded accent-amber-400"
               />
-              <span className="text-xs leading-5" style={{ color: "rgba(255,255,255,0.75)" }}>
+              <span className="text-xs leading-5 text-white/75">
                 আমি শর্তাবলী ও প্রাইভেসি পলিসির সাথে একমত *
               </span>
             </label>
@@ -312,20 +302,15 @@ export default function RegisterPage() {
           </form>
 
           <div className="my-3 flex items-center gap-3">
-            <span className="h-px flex-1" style={{ background: "rgba(255,255,255,0.1)" }} />
-            <span className="text-xs" style={{ color: "rgba(255,255,255,0.38)" }}>অথবা</span>
-            <span className="h-px flex-1" style={{ background: "rgba(255,255,255,0.1)" }} />
+            <span className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-white/40">অথবা</span>
+            <span className="h-px flex-1 bg-white/10" />
           </div>
 
           <button
             onClick={handleGoogleSignUp}
             disabled={loading}
-            className="flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-[0.99] disabled:opacity-60"
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.05)",
-              color: "rgba(255,255,255,0.85)",
-            }}
+            className="flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-white/15 bg-white/5 text-sm font-semibold text-white/85 transition-all active:scale-[0.99] disabled:opacity-60"
           >
             <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -337,15 +322,11 @@ export default function RegisterPage() {
           </button>
         </section>
 
-        <p
-          className="mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-xs"
-          style={{ color: "rgba(255,255,255,0.5)" }}
-        >
+        <p className="mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-xs text-white/50">
           আগে থেকেই অ্যাকাউন্ট আছে?{" "}
           <button
             onClick={() => router.push("/login")}
-            style={{ color: "rgba(251,189,35,0.9)" }}
-            className="font-semibold hover:underline transition"
+            className="font-semibold text-amber-300/90 transition hover:underline"
           >
             লগইন করুন
           </button>

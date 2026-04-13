@@ -74,6 +74,7 @@ class Settings:
         self.site_longitude = float(env.get("SITE_LNG", "90.399452"))
         self.site_max_radius_km = float(env.get("SITE_MAX_RADIUS_KM", "2.0"))
         self.governance_refresh_secret = env.get("GOVERNANCE_REFRESH_SECRET", "").strip()
+        self.webauthn_rp_id = env.get("WEBAUTHN_RP_ID", "").strip().lower()
 
         # ── Twilio SMS (custom phone OTP) ─────────────────────────────────────
         self.twilio_account_sid = env.get("TWILIO_ACCOUNT_SID", "").strip()

@@ -27,7 +27,7 @@ export function LandingView({ onSignin, onSignup, onEmailOtp, onBiometric, onPas
       key="landing"
       {...fadeUp}
       transition={{ duration: 0.4, ease: easeAuth }}
-      className="flex h-[100dvh] w-full flex-col items-center overflow-hidden px-5 pt-[max(2.5rem,env(safe-area-inset-top))]"
+      className="flex min-h-[100dvh] w-full flex-col items-center overflow-y-auto overflow-x-hidden px-5 pt-[max(2.5rem,env(safe-area-inset-top))]"
     >
       <header className="flex flex-col items-center gap-3">
         <div className="flex h-[140px] w-[140px] items-center justify-center rounded-full border-[2.5px] border-amber-300/55 bg-[#0e1f3b] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
@@ -38,7 +38,7 @@ export function LandingView({ onSignin, onSignup, onEmailOtp, onBiometric, onPas
         </p>
       </header>
 
-      <h2 className="mt-6 text-center font-[var(--font-outfit-var)] text-4xl font-extrabold tracking-[-0.01em] text-white">
+      <h2 className="mt-6 text-center font-[var(--font-outfit-var)] text-4xl font-extrabold tracking-[-0.01em] text-foreground">
         Welcome Back
       </h2>
 
@@ -51,12 +51,12 @@ export function LandingView({ onSignin, onSignup, onEmailOtp, onBiometric, onPas
         </button>
 
         <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-white/[0.1]" />
-          <span className="text-[11px] text-white/40">OR</span>
-          <span className="h-px flex-1 bg-white/[0.1]" />
+          <span className="h-px flex-1 bg-border/70" />
+          <span className="text-[11px] text-muted-foreground">OR</span>
+          <span className="h-px flex-1 bg-border/70" />
         </div>
 
-        <button type="button" onClick={onPasskey} disabled={passkeyLoading} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/80 transition-all hover:border-amber-300/25 hover:bg-white/[0.07] active:scale-[0.97] disabled:opacity-60" aria-label="Sign in with passkey">
+        <button type="button" onClick={onPasskey} disabled={passkeyLoading} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card/60 text-sm font-medium text-foreground transition-all hover:border-primary/40 hover:bg-card active:scale-[0.97] disabled:opacity-60" aria-label="Sign in with passkey">
           {passkeyLoading ? <Loader2 className="h-5 w-5 animate-spin text-amber-300/80" /> : <Shield className="h-5 w-5 text-amber-300/70" />}
           Continue with Passkey
         </button>
@@ -87,7 +87,7 @@ export function LandingView({ onSignin, onSignup, onEmailOtp, onBiometric, onPas
                 </button>
               </div>
 
-              <p className="text-[11px] text-white/50">
+              <p className="text-[11px] text-muted-foreground">
                 {bioState === "scanning" ? "Scanning..." : bioState === "failed" ? "Biometric verification failed" : "Tap to scan"}
               </p>
 
@@ -100,7 +100,7 @@ export function LandingView({ onSignin, onSignup, onEmailOtp, onBiometric, onPas
           )}
         </AnimatePresence>
 
-        <button type="button" onClick={onEmailOtp} className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-white/50 transition-colors hover:text-amber-300">
+        <button type="button" onClick={onEmailOtp} className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-primary">
           <Mail className="h-3.5 w-3.5" />
           Use Email OTP fallback
         </button>

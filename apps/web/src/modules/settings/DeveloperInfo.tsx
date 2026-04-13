@@ -15,7 +15,7 @@ const links = [
 export function DeveloperInfo() {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <Card className="max-w-xl overflow-hidden border-white/20 bg-white/10">
+      <Card className="max-w-xl overflow-hidden border-border/70 bg-card/80">
         <CardContent className="space-y-5 p-6">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-indigo-500 to-fuchsia-500 text-lg font-bold text-white shadow-lg shadow-sky-500/20">

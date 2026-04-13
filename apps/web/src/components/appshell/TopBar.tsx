@@ -99,19 +99,19 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
         <div className="flex items-center gap-0.5">
           <Button variant="ghost" className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 p-0" onClick={onToggleTheme} aria-label={language === "bn" ? "থিম পরিবর্তন" : "Toggle theme"}>
             {dark ? <Sun className="h-5 w-5 text-gold" /> : <Moon className="h-5 w-5" />}
-            <span className="font-[var(--font-outfit)] text-[9px] leading-none text-muted-foreground">{actionLabels.theme}</span>
+            <span className="font-[var(--font-outfit)] text-[10px] leading-none text-muted-foreground">{actionLabels.theme}</span>
           </Button>
 
           <Button variant="ghost" className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 p-0" type="button" onClick={onToggleLanguage} aria-label={language === "bn" ? "ভাষা পরিবর্তন" : "Toggle language"}>
             <Languages className="h-5 w-5" />
-            <span className="font-[var(--font-outfit)] text-[9px] leading-none text-muted-foreground">{actionLabels.language}</span>
+            <span className="font-[var(--font-outfit)] text-[10px] leading-none text-muted-foreground">{actionLabels.language}</span>
           </Button>
 
           <Button variant="ghost" className="relative flex h-12 w-12 flex-col items-center justify-center gap-0.5 p-0" onClick={onOpenNotifications} aria-label={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
             <Bell className="h-5 w-5" />
-            <span className="font-[var(--font-outfit)] text-[9px] leading-none text-muted-foreground">{actionLabels.notifications}</span>
+            <span className="font-[var(--font-outfit)] text-[10px] leading-none text-muted-foreground">{actionLabels.notifications}</span>
             {unread > 0 && (
-              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
+              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
@@ -125,7 +125,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
             aria-label={language === "bn" ? "লগআউট" : "Logout"}
           >
             <LogOut className="h-5 w-5" />
-            <span className="font-[var(--font-outfit)] text-[9px] leading-none text-muted-foreground">{actionLabels.logout}</span>
+            <span className="font-[var(--font-outfit)] text-[10px] leading-none text-muted-foreground">{actionLabels.logout}</span>
           </Button>
 
           <button

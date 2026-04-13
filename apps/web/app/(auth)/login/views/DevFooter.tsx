@@ -10,7 +10,7 @@ export function DevFooter() {
     <footer className="w-full pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="h-px w-full bg-white/[0.08]" />
       <div className="pt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-        <p className="text-[10px] tracking-[0.15em] whitespace-nowrap" style={{ color: "rgba(255,255,255,0.30)" }}>
+        <p className="text-[10px] tracking-[0.15em] whitespace-nowrap text-white/30">
           Powered by <span className="gold-text-gradient font-semibold uppercase tracking-[0.18em]">SUMONIX AI</span>
         </p>
         <div className="flex items-center gap-2">

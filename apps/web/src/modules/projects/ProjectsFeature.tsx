@@ -675,6 +675,16 @@ export function ProjectsFeature() {
                   onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
                   required
                 />
+                <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60">
+                  <FileImage className="h-3.5 w-3.5" />
+                  Capture from Camera
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                  />
+                </label>
                 <input
                   className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   title="Attachment caption"
@@ -800,32 +810,58 @@ export function ProjectsFeature() {
                       className="h-28 w-full rounded-xl object-cover border border-border"
                     />
                   )}
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-foreground hover:bg-muted/60">
-                    {coverPhotoUploading
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : <FileImage className="h-3.5 w-3.5" />}
-                    {coverPhotoUploading ? "Uploading..." : "Upload Cover Photo"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={coverPhotoUploading}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        e.currentTarget.value = "";
-                        setCoverPhotoUploading(true);
-                        try {
-                          const url = await uploadToCloudinary(file);
-                          setForm((f) => ({ ...f, cover_photo_url: url }));
-                        } catch (uploadErr) {
-                          setError(getErrorMessage(uploadErr) || "Cover photo upload failed.");
-                        } finally {
-                          setCoverPhotoUploading(false);
-                        }
-                      }}
-                    />
-                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-foreground hover:bg-muted/60">
+                      {coverPhotoUploading
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <FileImage className="h-3.5 w-3.5" />}
+                      {coverPhotoUploading ? "Uploading..." : "Upload Cover Photo"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={coverPhotoUploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          e.currentTarget.value = "";
+                          setCoverPhotoUploading(true);
+                          try {
+                            const url = await uploadToCloudinary(file);
+                            setForm((f) => ({ ...f, cover_photo_url: url }));
+                          } catch (uploadErr) {
+                            setError(getErrorMessage(uploadErr) || "Cover photo upload failed.");
+                          } finally {
+                            setCoverPhotoUploading(false);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60">
+                      <FileImage className="h-3.5 w-3.5" />
+                      Camera
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={coverPhotoUploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          e.currentTarget.value = "";
+                          setCoverPhotoUploading(true);
+                          try {
+                            const url = await uploadToCloudinary(file);
+                            setForm((f) => ({ ...f, cover_photo_url: url }));
+                          } catch (uploadErr) {
+                            setError(getErrorMessage(uploadErr) || "Cover photo upload failed.");
+                          } finally {
+                            setCoverPhotoUploading(false);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   {/* Fallback: allow pasting a URL directly */}
                   <input
                     type="url"

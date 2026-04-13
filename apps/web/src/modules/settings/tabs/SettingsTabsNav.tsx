@@ -24,7 +24,7 @@ export function SettingsTabsNav({ language, tabs, activeTab, onChange }: Setting
               >
                 <Icon className="h-4 w-4" />
                 <span className="text-[11px] font-medium leading-tight">{TAB_LABELS[language][tab]}</span>
-                <span className="text-[9px] leading-tight opacity-70">{desc}</span>
+                <span className="text-[10px] leading-tight opacity-75">{desc}</span>
               </button>
             );
           })}

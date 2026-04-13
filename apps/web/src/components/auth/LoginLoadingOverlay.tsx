@@ -30,14 +30,13 @@ export function LoginLoadingOverlay({ visible, complete = false, onDone }: Login
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35 }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6"
-          style={{ background: "rgba(4, 9, 16, 0.78)", backdropFilter: "blur(6px)" }}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 px-6 backdrop-blur-md"
         >
           <motion.div
             initial={{ scale: 0.92, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.06, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-xs rounded-3xl border border-white/10 bg-slate-950/65 p-7 text-center shadow-2xl"
+            className="w-full max-w-xs rounded-3xl border border-border/70 bg-card/90 p-7 text-center shadow-2xl"
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -54,8 +53,8 @@ export function LoginLoadingOverlay({ visible, complete = false, onDone }: Login
                 priority
               />
             </div>
-            <h2 className="font-display text-xl font-bold tracking-tight text-amber-200">Signing you in...</h2>
-            <p className="mt-1 text-xs text-slate-300">Please wait while we secure your session.</p>
+            <h2 className="font-display text-xl font-bold tracking-tight text-amber-300">Signing you in...</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Please wait while we secure your session.</p>
           </motion.div>
         </motion.div>
       )}

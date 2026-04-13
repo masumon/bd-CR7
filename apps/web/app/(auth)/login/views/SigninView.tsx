@@ -54,14 +54,14 @@ export function SigninView({
   passkeyError,
 }: SigninViewProps) {
   return (
-    <motion.main key="signin" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
+    <motion.main key="signin" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="flex min-h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="font-[var(--font-outfit-var)] text-2xl font-bold text-white">Welcome Back</h1>
+            <h1 className="font-[var(--font-outfit-var)] text-2xl font-bold text-foreground">Welcome Back</h1>
             <div className="secure-badge mt-0.5"><Shield className="h-3 w-3" />Secure Sign In</div>
           </div>
         </header>
@@ -82,7 +82,7 @@ export function SigninView({
               <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Password</label>
               <input type={showPass ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => setCapsLock(e.getModifierState("CapsLock"))} className="bdcr7-input pr-8" required aria-label="Password" />
-              <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Hide password" : "Show password"} className="min-h-0 shrink-0 text-white/40 transition-colors hover:text-white/80">
+              <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Hide password" : "Show password"} className="min-h-0 shrink-0 text-muted-foreground transition-colors hover:text-foreground">
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
@@ -90,7 +90,7 @@ export function SigninView({
             {capsLock && <p className="text-[11px] text-amber-300/80">⚠ Caps Lock is on</p>}
 
             <div className="flex items-center justify-between">
-              <label className="flex cursor-pointer items-center gap-2 text-[12px] text-white/60">
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground">
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 min-h-0 rounded accent-amber-400" />
                 Remember me
               </label>
@@ -107,18 +107,18 @@ export function SigninView({
 
           <SocialRow onGoogle={onGoogle} loading={loading} />
 
-          <button type="button" onClick={onPasskey} disabled={passkeyLoading || !email.trim()} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 py-2 text-[12px] text-white/70 transition-colors hover:border-amber-300/30 hover:text-amber-300 disabled:opacity-50">
+          <button type="button" onClick={onPasskey} disabled={passkeyLoading || !email.trim()} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border py-2 text-[12px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50">
             {passkeyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
             Sign in with Passkey
           </button>
 
-          <button type="button" onClick={onEmailOtp} className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] text-white/45 transition-colors hover:text-amber-300">
+          <button type="button" onClick={onEmailOtp} className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] text-muted-foreground transition-colors hover:text-primary">
             <Mail className="h-3.5 w-3.5" />
             Use Email OTP fallback
           </button>
         </div>
 
-        <p className="mt-3 pb-2 text-center text-xs text-white/50">
+        <p className="mt-3 pb-2 text-center text-xs text-muted-foreground">
           No account? <button type="button" onClick={onSignup} className="font-semibold text-amber-300/90 hover:underline">Create one</button>
         </p>
       </div>

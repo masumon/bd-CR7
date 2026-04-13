@@ -104,7 +104,7 @@ def _resolve_origin_and_rp_id(request: Request) -> tuple[str, str]:
     else:
         expected_origin = request_origin
 
-    rp_id = request.url.hostname or urlparse(expected_origin).hostname or "localhost"
+    rp_id = settings.webauthn_rp_id or request.url.hostname or urlparse(expected_origin).hostname or "localhost"
     return expected_origin, rp_id
 
 
@@ -451,7 +451,7 @@ async def verify_webauthn_assertion(payload: dict, request: Request, user: UserC
             expected_origin=expected_origin,
             credential_public_key=base64url_to_bytes(str(cred_row.get("public_key"))),
             credential_current_sign_count=int(cred_row.get("sign_count") or 0),
-            require_user_verification=False,
+            require_user_verification=True,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=401, detail="Biometric cryptographic verification failed") from exc
@@ -536,7 +536,7 @@ async def login_with_passkey(payload: dict, request: Request):
             expected_origin=expected_origin,
             credential_public_key=base64url_to_bytes(str(cred_row.get("public_key"))),
             credential_current_sign_count=int(cred_row.get("sign_count") or 0),
-            require_user_verification=False,
+            require_user_verification=True,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=401, detail="Passkey cryptographic verification failed") from exc

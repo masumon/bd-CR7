@@ -151,7 +151,7 @@ export function ModulePageHeader({ icon: Icon, title, titleBn, theme, stats, act
               <p className={`text-sm font-bold leading-tight ${STAT_COLOR[stat.color]}`}>
                 {stat.value}
               </p>
-              <p className="mt-0.5 truncate text-[9px] leading-tight text-muted-foreground">
+              <p className="mt-0.5 truncate text-[10px] leading-tight text-muted-foreground">
                 {stat.labelBn}
               </p>
             </div>

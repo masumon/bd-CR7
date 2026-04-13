@@ -9,7 +9,7 @@ function buildApiUrl(path: string): string {
 }
 
 async function apiPost<T>(path: string, token: string, payload: unknown): Promise<T> {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetchWithRetry(buildApiUrl(path), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -34,7 +34,7 @@ async function apiPost<T>(path: string, token: string, payload: unknown): Promis
 }
 
 async function apiPostPublic<T>(path: string, payload: unknown): Promise<T> {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetchWithRetry(buildApiUrl(path), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -95,6 +95,38 @@ function randomChallenge(size = 32): ArrayBuffer {
   return bytes.buffer;
 }
 
+function resolveRpId(): string {
+  const envRpId = process.env.NEXT_PUBLIC_WEBAUTHN_RP_ID?.trim().toLowerCase();
+  if (envRpId) return envRpId;
+  return window.location.hostname.toLowerCase();
+}
+
+async function fetchWithRetry(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(input, init);
+      if (response.status >= 500 || response.status === 429) {
+        if (attempt < maxAttempts) {
+          await sleep(200 * attempt);
+          continue;
+        }
+      }
+      return response;
+    } catch {
+      if (attempt >= maxAttempts) {
+        throw new Error("Network error while contacting auth service. Please retry.");
+      }
+      await sleep(200 * attempt);
+    }
+  }
+  throw new Error("Request failed after retries.");
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function isWebAuthnSupported(): boolean {
   return typeof window !== "undefined" && !!window.PublicKeyCredential && !!navigator.credentials;
 }
@@ -129,7 +161,7 @@ export async function ensureBiometricCredential(token: string, userId: string, u
       challenge: randomChallenge(),
       rp: {
         name: "BD CR7",
-        id: window.location.hostname,
+        id: resolveRpId(),
       },
       user: {
         id: userBytes,
@@ -142,7 +174,7 @@ export async function ensureBiometricCredential(token: string, userId: string, u
       ],
       timeout: 60_000,
       authenticatorSelection: {
-        userVerification: "preferred",
+        userVerification: "required",
       },
       attestation: "none",
     },
@@ -196,7 +228,7 @@ export async function verifyBiometricAssertion(token: string): Promise<void> {
         type: item.type,
       })),
       timeout: challenge.timeout || 60_000,
-      userVerification: "preferred",
+      userVerification: "required",
     },
   })) as PublicKeyCredential | null;
 
@@ -243,7 +275,7 @@ export async function signInWithPasskey(email: string): Promise<{ token_hash: st
         type: item.type,
       })),
       timeout: challenge.timeout || 60_000,
-      userVerification: "preferred",
+      userVerification: "required",
     },
   })) as PublicKeyCredential | null;
 

@@ -38,10 +38,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main
-      className="auth-bg-bdcr7 login-shell flex h-[100dvh] flex-col items-center justify-between overflow-hidden px-5"
-      style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}
-    >
+    <main className="auth-bg-bdcr7 login-shell flex min-h-[100dvh] flex-col items-center justify-between overflow-y-auto overflow-x-hidden px-5 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="flex flex-1 w-full items-center justify-center">
       <motion.div
         initial={{ opacity: 0, y: 28, scale: 0.96 }}
@@ -55,16 +52,10 @@ export default function ForgotPasswordPage() {
             <Shield className="h-3.5 w-3.5" />
             Secure Reset
           </div>
-          <h1
-            className="text-2xl font-bold tracking-tight text-white"
-            style={{ fontFamily: "var(--font-outfit-var)" }}
-          >
+          <h1 className="font-[var(--font-outfit-var)] text-2xl font-bold tracking-tight text-white">
             Forgot Password
           </h1>
-          <p
-            className="mt-1 text-xs"
-            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-hind-var)" }}
-          >
+          <p className="mt-1 font-[var(--font-hind-var)] text-xs text-white/45">
             পাসওয়ার্ড ভুলে গেছেন?
           </p>
         </div>
@@ -82,10 +73,7 @@ export default function ForgotPasswordPage() {
             <p className="text-sm font-medium text-emerald-300">
               Reset email sent. Check your inbox.
             </p>
-            <p
-              className="text-xs"
-              style={{ color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-hind-var)" }}
-            >
+            <p className="font-[var(--font-hind-var)] text-xs text-white/45">
               রিসেট ইমেইল পাঠানো হয়েছে। ইনবক্স চেক করুন।
             </p>
           </motion.div>
@@ -128,8 +116,7 @@ export default function ForgotPasswordPage() {
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="flex items-center gap-1.5 text-xs transition-colors hover:underline"
-            style={{ color: "rgba(255,255,255,0.42)" }}
+            className="flex items-center gap-1.5 text-xs text-white/40 transition-colors hover:text-white/70 hover:underline"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Back to Login / লগইনে ফিরুন

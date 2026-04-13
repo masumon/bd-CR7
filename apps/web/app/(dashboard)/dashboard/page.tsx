@@ -180,7 +180,7 @@ export default function DashboardPage() {
               <span className="text-erp-text-primary font-bold text-lg">{progressPct}%</span>
               <span className="text-erp-text-secondary text-xs">সম্পন্ন</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            <div className="h-2 overflow-hidden rounded-full bg-muted/80">
               <svg viewBox="0 0 100 8" className="h-full w-full" preserveAspectRatio="none" aria-hidden="true">
                 <rect x="0" y="0" width={progressPct} height="8" rx="4" ry="4" className="fill-emerald-500" />
               </svg>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-white/10">
+        <div className="h-2 overflow-hidden rounded-full bg-muted/80">
           <svg viewBox="0 0 100 8" className="h-full w-full" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="budgetGradient" x1="0%" y1="0%" x2="100%" y2="0%">

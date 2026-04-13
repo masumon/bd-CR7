@@ -5,7 +5,7 @@ export function SocialRow({ onGoogle, loading }: { onGoogle: () => void; loading
     <div className="space-y-2.5">
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-white/[0.1]" />
-        <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.38)" }}>অথবা গুগল দিয়ে চালিয়ে যান</span>
+        <span className="text-[11px] text-white/40">অথবা গুগল দিয়ে চালিয়ে যান</span>
         <span className="h-px flex-1 bg-white/[0.1]" />
       </div>
       <div className="flex items-center justify-center gap-3">

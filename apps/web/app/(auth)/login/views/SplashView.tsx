@@ -11,7 +11,7 @@ export function SplashView() {
       key="splash"
       {...fadeUp}
       transition={{ duration: 0.45, ease: easeAuth }}
-      className="flex h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-5"
+      className="flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-y-auto overflow-x-hidden px-5"
     >
       <motion.div
         animate={{ scale: [1, 1.06, 1], opacity: [0.95, 1, 0.95] }}
@@ -21,16 +21,15 @@ export function SplashView() {
         <Image src="/icons/icon.svg" alt="BD CR7" width={88} height={88} priority />
       </motion.div>
 
-      <h1 className="text-3xl font-bold tracking-tight text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
-        স্বাগতম / <span style={{ fontFamily: "var(--font-hind-var)" }}>Welcome</span>
+      <h1 className="font-[var(--font-outfit-var)] text-3xl font-bold tracking-tight text-white">
+        স্বাগতম / <span className="font-[var(--font-hind-var)]">Welcome</span>
       </h1>
 
       <div className="mt-6 flex items-center justify-center gap-2.5">
         {[0, 1, 2].map((dot) => (
           <motion.span
             key={dot}
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--bdcr7-gold)" }}
+            className="h-2.5 w-2.5 rounded-full bg-[var(--bdcr7-gold)]"
             animate={{ scale: [1, 1.45, 1], opacity: [0.3, 1, 0.3] }}
             transition={{ repeat: Infinity, duration: 0.95, delay: dot * 0.16, ease: "easeInOut" }}
           />
@@ -38,7 +37,7 @@ export function SplashView() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
-        <p className="text-[10px] uppercase tracking-[0.22em]" style={{ color: "rgba(255,255,255,0.32)" }}>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-white/30">
           পরিচালনায়
         </p>
         <p className="mt-0.5 text-sm font-bold uppercase tracking-[0.18em] gold-text-gradient">SUMONIX AI</p>

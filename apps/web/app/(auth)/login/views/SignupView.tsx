@@ -75,13 +75,13 @@ export function SignupView({
   };
 
   return (
-    <motion.main key="signup" {...slideLeft} transition={{ duration: 0.35, ease: easeAuth }} className="flex h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
+    <motion.main key="signup" {...slideLeft} transition={{ duration: 0.35, ease: easeAuth }} className="flex min-h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="পিছনে যান">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-outfit-var)" }}>
+          <h1 className="font-[var(--font-outfit-var)] text-xl font-bold text-foreground">
             নতুন একাউন্ট তৈরি করুন
           </h1>
         </header>
@@ -96,7 +96,7 @@ export function SignupView({
             <div className="grid grid-cols-2 gap-2.5">
               <div className="bdcr7-input-wrap" data-filled={Boolean(fullName)}>
                 <User className="h-4 w-4 shrink-0 text-amber-300/60" />
-                <label className="bdcr7-input-label bdcr7-input-label-sm">Full Name / <span style={{ fontFamily: "var(--font-hind-var)" }}>নাম</span></label>
+                <label className="bdcr7-input-label bdcr7-input-label-sm">Full Name / <span className="font-[var(--font-hind-var)]">নাম</span></label>
                 <input type="text" autoComplete="name" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} className="bdcr7-input" required aria-label="Full name" />
               </div>
               <div className="bdcr7-input-wrap" data-filled={Boolean(userId)}>
@@ -109,7 +109,7 @@ export function SignupView({
             <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={emailError}>
               <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Email / ইমেইল</label>
-              <input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmailBlurred(true)} disabled={loading} className="bdcr7-input" required aria-label="Email address" aria-invalid={emailError} />
+              <input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmailBlurred(true)} disabled={loading} className="bdcr7-input" required aria-label="Email address" />
             </div>
             {emailError && <p className="text-[11px] text-rose-300/90">সঠিক ইমেইল ঠিকানা লিখুন।</p>}
 
@@ -123,7 +123,7 @@ export function SignupView({
               <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Password / পাসওয়ার্ড</label>
               <input type={showPass ? "text" : "password"} autoComplete="new-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} className="bdcr7-input pr-8" required aria-label="Password" />
-              <button type="button" onClick={() => setShowPass(!showPass)} disabled={loading} style={{ minHeight: "unset" }} className="shrink-0 text-white/40 hover:text-white/80 transition-colors">
+              <button type="button" onClick={() => setShowPass(!showPass)} disabled={loading} className="min-h-0 shrink-0 text-muted-foreground transition-colors hover:text-foreground">
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
@@ -134,7 +134,7 @@ export function SignupView({
               <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">পাসওয়ার্ড নিশ্চিত করুন</label>
               <input type={showConfirm ? "text" : "password"} autoComplete="new-password" placeholder="••••••••" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} disabled={loading} className="bdcr7-input pr-8" required aria-label="পাসওয়ার্ড নিশ্চিত করুন" />
-              <button type="button" onClick={() => setShowConfirm(!showConfirm)} disabled={loading} style={{ minHeight: "unset" }} className="shrink-0 text-white/40 hover:text-white/80 transition-colors">
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} disabled={loading} className="min-h-0 shrink-0 text-muted-foreground transition-colors hover:text-foreground">
                 {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
@@ -157,8 +157,8 @@ export function SignupView({
           <SocialRow onGoogle={onGoogle} loading={loading} />
         </div>
 
-        <p className="mt-3 pb-2 text-center text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-          আগে থেকেই অ্যাকাউন্ট আছে? <button type="button" onClick={onBack} style={{ color: "rgba(251,189,35,0.9)" }} className="font-semibold hover:underline">লগইন করুন</button>
+        <p className="mt-3 pb-2 text-center text-xs text-muted-foreground">
+          আগে থেকেই অ্যাকাউন্ট আছে? <button type="button" onClick={onBack} className="font-semibold text-primary hover:underline">লগইন করুন</button>
         </p>
       </div>
       <DevFooter />
