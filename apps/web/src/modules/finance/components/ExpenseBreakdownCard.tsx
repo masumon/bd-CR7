@@ -4,6 +4,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+function getWidthClass(widthPct: number) {
+  if (widthPct >= 100) return "w-full";
+  if (widthPct >= 90) return "w-11/12";
+  if (widthPct >= 80) return "w-10/12";
+  if (widthPct >= 70) return "w-9/12";
+  if (widthPct >= 60) return "w-8/12";
+  if (widthPct >= 50) return "w-6/12";
+  if (widthPct >= 40) return "w-5/12";
+  if (widthPct >= 30) return "w-4/12";
+  if (widthPct >= 20) return "w-3/12";
+  if (widthPct >= 10) return "w-2/12";
+  if (widthPct > 0) return "w-1/12";
+  return "w-0";
+}
+
 export function ExpenseBreakdownCard({
   loading,
   categoryBreakdown,
@@ -26,7 +41,7 @@ export function ExpenseBreakdownCard({
               <span className="shrink-0 text-xs text-muted-foreground">৳{item.value.toLocaleString("en-BD")}</span>
             </div>
             <div className="h-2 rounded-full bg-muted">
-              <div className="h-2 rounded-full bg-primary" style={{ width: `${item.widthPct}%` }} />
+              <div className={`h-2 rounded-full bg-primary transition-all duration-500 ${getWidthClass(item.widthPct)}`} />
             </div>
           </div>
         ))}

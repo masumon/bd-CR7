@@ -39,6 +39,12 @@ function fmt(n: number) {
 
 const PIE_COLORS = ["hsl(167,46%,46%)", "hsl(40,93%,64%)", "hsl(210,80%,56%)", "hsl(0,72%,51%)"];
 const PIE_DOT_CLASSES = ["bg-emerald-500", "bg-amber-400", "bg-blue-500", "bg-rose-500"];
+const CHART_TOOLTIP_STYLE = {
+  background: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 10,
+  fontSize: 12,
+};
 
 function getProgressWidthClass(progress: number) {
   if (progress >= 100) return "w-full";
@@ -297,9 +303,9 @@ export function DashboardHomeView() {
           ) : (
             <ResponsiveContainer width="100%" height={100}>
               <BarChart data={monthlyBarData} barSize={8} aria-label={t.weeklySpend}>
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                   formatter={(v: number) => [fmt(v), "Amount"]}
                 />
                 <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
@@ -320,10 +326,10 @@ export function DashboardHomeView() {
           <>
             <ResponsiveContainer width="100%" height={120}>
               <LineChart data={progressLineData} aria-label={t.progressVsCost}>
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                 />
                 <Line type="monotone" dataKey="progress" stroke="hsl(167,46%,46%)" strokeWidth={2} dot={false} name="Progress %" />
                 <Line type="monotone" dataKey="cost" stroke="hsl(40,93%,64%)" strokeWidth={2} dot={false} name="Cost ৳" />

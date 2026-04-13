@@ -79,7 +79,7 @@ export function ProjectFilesPanel({
               <FileText className="h-4 w-4 text-primary" />
               {label ?? "Files & Evidence"}
               {files.length > 0 && (
-                <span className="ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] text-primary font-semibold">
+                <span className="ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-[11px] text-primary font-semibold">
                   {files.length}
                 </span>
               )}
@@ -134,7 +134,7 @@ export function ProjectFilesPanel({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-medium truncate">{f.file_name ?? "File"}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[11px] text-muted-foreground">
                           {f.module}/{f.category}
                           {f.ai_classified && (
                             <span className="ml-1 text-primary">· AI ✓</span>
@@ -202,7 +202,7 @@ export function ProjectFilesPanel({
                     )}
 
                     {f.extracted_text && (
-                      <p className="text-[10px] text-muted-foreground line-clamp-2 border-t border-border/30 pt-1">
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 border-t border-border/30 pt-1">
                         {f.extracted_text}
                       </p>
                     )}
