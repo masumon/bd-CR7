@@ -1,5 +1,11 @@
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 
+type ApiEnvelope<T> = {
+  success: boolean;
+  data: T;
+  error?: string | null;
+};
+
 /**
  * Always use same-origin relative paths so that the Next.js API proxy
  * (app/api/[...path]/route.ts) forwards requests to the Python backend.
@@ -30,7 +36,16 @@ async function apiPost<T>(path: string, token: string, payload: unknown): Promis
     throw new Error(detail);
   }
 
-  return (await response.json()) as T;
+  const json = (await response.json()) as T | ApiEnvelope<T>;
+  if (json && typeof json === "object" && "success" in json) {
+    const envelope = json as ApiEnvelope<T>;
+    if (!envelope.success) {
+      throw new Error(envelope.error || "Request failed");
+    }
+    return envelope.data;
+  }
+
+  return json as T;
 }
 
 async function apiPostPublic<T>(path: string, payload: unknown): Promise<T> {
@@ -54,7 +69,16 @@ async function apiPostPublic<T>(path: string, payload: unknown): Promise<T> {
     throw new Error(detail);
   }
 
-  return (await response.json()) as T;
+  const json = (await response.json()) as T | ApiEnvelope<T>;
+  if (json && typeof json === "object" && "success" in json) {
+    const envelope = json as ApiEnvelope<T>;
+    if (!envelope.success) {
+      throw new Error(envelope.error || "Request failed");
+    }
+    return envelope.data;
+  }
+
+  return json as T;
 }
 
 type BiometricCredentialRow = {
@@ -89,16 +113,23 @@ function fromBase64UrlToBuffer(input: string | undefined | null): ArrayBuffer {
   return bytes.buffer;
 }
 
-function randomChallenge(size = 32): ArrayBuffer {
-  const bytes = new Uint8Array(size);
-  crypto.getRandomValues(bytes);
-  return bytes.buffer;
-}
-
 function resolveRpId(): string {
   const envRpId = process.env.NEXT_PUBLIC_WEBAUTHN_RP_ID?.trim().toLowerCase();
   if (envRpId) return envRpId;
   return window.location.hostname.toLowerCase();
+}
+
+async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
+  if (!isWebAuthnSupported()) return false;
+  if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== "function") {
+    return true;
+  }
+
+  try {
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch {
+    return false;
+  }
 }
 
 async function fetchWithRetry(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
@@ -131,12 +162,18 @@ export function isWebAuthnSupported(): boolean {
   return typeof window !== "undefined" && !!window.PublicKeyCredential && !!navigator.credentials;
 }
 
-export async function listBiometricCredentials(): Promise<BiometricCredentialRow[]> {
+export async function listBiometricCredentials(userId?: string): Promise<BiometricCredentialRow[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase
+  let query = supabase
     .from("biometric_credentials")
-    .select("id, credential_id, device_name, is_active, sign_count, transports")
+    .select("id, user_id, credential_id, device_name, is_active, sign_count, transports")
     .eq("is_active", true);
+
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message || "Failed to list biometric credentials");
   return (data ?? []) as BiometricCredentialRow[];
 }
@@ -149,7 +186,12 @@ export async function ensureBiometricCredential(token: string, userId: string, u
     throw new Error("Supabase is not configured.");
   }
 
-  const existing = await listBiometricCredentials();
+  const platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
+  if (!platformAuthenticatorAvailable) {
+    throw new Error("This mobile device does not expose a supported biometric or screen-lock authenticator for WebAuthn.");
+  }
+
+  const existing = await listBiometricCredentials(userId);
   if (existing.some((item) => item.is_active && item.credential_id)) {
     return;
   }
@@ -179,12 +221,14 @@ export async function ensureBiometricCredential(token: string, userId: string, u
         { alg: -7, type: "public-key" },
         { alg: -257, type: "public-key" },
       ],
-      timeout: 60_000,
+      timeout: challenge.timeout || 60_000,
       excludeCredentials: (challenge.exclude_credentials ?? []).filter((item) => item.id).map((item) => ({
         id: fromBase64UrlToBuffer(item.id),
         type: item.type,
       })),
       authenticatorSelection: {
+        authenticatorAttachment: "platform",
+        residentKey: "preferred",
         userVerification: "required",
       },
       attestation: "none",
