@@ -83,6 +83,40 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+/**
+ * FIX: Extract the refresh_token from the Supabase session cookie.
+ *
+ * Supabase @supabase/ssr stores a JSON object in sb-*-auth-token that
+ * includes both access_token AND refresh_token. When the access_token is
+ * expired but refresh_token is still present, the browser-side Supabase
+ * client can silently renew the session via refreshSession(). We must NOT
+ * redirect to /login in this case — we should let the page load and allow
+ * the client Supabase SDK to handle the refresh transparently.
+ */
+function hasRefreshToken(rawCookieValue: string): boolean {
+  const decodedValue = decodeURIComponent(rawCookieValue);
+
+  const tryAsJsonObject = (candidate: string): boolean => {
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      if (parsed && typeof parsed === "object") {
+        const rt = (parsed as { refresh_token?: unknown }).refresh_token;
+        return typeof rt === "string" && rt.length > 0;
+      }
+    } catch {
+      // Not JSON.
+    }
+    return false;
+  };
+
+  if (decodedValue.startsWith("base64-")) {
+    const unpacked = decodeBase64Url(decodedValue.slice(7));
+    if (unpacked && tryAsJsonObject(unpacked)) return true;
+  }
+
+  return tryAsJsonObject(decodedValue);
+}
+
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -98,6 +132,17 @@ export async function middleware(request: NextRequest) {
     const isExpired = exp ? Date.now() >= exp * 1000 : false;
 
     if (!accessToken || !payload || isExpired) {
+      // FIX: If the access_token is expired but the cookie still contains a
+      // valid refresh_token, let the request through. The browser Supabase
+      // client calls getSession() → autoRefreshToken on first render, which
+      // silently renews the session cookie. Hard-redirecting to /login on
+      // expiry while a refresh_token is present caused an infinite loop:
+      //   expired cookie → /login → client refreshes → /dashboard →
+      //   middleware sees old cookie again → /login → …
+      if (isExpired && authCookie && hasRefreshToken(authCookie.value)) {
+        return NextResponse.next();
+      }
+
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("returnTo", pathname);
       return NextResponse.redirect(loginUrl);

@@ -137,20 +137,34 @@ export const useAuthStore = create<AuthState>()(
           const session = data.session;
 
           if (session?.user?.id) {
-            const roleName = await fetchUserRole(session.user.id);
+            // FIX: wrap role fetch in its own try/catch so a DB error (RLS,
+            // network timeout, missing row) does NOT clear the valid Supabase
+            // session. Without this, any fetchUserRole() throw propagates to
+            // the outer catch which sets userId:null, causing MobileAppShell
+            // to redirect to /login while the Supabase cookie is still valid
+            // — creating an infinite /login ↔ /dashboard redirect loop.
+            let roleName: string | null = null;
+            let roleError: string | null = null;
+            try {
+              roleName = await fetchUserRole(session.user.id);
+            } catch (roleErr) {
+              roleError = getErrorMessage(roleErr);
+            }
             set({
               token: session.access_token,
               userId: session.user.id,
-              role: roleName,
+              role: roleName,          // null if role fetch failed — RBAC falls back to "viewer"
               loading: false,
               hydrated: true,
-              error: null,
+              error: roleError,        // surfaced to UI but does NOT block access
             });
             return;
           }
 
           set({ token: null, userId: null, role: null, loading: false, hydrated: true });
         } catch (err) {
+          // Only the supabase.auth.getSession() call itself failed here.
+          // It is safe to clear auth state in this case.
           set({
             token: null,
             role: null,
