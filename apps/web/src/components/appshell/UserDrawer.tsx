@@ -51,6 +51,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
   const [profile, setProfile] = useState<{ full_name?: string; email?: string; phone?: string | null; user_code?: string | null; profile_image_url?: string | null } | null>(null);
 
   const t = copy[language];
+  const showInternalId = role === "super_admin";
 
   useEffect(() => {
     if (!open || !token) return;
@@ -164,8 +165,12 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
                   <div className="min-w-0">
                     <p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Public User ID / পাবলিক ইউজার আইডি</p>
                     <p className="truncate font-mono text-xs text-foreground">{profile?.user_code || "—"}</p>
-                    <p className="mt-0.5 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Internal ID / ইন্টারনাল আইডি</p>
-                    <p className="truncate font-mono text-xs text-muted-foreground">{userId || "—"}</p>
+                    {showInternalId ? (
+                      <>
+                        <p className="mt-0.5 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Internal ID / ইন্টারনাল আইডি</p>
+                        <p className="truncate font-mono text-xs text-muted-foreground">{userId || "—"}</p>
+                      </>
+                    ) : null}
                   </div>
                 </div>
 

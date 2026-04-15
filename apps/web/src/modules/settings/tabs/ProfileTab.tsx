@@ -44,6 +44,8 @@ export function ProfileTab({
   onReload,
   onSave,
 }: ProfileTabProps) {
+  const showInternalId = role === "super_admin";
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -64,8 +66,12 @@ export function ProfileTab({
           <form onSubmit={onSave} className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">User ID</p>
-                <p className="mt-2 truncate font-mono text-xs text-foreground">{profile?.id || "-"}</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                  {showInternalId ? "Internal User ID" : "Public User ID"}
+                </p>
+                <p className="mt-2 truncate font-mono text-xs text-foreground">
+                  {showInternalId ? (profile?.id || "-") : (profile?.user_code || "-")}
+                </p>
               </div>
               <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
                 <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Role</p>
