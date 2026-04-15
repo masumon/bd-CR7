@@ -11,7 +11,7 @@ type RouterLike = {
   replace: (href: string) => void;
 };
 
-export function useAuthFlow(router: RouterLike) {
+export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard") {
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
   const persistedToken = useAuthStore((s) => s.token);
@@ -28,7 +28,7 @@ export function useAuthFlow(router: RouterLike) {
       if (supabase) {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          router.replace("/dashboard");
+          router.replace(returnTo);
           return;
         }
       }
@@ -49,7 +49,7 @@ export function useAuthFlow(router: RouterLike) {
     };
     void run();
     return () => clearTimeout(splashTimer);
-  }, [router]);
+  }, [router, returnTo]);
 
   // Trusted device: if "Remember Me" was set AND a valid Supabase session exists,
   // attempt silent session restore so the user never has to re-type credentials.
@@ -367,7 +367,7 @@ export function useAuthFlow(router: RouterLike) {
     // "validation_failed" 400 because no code exchange happens.
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnTo)}` },
     });
   };
 

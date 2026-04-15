@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { LoginLoadingOverlay } from "@/components/auth/LoginLoadingOverlay";
 
@@ -14,13 +15,16 @@ import { SignupView } from "./views/SignupView";
 import { SplashView } from "./views/SplashView";
 import { ThemeToggle } from "./views/ThemeToggle";
 
-export default function LoginPageController() {
+function LoginPageController() {
   const router = useRouter();
-  const flow = useAuthFlow(router);
+  const searchParams = useSearchParams();
+  // Honour the returnTo param set by the middleware so deep-links work after login.
+  const returnTo = searchParams.get("returnTo") || "/dashboard";
+  const flow = useAuthFlow(router, returnTo);
 
   return (
     <>
-      <LoginLoadingOverlay visible={flow.showOverlay} complete={flow.authDone} onDone={() => router.push("/dashboard")} />
+      <LoginLoadingOverlay visible={flow.showOverlay} complete={flow.authDone} onDone={() => router.push(returnTo)} />
 
       <ThemeToggle />
 
@@ -131,5 +135,16 @@ export default function LoginPageController() {
         </div>
       </div>
     </>
+  );
+}
+
+// useSearchParams() requires a Suspense boundary in Next.js 15.
+// Wrap the inner controller so the rest of the page can still be statically
+// pre-rendered while the search-param read happens client-side.
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<SplashView />}>
+      <LoginPageController />
+    </Suspense>
   );
 }

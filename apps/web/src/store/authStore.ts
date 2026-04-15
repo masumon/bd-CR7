@@ -175,13 +175,59 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
         ensureAuthSubscription();
+
+        // If we already have a live, hydrated session in memory (e.g. user just
+        // signed in and was navigated to the dashboard), do NOT reset the loading
+        // state — that would cause a brief null-user window that triggers the
+        // redirect-to-login guard in MobileAppShell.  Instead, validate the
+        // session silently in the background.
+        const { hydrated: alreadyHydrated, userId: currentUserId } =
+          useAuthStore.getState();
+        if (alreadyHydrated && currentUserId !== null && currentUserId !== undefined) {
+          // Capture the non-null client for use inside the async callback.
+          const client = supabase;
+          void client.auth
+            .getSession()
+            .then(async ({ data }) => {
+              if (!data.session) {
+                // Access token gone — try refreshing before giving up.
+                const { data: refreshed } = await client.auth.refreshSession();
+                if (!refreshed.session) {
+                  set({
+                    token: null,
+                    userId: null,
+                    role: null,
+                    loading: false,
+                    hydrated: true,
+                    error: null,
+                  });
+                }
+              }
+            })
+            .catch((err: unknown) => {
+              // Network error during background validation — keep existing state
+              // so the user is not incorrectly signed out due to a transient failure.
+              if (process.env.NODE_ENV !== "production") {
+                console.warn("[auth] Background session validation failed:", err);
+              }
+            });
+          return;
+        }
+
         set({ loading: true, error: null });
         try {
           const { data, error } = await supabase.auth.getSession();
           if (error) {
             throw new Error(error.message || "Failed to restore session");
           }
-          await applySessionToState(data.session, set);
+          let session = data.session;
+          // If no session was returned but a refresh token may still be valid,
+          // attempt a silent refresh before clearing auth state.
+          if (!session) {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            session = refreshed.session;
+          }
+          await applySessionToState(session, set);
         } catch (err) {
           // Only the supabase.auth.getSession() call itself failed here.
           // It is safe to clear auth state in this case.
