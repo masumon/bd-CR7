@@ -115,6 +115,8 @@ const STATUS_FROM_DB: Record<string, ProjectStatus> = {
   cancelled: "Cancelled",
 };
 
+const PROJECT_WRITE_ROLES = new Set(["super_admin", "admin", "maker", "checker"]);
+
 function normalizeProject(input: ProjectRow): Project {
   const rawStatus = String(input.status || "planning").trim().toLowerCase();
   return {
@@ -135,6 +137,7 @@ export function ProjectsFeature() {
   const supabase = useMemo(() => createClient(), []);
   const userId = useAuthStore((state) => state.userId);
   const token = useAuthStore((state) => state.token);
+  const role = useAuthStore((state) => state.role);
   const toast = useToast();
 
   const [projects, setProjects]     = useState<Project[]>([]);
@@ -166,6 +169,8 @@ export function ProjectsFeature() {
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
     [projects, selectedProjectId]
   );
+
+  const canManageProjects = PROJECT_WRITE_ROLES.has(String(role || "").trim().toLowerCase());
 
   const filteredProjects = useMemo(() => {
     const normalized = projectQuery.trim().toLowerCase();
@@ -327,6 +332,10 @@ export function ProjectsFeature() {
   }
 
   async function handleCancel(id: string) {
+    if (!canManageProjects) {
+      toast.error("Access denied", "Your role can view projects but cannot change them.");
+      return;
+    }
     if (!confirm("Mark this project as Cancelled?")) return;
     try {
       const result = await apiRequest<Project>(`/api/projects/${id}/cancel`, { method: "POST" }, token || undefined);
@@ -346,9 +355,12 @@ export function ProjectsFeature() {
     if (!selectedProjectId || !timelineTitle.trim()) {
       return;
     }
+    if (!canManageProjects) {
+      setDetailsError("Your role can view the project timeline but cannot add milestones.");
+      return;
+    }
     setTimelineSaving(true);
     setDetailsError(null);
-    let timelineError: Error | null = null;
     try {
       const result = await apiRequest(`/api/projects/${selectedProjectId}/timeline`, {
         method: "POST",
@@ -362,22 +374,12 @@ export function ProjectsFeature() {
       if (isQueuedApiResult(result)) {
         toast.warning("Timeline event queued", "Saved offline. The timeline update will sync automatically when the internet returns.");
       }
-    } catch {
-      const { error } = await supabase.from("project_timeline_events").insert({
-        project_id: selectedProjectId,
-        title: timelineTitle.trim(),
-        description: timelineDescription.trim() || null,
-        event_date: timelineDate,
-        status: timelineStatus,
-        created_by: userId ?? null,
-      });
-      timelineError = error;
-    }
-    setTimelineSaving(false);
-    if (timelineError) {
-      setDetailsError(timelineError.message);
+    } catch (timelineError) {
+      setTimelineSaving(false);
+      setDetailsError(getErrorMessage(timelineError));
       return;
     }
+    setTimelineSaving(false);
     setTimelineTitle("");
     setTimelineDescription("");
     setTimelineDate(new Date().toISOString().slice(0, 10));
@@ -390,37 +392,23 @@ export function ProjectsFeature() {
     if (!selectedProjectId || !attachmentFile) {
       return;
     }
+    if (!canManageProjects) {
+      setDetailsError("Your role can view attachments but cannot upload new project files.");
+      return;
+    }
     setAttachmentSaving(true);
     setDetailsError(null);
     try {
       const fileUrl = await uploadToCloudinary(attachmentFile);
-
-      let attachmentError: Error | null = null;
-      try {
-        await apiRequest(`/api/projects/${selectedProjectId}/attachments`, {
-          method: "POST",
-          body: JSON.stringify({
-            file_url: fileUrl,
-            file_type: attachmentFile.type || null,
-            file_name: attachmentFile.name || null,
-            caption: attachmentCaption.trim() || null,
-          }),
-        }, token || undefined);
-      } catch {
-        const { error } = await supabase.from("project_attachments").insert({
-          project_id: selectedProjectId,
+      await apiRequest(`/api/projects/${selectedProjectId}/attachments`, {
+        method: "POST",
+        body: JSON.stringify({
           file_url: fileUrl,
           file_type: attachmentFile.type || null,
           file_name: attachmentFile.name || null,
           caption: attachmentCaption.trim() || null,
-          uploaded_by: userId ?? null,
-        });
-        attachmentError = error;
-      }
-
-      if (attachmentError) {
-        throw attachmentError;
-      }
+        }),
+      }, token || undefined);
       setAttachmentFile(null);
       setAttachmentCaption("");
       await fetchProjectDetails(selectedProjectId);
@@ -495,9 +483,11 @@ export function ProjectsFeature() {
                 ],
               })}
             />
-            <Button onClick={openCreate} className="h-8 gap-1.5 px-3 text-xs">
-              <Plus className="h-3.5 w-3.5" /> New
-            </Button>
+            {canManageProjects ? (
+              <Button onClick={openCreate} className="h-8 gap-1.5 px-3 text-xs">
+                <Plus className="h-3.5 w-3.5" /> New
+              </Button>
+            ) : null}
           </div>
         }
         stats={[
@@ -578,12 +568,14 @@ export function ProjectsFeature() {
                         {p.status}
                       </span>
                     </div>
-                    <ActionMenu
-                      items={[
-                        { label: "Update Project", onClick: () => openEdit(p) },
-                        { label: "Mark as Cancelled", onClick: () => void handleCancel(p.id), tone: "danger" },
-                      ]}
-                    />
+                    {canManageProjects ? (
+                      <ActionMenu
+                        items={[
+                          { label: "Update Project", onClick: () => openEdit(p) },
+                          { label: "Mark as Cancelled", onClick: () => void handleCancel(p.id), tone: "danger" },
+                        ]}
+                      />
+                    ) : null}
                   </div>
                   {p.description && (
                     <p className="text-xs text-muted-foreground leading-5 line-clamp-2">{p.description}</p>
@@ -607,13 +599,15 @@ export function ProjectsFeature() {
                     </div>
                   )}
                   <div className="flex gap-2 pt-1">
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-1.5 text-xs h-8"
-                      onClick={() => openEdit(p)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Edit
-                    </Button>
+                    {canManageProjects ? (
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-1.5 text-xs h-8"
+                        onClick={() => openEdit(p)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Button>
+                    ) : null}
                     <Button
                       variant="outline"
                       className="gap-1.5 text-xs h-8"
@@ -621,7 +615,7 @@ export function ProjectsFeature() {
                     >
                       <Clock3 className="h-3.5 w-3.5" /> Timeline
                     </Button>
-                    {p.status !== "Cancelled" && p.status !== "Completed" && (
+                    {canManageProjects && p.status !== "Cancelled" && p.status !== "Completed" && (
                       <Button
                         variant="outline"
                         className="gap-1.5 text-xs h-8 text-rose-600 hover:text-rose-700 border-rose-200"
@@ -654,48 +648,54 @@ export function ProjectsFeature() {
                 </div>
               </div>
 
-              <form onSubmit={handleAddTimelineEvent} className="grid gap-2">
-                <input
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  title="Timeline title"
-                  placeholder="Milestone title"
-                  value={timelineTitle}
-                  onChange={(e) => setTimelineTitle(e.target.value)}
-                  required
-                />
-                <textarea
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-                  title="Timeline description"
-                  placeholder="Milestone details"
-                  rows={2}
-                  value={timelineDescription}
-                  onChange={(e) => setTimelineDescription(e.target.value)}
-                />
-                <div className="grid grid-cols-2 gap-2">
+              {canManageProjects ? (
+                <form onSubmit={handleAddTimelineEvent} className="grid gap-2">
                   <input
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    type="date"
-                    title="Event date"
-                    value={timelineDate}
-                    onChange={(e) => setTimelineDate(e.target.value)}
+                    title="Timeline title"
+                    placeholder="Milestone title"
+                    value={timelineTitle}
+                    onChange={(e) => setTimelineTitle(e.target.value)}
+                    required
                   />
-                  <select
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    title="Event status"
-                    value={timelineStatus}
-                    onChange={(e) => setTimelineStatus(e.target.value)}
-                  >
-                    <option value="planned">Planned</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="blocked">Blocked</option>
-                  </select>
+                  <textarea
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                    title="Timeline description"
+                    placeholder="Milestone details"
+                    rows={2}
+                    value={timelineDescription}
+                    onChange={(e) => setTimelineDescription(e.target.value)}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      type="date"
+                      title="Event date"
+                      value={timelineDate}
+                      onChange={(e) => setTimelineDate(e.target.value)}
+                    />
+                    <select
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      title="Event status"
+                      value={timelineStatus}
+                      onChange={(e) => setTimelineStatus(e.target.value)}
+                    >
+                      <option value="planned">Planned</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="blocked">Blocked</option>
+                    </select>
+                  </div>
+                  <Button type="submit" className="gap-1.5" disabled={timelineSaving}>
+                    {timelineSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Add Milestone
+                  </Button>
+                </form>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border bg-background/70 px-3 py-4 text-xs text-muted-foreground">
+                  Your role has read-only access to project milestones.
                 </div>
-                <Button type="submit" className="gap-1.5" disabled={timelineSaving}>
-                  {timelineSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Add Milestone
-                </Button>
-              </form>
+              )}
 
               <div className="space-y-2">
                 {detailsLoading ? (
@@ -730,37 +730,43 @@ export function ProjectsFeature() {
                 </div>
               </div>
 
-              <form onSubmit={handleUploadAttachment} className="grid gap-2">
-                <input
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  type="file"
-                  title="Attachment upload"
-                  accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.csv"
-                  onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
-                  required
-                />
-                <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60">
-                  <FileImage className="h-3.5 w-3.5" />
-                  Capture from Camera
+              {canManageProjects ? (
+                <form onSubmit={handleUploadAttachment} className="grid gap-2">
                   <input
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     type="file"
-                    accept="image/*,video/*"
-                    className="hidden"
+                    title="Attachment upload"
+                    accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.csv"
                     onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                    required
                   />
-                </label>
-                <input
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  title="Attachment caption"
-                  placeholder="Caption (optional)"
-                  value={attachmentCaption}
-                  onChange={(e) => setAttachmentCaption(e.target.value)}
-                />
-                <Button type="submit" className="gap-1.5" disabled={attachmentSaving}>
-                  {attachmentSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  Upload Attachment
-                </Button>
-              </form>
+                  <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60">
+                    <FileImage className="h-3.5 w-3.5" />
+                    Capture from Camera
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      className="hidden"
+                      onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                  <input
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    title="Attachment caption"
+                    placeholder="Caption (optional)"
+                    value={attachmentCaption}
+                    onChange={(e) => setAttachmentCaption(e.target.value)}
+                  />
+                  <Button type="submit" className="gap-1.5" disabled={attachmentSaving}>
+                    {attachmentSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    Upload Attachment
+                  </Button>
+                </form>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border bg-background/70 px-3 py-4 text-xs text-muted-foreground">
+                  Your role can review project attachments but cannot upload new ones here.
+                </div>
+              )}
 
               <div className="space-y-2">
                 {detailsLoading ? (
