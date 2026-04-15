@@ -64,6 +64,16 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
     void initialize();
   }, [initialize]);
 
+  // Redirect to login when the session is confirmed to be gone.
+  // This must live in a useEffect — calling router.replace() during render
+  // is an anti-pattern that can fire before the component settles and cause
+  // an infinite redirect loop in React's concurrent rendering model.
+  useEffect(() => {
+    if (hydrated && !loading && !userId) {
+      router.replace("/login");
+    }
+  }, [hydrated, loading, userId, router]);
+
   // PHASE 10 — Theme: stored preference or system preference
   useEffect(() => {
     const storedLanguage = window.localStorage.getItem("bdcr7-language");
@@ -223,7 +233,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!userId) {
-    router.replace("/login");
+    // The useEffect above will redirect to /login; render nothing in the meantime.
     return null;
   }
 
