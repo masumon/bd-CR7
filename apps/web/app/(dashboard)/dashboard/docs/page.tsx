@@ -6,7 +6,14 @@ import { BookOpenText, Download, FileText, ShieldCheck, Users } from "lucide-rea
 import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { useAuthStore } from "@/store/authStore";
 
-type RoleKey = "admin" | "manager" | "accountant" | "supervisor" | "worker" | "viewer";
+type RoleKey = "super_admin" | "admin" | "manager" | "accountant" | "supervisor" | "engineer" | "maker" | "checker" | "worker" | "viewer";
+
+type ModuleGuide = {
+  name: string;
+  nameBn: string;
+  purpose: string;
+  steps: string[];
+};
 
 type RoleGuide = {
   label: string;
@@ -14,9 +21,136 @@ type RoleGuide = {
   summary: string;
   tasks: string[];
   canView: string[];
+  caution: string;
 };
 
+const MODULE_GUIDE: ModuleGuide[] = [
+  {
+    name: "Dashboard",
+    nameBn: "ড্যাশবোর্ড",
+    purpose: "সামগ্রিক অবস্থা, কিউ, দ্রুত সতর্কতা এবং দিনের কাজের অগ্রাধিকার দেখতে ব্যবহার করুন।",
+    steps: [
+      "দিন শুরুতে Dashboard খুলে pending কাজ, approval, sync status এবং alert দেখুন।",
+      "সংখ্যা বা কার্ডে ক্লিক করে সংশ্লিষ্ট module-এ যান।",
+      "অফলাইন থাকলে sync badge দেখে পরে manual sync চালান।",
+    ],
+  },
+  {
+    name: "Projects",
+    nameBn: "প্রকল্প",
+    purpose: "প্রকল্প তৈরি, অবস্থা আপডেট, timeline event এবং attachment ব্যবস্থাপনা।",
+    steps: [
+      "নতুন project তৈরি করতে নাম, phase, budget, start/end date এবং status দিন।",
+      "Project খোলার পর timeline-এ milestone বা field progress যোগ করুন।",
+      "ছবি/ফাইল attachment দিলে Cloudinary upload শেষে তা project history-তে সংরক্ষিত হবে।",
+    ],
+  },
+  {
+    name: "Finance",
+    nameBn: "ফাইন্যান্স",
+    purpose: "fund entry, expense, approval এবং রিপোর্টিং ব্যবহারের কেন্দ্র।",
+    steps: [
+      "নতুন expense বা fund entry দেওয়ার আগে account নির্বাচন করুন।",
+      "রসিদ/ভাউচার upload থাকলে approval process দ্রুত হয়।",
+      "Checker/Admin role pending approval queue নিয়মিত পর্যালোচনা করুন।",
+    ],
+  },
+  {
+    name: "Workforce",
+    nameBn: "ওয়ার্কফোর্স",
+    purpose: "attendance, worker log, wage tracking এবং field team monitoring।",
+    steps: [
+      "Worker log তৈরি করার সময় worker, date, location এবং কাজের ধরন ঠিকভাবে দিন।",
+      "Attendance offline queue-তে গেলে internet ফেরার পর auto sync হবে।",
+      "Supervisor role দৈনিক log verify করে mismatch থাকলে report করুন।",
+    ],
+  },
+  {
+    name: "Materials",
+    nameBn: "মেটেরিয়ালস",
+    purpose: "site supply, movement, stock visibility এবং usage tracking।",
+    steps: [
+      "Material in/out entry-তে quantity এবং source/destination সঠিক দিন।",
+      "Stock কমে গেলে report বা requisition flow শুরু করুন।",
+      "Site-level movement update ছাড়া রিপোর্টে stock mismatch দেখা যাবে।",
+    ],
+  },
+  {
+    name: "Evidence",
+    nameBn: "এভিডেন্স",
+    purpose: "ছবি, ফাইল, inspection proof এবং compliance record সংরক্ষণ।",
+    steps: [
+      "ছবি বা ডকুমেন্ট upload করার আগে সঠিক project বা কাজের context বেছে নিন।",
+      "Caption-এ কী প্রমাণ করছে তা সংক্ষেপে লিখুন।",
+      "বিতর্ক বা approval case-এ audit trail-এর সাথে evidence মিলিয়ে দেখুন।",
+    ],
+  },
+  {
+    name: "Contractor",
+    nameBn: "কন্ট্রাক্টর",
+    purpose: "contractor profile, কাজের অবস্থা, payment context এবং document tracking।",
+    steps: [
+      "নতুন contractor entry-তে যোগাযোগ, কাজের ধরণ এবং relevant notes যোগ করুন।",
+      "চলমান contractor কাজের অবস্থা নিয়মিত update করুন।",
+      "Finance-এর payment review-এর আগে contractor record মিলিয়ে নিন।",
+    ],
+  },
+  {
+    name: "Audit",
+    nameBn: "অডিট",
+    purpose: "কে কখন কী পরিবর্তন করেছে তা যাচাই এবং incident trace করা।",
+    steps: [
+      "কোনো ডেটা mismatch দেখলে আগে Audit log-এ related action খুঁজুন।",
+      "Checker/Admin/Super Admin role sensitive change review করবেন।",
+      "Unexpected access বা update পেলে security review শুরু করুন।",
+    ],
+  },
+  {
+    name: "Reports",
+    nameBn: "রিপোর্টস",
+    purpose: "module summary, export, oversight এবং management reporting।",
+    steps: [
+      "Weekly বা monthly রিপোর্ট export-এর আগে relevant module data refresh করুন।",
+      "Role অনুযায়ী visible reports-এ কাজ করুন; missing data থাকলে source module ঠিক করুন।",
+      "Audit বা Finance review-এর সময় report snapshot সংরক্ষণ করুন।",
+    ],
+  },
+  {
+    name: "Settings",
+    nameBn: "সেটিংস",
+    purpose: "language, sync control, backup, security toggle এবং preferences।",
+    steps: [
+      "Language, theme, sync preference এবং app lock security এখানে নিয়ন্ত্রণ করুন।",
+      "Backup/restore শুধু অনুমোদিত role দিয়ে চালান।",
+      "Biometric/App lock চালু করলে current device-এ enrollment নিশ্চিত করুন।",
+    ],
+  },
+  {
+    name: "Guide",
+    nameBn: "ইউজার গাইড",
+    purpose: "role-based module usage, নিরাপত্তা নিয়ম এবং PDF export guide।",
+    steps: [
+      "নিজের role বেছে নিয়ে allowed modules ও task list দেখুন।",
+      "PDF Preview/Download দিয়ে offline reference তৈরি করুন।",
+      "নতুন user onboarding-এর সময় এই page থেকেই role-wise training দিন।",
+    ],
+  },
+];
+
 const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
+  super_admin: {
+    label: "Super Admin",
+    labelBn: "সুপার অ্যাডমিন",
+    summary: "পুরো প্ল্যাটফর্মের সর্বোচ্চ দায়িত্বশীল ব্যবহারকারী; access control, incident response, critical configuration এবং high-risk approval তদারকি করেন।",
+    tasks: [
+      "সব role ও privilege policy তদারকি করা",
+      "critical audit, backup/restore এবং security review চালানো",
+      "production issue, user escalation এবং platform governance অনুমোদন করা",
+      "integration, system policy এবং sensitive settings final review করা"
+    ],
+    canView: ["Dashboard", "Docs", "Projects", "Workforce", "Materials", "Evidence", "Audit", "AI", "Finance", "Contractor", "Reports", "Settings"],
+    caution: "Super Admin account দৈনন্দিন data entry-র জন্য ব্যবহার করবেন না; governance ও recovery কাজেই সীমিত রাখুন.",
+  },
   admin: {
     label: "Admin",
     labelBn: "অ্যাডমিন",
@@ -27,7 +161,8 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
       "সিস্টেম সেটিংস, নোটিফিকেশন ও ইন্টিগ্রেশন কনফিগার করা",
       "গুরুত্বপূর্ণ ডেটা রিসেট/রক্ষণাবেক্ষণ অনুমোদন করা"
     ],
-    canView: ["Dashboard", "Settings", "Audit", "Reports", "Finance", "Projects", "Workforce", "Materials", "Evidence", "Contractor"],
+    canView: ["Dashboard", "Docs", "Settings", "Audit", "Reports", "Finance", "Projects", "Workforce", "Materials", "Evidence", "Contractor"],
+    caution: "Admin role দিয়ে user/setting পরিবর্তনের আগে audit effect বুঝে নিন।",
   },
   manager: {
     label: "Manager",
@@ -39,7 +174,8 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
       "দৈনিক কার্যক্রমের রিপোর্ট রিভিউ",
       "মডিউলভিত্তিক টিম সমন্বয়"
     ],
-    canView: ["Dashboard", "Projects", "Finance", "Workforce", "Materials", "Reports", "Audit"],
+    canView: ["Dashboard", "Docs", "Projects", "Finance", "Workforce", "Materials", "Reports", "Audit", "Settings", "Contractor"],
+    caution: "Manager role operational decision নেয়, কিন্তু low-level security বা role mapping পরিবর্তন করা উচিত নয়।",
   },
   accountant: {
     label: "Accountant",
@@ -51,7 +187,8 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
       "রসিদ/ভাউচার ট্র্যাকিং",
       "মাসিক/সাপ্তাহিক ফাইন্যান্স রিপোর্ট এক্সপোর্ট"
     ],
-    canView: ["Dashboard", "Finance", "Reports", "Audit"],
+    canView: ["Dashboard", "Docs", "Finance", "Reports", "Audit", "Settings"],
+    caution: "Approval-এর আগে evidence, receipt এবং project context cross-check করুন।",
   },
   supervisor: {
     label: "Supervisor",
@@ -63,7 +200,47 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
       "দৈনিক প্রগ্রেস ছবি/প্রমাণ আপলোড",
       "সাইট পর্যায়ের সমস্যা রিপোর্ট করা"
     ],
-    canView: ["Dashboard", "Workforce", "Materials", "Evidence", "Projects"],
+    canView: ["Dashboard", "Docs", "Workforce", "Materials", "Evidence", "Projects", "Finance", "Audit", "Reports", "Settings", "Contractor", "AI"],
+    caution: "Field update real-time না দিলে reports এবং approvals-এ mismatch তৈরি হবে।",
+  },
+  engineer: {
+    label: "Engineer",
+    labelBn: "ইঞ্জিনিয়ার",
+    summary: "technical progress, site issue, project execution detail এবং evidence quality নিশ্চিত করেন।",
+    tasks: [
+      "project progress ও phase readiness যাচাই করা",
+      "technical issue, measurement বা site constraint report করা",
+      "evidence ও field update engineering context-এ validate করা",
+      "workforce/material status project execution-এর সাথে মিলিয়ে দেখা"
+    ],
+    canView: ["Dashboard", "Docs", "Projects", "Workforce", "Materials", "Evidence", "AI", "Finance", "Contractor", "Reports", "Settings"],
+    caution: "Engineering note বা evidence caption-এ technical ambiguity রাখবেন না।",
+  },
+  maker: {
+    label: "Maker",
+    labelBn: "মেকার",
+    summary: "নতুন data entry, first-pass transaction creation এবং operational record শুরু করেন।",
+    tasks: [
+      "expense, project, contractor বা material entry তৈরি করা",
+      "attendance/log বা workflow initiation করা",
+      "প্রয়োজনীয় receipt, attachment বা evidence সংযুক্ত করা",
+      "checker-এর review-এর জন্য clean record প্রস্তুত করা"
+    ],
+    canView: ["Dashboard", "Docs", "Projects", "Workforce", "Materials", "Evidence", "AI", "Finance", "Contractor", "Reports", "Settings"],
+    caution: "Maker role দিয়ে final approval ধরে নেবেন না; review queue follow করুন।",
+  },
+  checker: {
+    label: "Checker",
+    labelBn: "চেকার",
+    summary: "maker-এর entry যাচাই, audit review এবং approval discipline বজায় রাখেন।",
+    tasks: [
+      "pending transaction, project update বা expense review করা",
+      "evidence ও supporting data মিলিয়ে approval decision নেওয়া",
+      "audit visibility ব্যবহার করে সন্দেহজনক পরিবর্তন শনাক্ত করা",
+      "অসম্পূর্ণ entry reject বা correction request পাঠানো"
+    ],
+    canView: ["Dashboard", "Docs", "Projects", "Workforce", "Materials", "Evidence", "Audit", "AI", "Finance", "Contractor", "Reports", "Settings"],
+    caution: "Checker role approval দেয়; evidence বা business rule ছাড়া approve করবেন না।",
   },
   worker: {
     label: "Worker",
@@ -74,7 +251,8 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
       "নির্ধারিত কাজের আপডেট দেওয়া",
       "প্রয়োজনে প্রমাণ/ফাইল জমা দেওয়া"
     ],
-    canView: ["Dashboard", "Workforce", "Evidence"],
+    canView: ["Dashboard", "Docs", "Construction", "Workforce", "Materials", "Evidence", "Finance", "Projects", "Settings"],
+    caution: "নিজের কাজের বাইরে record edit বা অন্যের data পরিবর্তন করার চেষ্টা করবেন না।",
   },
   viewer: {
     label: "Viewer",
@@ -85,15 +263,16 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
       "রিপোর্ট ও অডিট তথ্য রিড-অনলি দেখা",
       "প্রকল্পের স্ট্যাটাস পর্যবেক্ষণ"
     ],
-    canView: ["Dashboard", "Reports", "Audit", "Projects"],
+    canView: ["Dashboard", "Docs", "Construction", "Workforce", "Materials", "Evidence", "Finance", "Contractor", "Projects", "Reports", "Settings"],
+    caution: "Viewer role read-only; কোনো mismatch দেখলে responsible role-এ escalate করুন।",
   },
 };
 
-const ORDER: RoleKey[] = ["admin", "manager", "accountant", "supervisor", "worker", "viewer"];
+const ORDER: RoleKey[] = ["super_admin", "admin", "manager", "accountant", "supervisor", "engineer", "maker", "checker", "worker", "viewer"];
 
 function normalizeRole(value: string | null | undefined): RoleKey {
   const role = (value || "").toLowerCase();
-  if (role === "admin" || role === "manager" || role === "accountant" || role === "supervisor" || role === "worker" || role === "viewer") {
+  if (role === "super_admin" || role === "admin" || role === "manager" || role === "accountant" || role === "supervisor" || role === "engineer" || role === "maker" || role === "checker" || role === "worker" || role === "viewer") {
     return role;
   }
   return "viewer";
@@ -179,7 +358,7 @@ export default function DocsPage() {
         stats={[
           { label: "Role", labelBn: "আপনার রোল", value: ROLE_GUIDE[currentRole].labelBn, color: "blue" },
           { label: "Modules", labelBn: "অনুমোদিত মডিউল", value: guide.canView.length, color: "green" },
-          { label: "Guide", labelBn: "ভাষা", value: "বাংলা", color: "amber" },
+          { label: "Role Set", labelBn: "গাইডেড রোল", value: ORDER.length, color: "amber" },
           { label: "API Docs", labelBn: "লিংক", value: "/api/docs", color: "default" },
         ]}
         actions={
@@ -260,16 +439,43 @@ export default function DocsPage() {
           </section>
 
           <section className="rounded-xl border border-border/60 bg-background/35 p-3">
-            <h3 className="mb-2 text-sm font-semibold">৪) API Documentation ব্যবহার</h3>
-            <p className="text-muted-foreground">API ডকুমেন্টেশন লিংক: /api/docs । এখানে থেকে রোল গাইড ও OpenAPI schema (/api/docs/openapi) পাওয়া যাবে।</p>
+            <h3 className="mb-2 text-sm font-semibold">৪) Role অনুযায়ী সতর্কতা</h3>
+            <p className="text-muted-foreground">{guide.caution}</p>
           </section>
 
           <section className="rounded-xl border border-border/60 bg-background/35 p-3">
-            <h3 className="mb-2 text-sm font-semibold">৫) নিরাপত্তা নির্দেশনা</h3>
+            <h3 className="mb-2 text-sm font-semibold">৫) মডিউল ব্যবহারের নিয়ম</h3>
+            <div className="space-y-3">
+              {MODULE_GUIDE.map((module) => (
+                <div key={module.name} className="rounded-xl border border-border/50 bg-background/45 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="text-sm font-semibold text-foreground">{module.nameBn}</h4>
+                    <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{module.name}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{module.purpose}</p>
+                  <ul className="mt-2 space-y-1.5 text-muted-foreground">
+                    {module.steps.map((step) => (
+                      <li key={step} className="rounded-lg bg-background/45 px-2.5 py-1.5">• {step}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border/60 bg-background/35 p-3">
+            <h3 className="mb-2 text-sm font-semibold">৬) API Documentation ব্যবহার</h3>
+            <p className="text-muted-foreground">API ডকুমেন্টেশন লিংক: /api/docs । এখানে role guide এবং OpenAPI schema (/api/docs/openapi) পাওয়া যাবে। Integration review বা backend troubleshooting-এ এটি ব্যবহার করুন।</p>
+          </section>
+
+          <section className="rounded-xl border border-border/60 bg-background/35 p-3">
+            <h3 className="mb-2 text-sm font-semibold">৭) নিরাপত্তা নির্দেশনা</h3>
             <ul className="space-y-1.5 text-muted-foreground">
               <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• নিজের role এর বাইরে কোন কাজ করার চেষ্টা করবেন না।</li>
               <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• গুরুত্বপূর্ণ পরিবর্তনের আগে Audit module দেখে নিন।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• Offline queue থাকলে online ফিরে sync status নিশ্চিত করুন।</li>
               <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• ডিভাইস পরিবর্তন করলে অবশ্যই Logout করুন।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• Biometric বা Passkey চালু করলে প্রথমে password login দিয়ে enrollment সম্পন্ন করুন।</li>
             </ul>
           </section>
         </div>

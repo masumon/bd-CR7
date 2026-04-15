@@ -156,6 +156,22 @@ class ConstructionEndpointAuthTests(unittest.TestCase):
         r = client.post("/api/construction/materials", json={})
         self.assertEqual(r.status_code, 401)
 
+    def test_list_projects_no_token_401(self) -> None:
+        r = client.get("/api/projects")
+        self.assertEqual(r.status_code, 401)
+
+    def test_create_project_no_token_401(self) -> None:
+        r = client.post("/api/projects", json={"name": "Demo Project", "status": "Planning"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_update_project_no_token_401(self) -> None:
+        r = client.patch("/api/projects/some-id", json={"name": "Demo Project", "status": "Planning"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_cancel_project_no_token_401(self) -> None:
+        r = client.post("/api/projects/some-id/cancel")
+        self.assertEqual(r.status_code, 401)
+
 
 @unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
 class UsersEndpointAuthTests(unittest.TestCase):

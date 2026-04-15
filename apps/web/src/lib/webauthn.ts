@@ -154,14 +154,21 @@ export async function ensureBiometricCredential(token: string, userId: string, u
     return;
   }
 
+  const challenge = await apiPost<{
+    challenge: string;
+    rp_id: string;
+    timeout?: number;
+    exclude_credentials?: Array<{ id: string; type: PublicKeyCredentialType }>;
+  }>("/api/auth/webauthn/register/challenge", token, {});
+
   const userBytes = new TextEncoder().encode(userId).slice(0, 64);
 
   const credential = (await navigator.credentials.create({
     publicKey: {
-      challenge: randomChallenge(),
+      challenge: fromBase64UrlToBuffer(challenge.challenge),
       rp: {
         name: "BD CR7",
-        id: resolveRpId(),
+        id: challenge.rp_id || resolveRpId(),
       },
       user: {
         id: userBytes,
@@ -173,6 +180,10 @@ export async function ensureBiometricCredential(token: string, userId: string, u
         { alg: -257, type: "public-key" },
       ],
       timeout: 60_000,
+      excludeCredentials: (challenge.exclude_credentials ?? []).filter((item) => item.id).map((item) => ({
+        id: fromBase64UrlToBuffer(item.id),
+        type: item.type,
+      })),
       authenticatorSelection: {
         userVerification: "required",
       },
@@ -187,23 +198,15 @@ export async function ensureBiometricCredential(token: string, userId: string, u
   const credentialId = toBase64UrlFromBuffer(credential.rawId);
   const attestationResponse = credential.response as AuthenticatorAttestationResponse & {
     getTransports?: () => string[];
-    getPublicKey?: () => ArrayBuffer | null;
   };
   const transports = typeof attestationResponse.getTransports === "function" ? attestationResponse.getTransports() : [];
-  const publicKeyBuffer = typeof attestationResponse.getPublicKey === "function" ? attestationResponse.getPublicKey() : null;
-  if (!publicKeyBuffer) {
-    throw new Error("Authenticator did not expose a public key; cannot enroll biometric securely.");
-  }
-  const publicKey = toBase64UrlFromBuffer(publicKeyBuffer);
 
   await apiPost<{ ok: boolean }>("/api/auth/webauthn/register", token, {
     credential_id: credentialId,
-    public_key: publicKey,
+    attestation_object: toBase64UrlFromBuffer(attestationResponse.attestationObject),
+    client_data_json: toBase64UrlFromBuffer(attestationResponse.clientDataJSON),
     device_name: "Primary Device",
     transports,
-    sign_count: 0,
-    user_id: userId,
-    user_email: userEmail,
   });
 }
 

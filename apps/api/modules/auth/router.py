@@ -108,6 +108,12 @@ def _resolve_origin_and_rp_id(request: Request) -> tuple[str, str]:
     return expected_origin, rp_id
 
 
+def _bytes_to_base64url(value: bytes) -> str:
+    from webauthn import bytes_to_base64url
+
+    return str(bytes_to_base64url(value))
+
+
 def _sync_auth_role_metadata(user_id: str, role_name: str) -> None:
     client = get_supabase_service()
     if client is None:
@@ -289,23 +295,99 @@ async def logout(user: UserContext = Depends(get_current_user)):
     return {"message": f"Logged out {user.user_id}"}
 
 
+@router.post("/webauthn/register/challenge")
+async def create_webauthn_registration_challenge(request: Request, user: UserContext = Depends(get_current_user)):
+    svc = require_supabase_service()
+
+    rows = (
+        svc.table("biometric_credentials")
+        .select("credential_id,is_active")
+        .eq("user_id", user.user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+
+    challenge = secrets.token_urlsafe(32)
+    _store_webauthn_challenge(user.user_id, challenge)
+
+    _, rp_id = _resolve_origin_and_rp_id(request)
+    return {
+        "challenge": challenge,
+        "rp_id": rp_id,
+        "timeout": 60000,
+        "exclude_credentials": [
+            {"id": row["credential_id"], "type": "public-key"}
+            for row in (rows.data or [])
+            if row.get("credential_id")
+        ],
+    }
+
+
 @router.post("/webauthn/register")
-async def register_webauthn_credential(payload: dict, user: UserContext = Depends(get_current_user)):
+async def register_webauthn_credential(payload: dict, request: Request, user: UserContext = Depends(get_current_user)):
     svc = require_supabase_service()
 
     credential_id = str(payload.get("credential_id") or "").strip()
     public_key = str(payload.get("public_key") or "").strip()
-    if not credential_id or not public_key:
+
+    attestation_object = str(payload.get("attestation_object") or "").strip()
+    client_data_json = str(payload.get("client_data_json") or "").strip()
+    transports = payload.get("transports") or []
+    device_name = str(payload.get("device_name") or "This device")
+
+    sign_count = int(payload.get("sign_count") or 0)
+
+    if attestation_object and client_data_json and credential_id:
+        challenge_state = _load_webauthn_challenge(user.user_id)
+        if not challenge_state:
+            raise HTTPException(status_code=400, detail="WebAuthn registration challenge is missing or expired")
+
+        expected_challenge, expires_at = challenge_state
+        if datetime.now(timezone.utc) > expires_at:
+            _clear_webauthn_challenge(user.user_id)
+            raise HTTPException(status_code=400, detail="WebAuthn registration challenge expired")
+
+        expected_origin, rp_id = _resolve_origin_and_rp_id(request)
+        credential: dict[str, Any] = {
+            "id": credential_id,
+            "rawId": credential_id,
+            "type": "public-key",
+            "response": {
+                "attestationObject": attestation_object,
+                "clientDataJSON": client_data_json,
+            },
+            "clientExtensionResults": payload.get("client_extension_results") or {},
+        }
+
+        try:
+            from webauthn import base64url_to_bytes, verify_registration_response
+
+            verification = verify_registration_response(
+                credential=credential,
+                expected_challenge=base64url_to_bytes(expected_challenge),
+                expected_rp_id=rp_id,
+                expected_origin=expected_origin,
+                require_user_verification=True,
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=401, detail="WebAuthn registration verification failed") from exc
+        finally:
+            _clear_webauthn_challenge(user.user_id)
+
+        credential_id = _bytes_to_base64url(verification.credential_id)
+        public_key = _bytes_to_base64url(verification.credential_public_key)
+        sign_count = int(verification.sign_count)
+    elif not credential_id or not public_key:
         raise HTTPException(status_code=400, detail="credential_id and public_key are required")
 
     row = {
         "user_id": user.user_id,
         "credential_id": credential_id,
         "public_key": public_key,
-        "device_name": str(payload.get("device_name") or "This device"),
-        "transports": payload.get("transports") or [],
+        "device_name": device_name,
+        "transports": transports,
         "is_active": True,
-        "sign_count": int(payload.get("sign_count") or 0),
+        "sign_count": sign_count,
     }
 
     result = svc.table("biometric_credentials").upsert(row, on_conflict="user_id,credential_id").execute()

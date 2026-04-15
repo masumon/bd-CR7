@@ -36,3 +36,14 @@ class ProjectAttachmentCreate(BaseModel):
     file_type: str | None = Field(default=None, max_length=120)
     file_name: str | None = Field(default=None, max_length=260)
     caption: str | None = Field(default=None, max_length=500)
+
+
+class ProjectUpsert(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    budget: Decimal | None = Field(default=None, ge=0)
+    cover_photo_url: str | None = Field(default=None, max_length=2000)
+    phase: str | None = Field(default=None, max_length=120)
+    start_date: date | None = None
+    end_date: date | None = None
+    status: str = Field(default="Planning", min_length=2, max_length=40)

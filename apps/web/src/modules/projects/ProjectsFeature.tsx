@@ -21,7 +21,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
+import { useToast } from "@/components/ui/toast";
 import { apiRequest } from "@/lib/api";
+import { isQueuedApiResult } from "@/lib/apiClient";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { PreviewModal } from "@/modules/_shared";
 import { createClient } from "@/lib/supabase/client";
@@ -68,6 +70,12 @@ interface Project {
   created_at: string;
 }
 
+type ProjectRow = Partial<Project> & {
+  title?: string | null;
+  expected_end_date?: string | null;
+  status?: string | null;
+};
+
 interface ProjectTimelineEvent {
   id: string;
   project_id: string;
@@ -99,10 +107,35 @@ const EMPTY_FORM = {
   status: "Planning" as ProjectStatus,
 };
 
+const STATUS_FROM_DB: Record<string, ProjectStatus> = {
+  planning: "Planning",
+  active: "Active",
+  paused: "Paused",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+function normalizeProject(input: ProjectRow): Project {
+  const rawStatus = String(input.status || "planning").trim().toLowerCase();
+  return {
+    id: String(input.id || ""),
+    name: String(input.name || input.title || ""),
+    description: input.description ?? null,
+    budget: typeof input.budget === "number" ? input.budget : input.budget != null ? Number(input.budget) : null,
+    cover_photo_url: input.cover_photo_url ?? null,
+    phase: input.phase ?? null,
+    start_date: input.start_date ?? null,
+    end_date: input.end_date ?? input.expected_end_date ?? null,
+    status: STATUS_FROM_DB[rawStatus] ?? "Planning",
+    created_at: String(input.created_at || ""),
+  };
+}
+
 export function ProjectsFeature() {
   const supabase = useMemo(() => createClient(), []);
   const userId = useAuthStore((state) => state.userId);
   const token = useAuthStore((state) => state.token);
+  const toast = useToast();
 
   const [projects, setProjects]     = useState<Project[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -148,21 +181,26 @@ export function ProjectsFeature() {
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("projects")
-      .select("id,name,description,budget,cover_photo_url,phase,start_date,end_date,status,created_at")
-      .order("created_at", { ascending: false });
-    if (!error && data) setProjects(data as Project[]);
+    try {
+      const data = await apiRequest<Project[]>("/api/projects", {}, token || undefined);
+      setProjects((data || []).map(normalizeProject));
+    } catch {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id,name,title,description,budget,cover_photo_url,phase,start_date,end_date,expected_end_date,status,created_at")
+        .order("created_at", { ascending: false });
+      if (!error && data) setProjects((data as ProjectRow[]).map(normalizeProject));
+    }
     setLoading(false);
-    }, [supabase]);
+    }, [supabase, token]);
 
   const fetchProjectDetails = useCallback(async (projectId: string) => {
     setDetailsLoading(true);
     setDetailsError(null);
     try {
       const [timelineData, attachmentData] = await Promise.all([
-        apiRequest<ProjectTimelineEvent[]>(`/api/project-management/projects/${projectId}/timeline`, {}, token || undefined),
-        apiRequest<ProjectAttachment[]>(`/api/project-management/projects/${projectId}/attachments`, {}, token || undefined),
+        apiRequest<ProjectTimelineEvent[]>(`/api/projects/${projectId}/timeline`, {}, token || undefined),
+        apiRequest<ProjectAttachment[]>(`/api/projects/${projectId}/attachments`, {}, token || undefined),
       ]);
       setTimelineItems(timelineData || []);
       setAttachments(attachmentData || []);
@@ -247,7 +285,7 @@ export function ProjectsFeature() {
     setSaving(true);
     setError(null);
 
-    const payload: Partial<Project> & { created_by: null } = {
+    const payload = {
       name: form.name.trim(),
       description: form.description.trim() || null,
       budget: form.budget ? Number(form.budget) : null,
@@ -256,28 +294,51 @@ export function ProjectsFeature() {
       start_date: form.start_date || null,
       end_date: form.end_date || null,
       status: form.status,
-      created_by: null,
     };
 
-    let err;
-    if (editId) {
-      const { error: e } = await supabase.from("projects").update(payload).eq("id", editId);
-      err = e;
-    } else {
-      const { error: e } = await supabase.from("projects").insert([payload]);
-      err = e;
-    }
+    try {
+      const result = editId
+        ? await apiRequest<Project>(`/api/projects/${editId}`, {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+          }, token || undefined)
+        : await apiRequest<Project>("/api/projects", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }, token || undefined);
 
-    if (err) { setError(err.message); setSaving(false); return; }
-    setSaving(false);
-    setShowModal(false);
-    fetchProjects();
+      setSaving(false);
+      setShowModal(false);
+
+      if (isQueuedApiResult(result)) {
+        toast.warning(
+          editId ? "Project update queued" : "Project save queued",
+          "Saved offline. The project change will sync automatically when the internet returns."
+        );
+        return;
+      }
+
+      toast.success(editId ? "Project updated" : "Project created", form.name.trim());
+      await fetchProjects();
+    } catch (submitError) {
+      setError(getErrorMessage(submitError));
+      setSaving(false);
+    }
   }
 
   async function handleCancel(id: string) {
     if (!confirm("Mark this project as Cancelled?")) return;
-    await supabase.from("projects").update({ status: "Cancelled" }).eq("id", id);
-    fetchProjects();
+    try {
+      const result = await apiRequest<Project>(`/api/projects/${id}/cancel`, { method: "POST" }, token || undefined);
+      if (isQueuedApiResult(result)) {
+        toast.warning("Project cancellation queued", "Saved offline. The cancellation will sync automatically when the internet returns.");
+        return;
+      }
+      toast.info("Project cancelled", "The project status is now Cancelled.");
+      await fetchProjects();
+    } catch (cancelError) {
+      toast.error("Failed to cancel project", getErrorMessage(cancelError));
+    }
   }
 
   async function handleAddTimelineEvent(e: React.FormEvent) {
@@ -289,7 +350,7 @@ export function ProjectsFeature() {
     setDetailsError(null);
     let timelineError: Error | null = null;
     try {
-      await apiRequest(`/api/project-management/projects/${selectedProjectId}/timeline`, {
+      const result = await apiRequest(`/api/projects/${selectedProjectId}/timeline`, {
         method: "POST",
         body: JSON.stringify({
           title: timelineTitle.trim(),
@@ -298,6 +359,9 @@ export function ProjectsFeature() {
           status: timelineStatus,
         }),
       }, token || undefined);
+      if (isQueuedApiResult(result)) {
+        toast.warning("Timeline event queued", "Saved offline. The timeline update will sync automatically when the internet returns.");
+      }
     } catch {
       const { error } = await supabase.from("project_timeline_events").insert({
         project_id: selectedProjectId,
@@ -333,7 +397,7 @@ export function ProjectsFeature() {
 
       let attachmentError: Error | null = null;
       try {
-        await apiRequest(`/api/project-management/projects/${selectedProjectId}/attachments`, {
+        await apiRequest(`/api/projects/${selectedProjectId}/attachments`, {
           method: "POST",
           body: JSON.stringify({
             file_url: fileUrl,
