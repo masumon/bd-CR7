@@ -91,7 +91,6 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
           title={fileName ?? "PDF Preview"}
           className="w-full h-64 border-0"
           loading="lazy"
-          sandbox="allow-same-origin"
         />
       </div>
     );

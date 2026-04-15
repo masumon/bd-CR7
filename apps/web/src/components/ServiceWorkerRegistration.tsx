@@ -5,6 +5,44 @@ import { useEffect } from "react";
 import { setupOfflineSync } from "@/lib/offlineSync";
 
 const SW_RESET_KEY = "bdcr7-sw-reset-2026-04-05";
+const PAGE_CACHE_NAME = "others";
+const START_URL_CACHE_NAME = "start-url";
+
+async function cacheCurrentRoute(pathname: string, search: string) {
+  if (typeof window === "undefined" || !("caches" in window) || !window.navigator.onLine) {
+    return;
+  }
+
+  const requestUrl = `${window.location.origin}${pathname}${search}`;
+  const cacheName = pathname === "/" ? START_URL_CACHE_NAME : PAGE_CACHE_NAME;
+
+  try {
+    const response = await fetch(requestUrl, {
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: {
+        "x-bdcr7-cache-warm": "1",
+      },
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const normalized = response.redirected
+      ? new Response(response.body, {
+          status: 200,
+          statusText: "OK",
+          headers: response.headers,
+        })
+      : response.clone();
+
+    const cache = await caches.open(cacheName);
+    await cache.put(requestUrl, normalized);
+  } catch {
+    // Best-effort route warming only.
+  }
+}
 
 export default function ServiceWorkerRegistration() {
   useEffect(() => {
@@ -69,6 +107,40 @@ export default function ServiceWorkerRegistration() {
     return () => {
       mounted = false;
       cleanupOfflineSync();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const warmCurrentRoute = () => {
+      void cacheCurrentRoute(window.location.pathname || "/", window.location.search || "");
+    };
+
+    const originalPushState = window.history.pushState.bind(window.history);
+    const originalReplaceState = window.history.replaceState.bind(window.history);
+
+    window.history.pushState = function pushState(...args) {
+      originalPushState(...args);
+      warmCurrentRoute();
+    };
+
+    window.history.replaceState = function replaceState(...args) {
+      originalReplaceState(...args);
+      warmCurrentRoute();
+    };
+
+    window.addEventListener("popstate", warmCurrentRoute);
+    window.addEventListener("online", warmCurrentRoute);
+    warmCurrentRoute();
+
+    return () => {
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+      window.removeEventListener("popstate", warmCurrentRoute);
+      window.removeEventListener("online", warmCurrentRoute);
     };
   }, []);
 
