@@ -22,7 +22,7 @@ import { AdvancedTab } from "@/modules/settings/tabs/AdvancedTab";
 import { IntegrationsTab } from "@/modules/settings/tabs/IntegrationsTab";
 import { ProfileTab } from "@/modules/settings/tabs/ProfileTab";
 import { SettingsCatalogTab } from "@/modules/settings/tabs/SettingsCatalogTab";
-import { SettingsTabsNav } from "@/modules/settings/tabs/SettingsTabsNav";
+import { SettingsGroupedNav } from "@/modules/settings/tabs/SettingsGroupedNav";
 import { WorkspaceTab } from "@/modules/settings/tabs/WorkspaceTab";
 import { UserManagementTab } from "@/modules/settings/tabs/UserManagementTab";
 import { normalizeRoleName } from "@/lib/rbac";
@@ -311,7 +311,7 @@ export function SettingsFeature() {
         <p className="mt-1 text-sm text-muted-foreground">{language === "bn" ? "প্রোফাইল, ভাষা, থিম এবং অ্যাপ কনফিগারেশন সহজভাবে ম্যানেজ করুন।" : "Manage profile, language, theme, and app configuration in one place."}</p>
       </div>
 
-      <SettingsTabsNav language={language} tabs={availableTabs} activeTab={activeTab} onChange={setActiveTab} />
+      <SettingsGroupedNav language={language} tabs={availableTabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "Profile" ? (
         <ProfileTab

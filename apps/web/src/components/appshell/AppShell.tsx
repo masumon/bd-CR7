@@ -49,23 +49,26 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
     [normalizedRole]
   );
 
+  // Single-language label: picks English or Bengali based on current language setting
+  const t = (en: string, bn: string) => language === "bn" ? bn : en;
+
   const coreItems = useMemo<NavItem[]>(() => {
-    const bi = (en: string, bn: string) => `${en} / ${bn}`;
     return [
-      { href: "/dashboard", label: bi("Dashboard", "ড্যাশবোর্ড"), icon: Home },
-      { href: "/dashboard/docs", label: bi("Guide", "ইউজার গাইড"), icon: BookOpenText },
-      { href: "/dashboard/construction/projects", label: bi("Projects", "প্রজেক্ট"), icon: FolderKanban },
-      { href: "/dashboard/finance", label: bi("Finance", "ফাইন্যান্স"), icon: BadgeDollarSign },
-      { href: "/dashboard/workforce", label: bi("Workforce", "শ্রমিক"), icon: HardHat },
-      { href: "/dashboard/materials", label: bi("Materials", "মালামাল"), icon: Building2 },
-      { href: "/dashboard/evidence", label: bi("Evidence", "ডকুমেন্ট"), icon: ClipboardList },
-      { href: "/dashboard/reports", label: bi("Reports", "রিপোর্ট"), icon: BarChart3 },
+      { href: "/dashboard", label: t("Dashboard", "ড্যাশবোর্ড"), icon: Home },
+      { href: "/dashboard/docs", label: t("Guide", "ইউজার গাইড"), icon: BookOpenText },
+      { href: "/dashboard/construction/projects", label: t("Projects", "প্রজেক্ট"), icon: FolderKanban },
+      { href: "/dashboard/finance", label: t("Finance", "ফাইন্যান্স"), icon: BadgeDollarSign },
+      { href: "/dashboard/workforce", label: t("Workforce", "শ্রমিক"), icon: HardHat },
+      { href: "/dashboard/materials", label: t("Materials", "মালামাল"), icon: Building2 },
+      { href: "/dashboard/evidence", label: t("Evidence", "ডকুমেন্ট"), icon: ClipboardList },
+      { href: "/dashboard/reports", label: t("Reports", "রিপোর্ট"), icon: BarChart3 },
       { href: "/dashboard/ai", label: "SUMONIX AI", icon: Bot },
-      { href: "/dashboard/audit", label: bi("Audit", "অডিট"), icon: ShieldCheck },
-      { href: "/dashboard/contractor", label: bi("Contractor", "ঠিকাদার"), icon: Briefcase },
-      { href: "/dashboard/settings", label: bi("Settings", "সেটিংস"), icon: Settings2 },
+      { href: "/dashboard/audit", label: t("Audit", "অডিট"), icon: ShieldCheck },
+      { href: "/dashboard/contractor", label: t("Contractor", "ঠিকাদার"), icon: Briefcase },
+      { href: "/dashboard/settings", label: t("Settings", "সেটিংস"), icon: Settings2 },
     ].filter((item) => corePathSet.has(item.href) && allowedPaths.has(item.href));
-  }, [allowedPaths, corePathSet]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedPaths, corePathSet, language]);
 
   const navItems = coreItems;
 
@@ -129,6 +132,7 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
         open={moreOpen}
         items={moreItems}
         onClose={() => setMoreOpen(false)}
+        language={language}
       />
 
       <UserDrawer

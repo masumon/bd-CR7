@@ -986,3 +986,333 @@ html.reduce-motion *::after {
 .compact-card-title {
   @apply text-xs font-semibold text-foreground leading-tight;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   UI/UX MODERNIZATION 2026 — DESIGN SYSTEM ADDITIONS
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── 8px Spacing Grid tokens ─── */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* ─── High Contrast Mode ─── */
+[data-high-contrast="true"] {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 6%;
+  --card-foreground: 0 0% 100%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 80%;
+  --border: 0 0% 40%;
+  --primary: 60 100% 60%;
+  --primary-foreground: 0 0% 0%;
+  --accent: 120 100% 45%;
+  --accent-foreground: 0 0% 0%;
+  --ring: 60 100% 60%;
+  --gold: 45 100% 55%;
+}
+
+[data-high-contrast="true"] .erp-card {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.3);
+}
+
+[data-high-contrast="true"] .glass,
+[data-high-contrast="true"] .glass-bdcr7 {
+  background: rgba(0,0,0,0.85);
+  border-color: rgba(255,255,255,0.35);
+}
+
+[data-high-contrast="true"] button,
+[data-high-contrast="true"] a {
+  outline: 2px solid transparent;
+}
+
+[data-high-contrast="true"] button:focus-visible,
+[data-high-contrast="true"] a:focus-visible {
+  outline: 3px solid hsl(60 100% 60%);
+  outline-offset: 2px;
+}
+
+/* ─── Bento Grid System ─── */
+.bento-grid {
+  display: grid;
+  gap: var(--space-3, 12px);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.bento-cell       { border-radius: 20px; overflow: hidden; }
+.bento-cell-wide  { grid-column: span 2; }
+.bento-cell-tall  { grid-row: span 2; }
+.bento-cell-full  { grid-column: 1 / -1; }
+
+@media (min-width: 640px) {
+  .bento-grid { grid-template-columns: repeat(4, 1fr); gap: var(--space-4, 16px); }
+}
+
+@media (min-width: 1024px) {
+  .bento-grid { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* ─── Dashboard Bento Named Areas ─── */
+.bento-dashboard {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-areas:
+    "header   header"
+    "progress donut"
+    "budget   budget"
+    "finance  finance"
+    "qa       qa"
+    "modules  modules";
+}
+
+.bento-area-header   { grid-area: header; }
+.bento-area-progress { grid-area: progress; }
+.bento-area-donut    { grid-area: donut; }
+.bento-area-budget   { grid-area: budget; }
+.bento-area-finance  { grid-area: finance; }
+.bento-area-qa       { grid-area: qa; }
+.bento-area-modules  { grid-area: modules; }
+.bento-area-dot-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── Typography Scale Enhancements ─── */
+.text-display { font-size: clamp(24px, 5vw, 32px); font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
+.text-heading  { font-size: clamp(18px, 3.5vw, 22px); font-weight: 700; line-height: 1.2; }
+.text-label   { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* ─── Sync State UI ─── */
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  transition: all 0.25s ease;
+}
+
+.sync-badge-pending {
+  background: rgba(251,189,35,0.15);
+  border: 1px solid rgba(251,189,35,0.3);
+  color: rgb(251,189,35);
+}
+
+.sync-badge-syncing {
+  background: rgba(96,165,250,0.15);
+  border: 1px solid rgba(96,165,250,0.3);
+  color: rgb(96,165,250);
+}
+
+.sync-badge-done {
+  background: rgba(34,197,94,0.12);
+  border: 1px solid rgba(34,197,94,0.25);
+  color: rgb(34,197,94);
+}
+
+.sync-badge-offline {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: rgb(239,68,68);
+}
+
+/* ─── Progressive Form Steps ─── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--muted));
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.step-dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background: hsl(var(--primary));
+}
+
+.step-dot.done {
+  background: hsl(var(--accent));
+}
+
+/* ─── Voice UI ─── */
+@keyframes voicePulse {
+  0%, 100% { transform: scale(1) translateZ(0); opacity: 1; }
+  50%       { transform: scale(1.1) translateZ(0); opacity: 0.85; }
+}
+
+.voice-btn-active {
+  animation: voicePulse 1.2s ease-in-out infinite;
+}
+
+.voice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.6);
+  color: hsl(var(--muted-foreground));
+  transition: all 0.2s ease;
+  min-height: unset;
+  flex-shrink: 0;
+}
+
+.voice-btn:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.08);
+}
+
+/* ─── Evidence Smart Hint ─── */
+.evidence-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed hsl(var(--primary) / 0.35);
+  background: hsl(var(--primary) / 0.05);
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.45;
+}
+
+.evidence-hint-icon {
+  flex-shrink: 0;
+  color: hsl(var(--primary));
+  margin-top: 1px;
+}
+
+/* ─── Empty State ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 12px;
+}
+
+.empty-state-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: hsl(var(--muted));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--muted-foreground));
+}
+
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  max-width: 260px;
+}
+
+/* ─── Error Card ─── */
+.error-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid hsl(0 72% 51% / 0.3);
+  background: hsl(0 72% 51% / 0.08);
+  font-size: 13px;
+  color: hsl(0 72% 70%);
+  line-height: 1.4;
+}
+
+/* ─── Settings Grouped Sections ─── */
+.settings-section {
+  border-radius: 16px;
+  border: 1px solid hsl(var(--border) / 0.55);
+  background: hsl(var(--card) / 0.6);
+  overflow: hidden;
+}
+
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.settings-section-header:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+.settings-section-body {
+  border-top: 1px solid hsl(var(--border) / 0.4);
+  padding: 12px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px;
+  border-radius: 10px;
+  gap: 12px;
+  transition: background 0.15s ease;
+}
+
+.settings-row:hover { background: hsl(var(--muted) / 0.35); }
+
+/* ─── Role Badge ─── */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.role-badge-admin     { background: hsl(0 72% 51% / 0.15); color: hsl(0 72% 70%); border: 1px solid hsl(0 72% 51% / 0.25); }
+.role-badge-manager   { background: hsl(210 80% 56% / 0.15); color: hsl(210 80% 75%); border: 1px solid hsl(210 80% 56% / 0.25); }
+.role-badge-supervisor{ background: hsl(40 93% 64% / 0.15); color: hsl(40 93% 75%); border: 1px solid hsl(40 93% 64% / 0.25); }
+.role-badge-worker    { background: hsl(167 46% 46% / 0.15); color: hsl(167 46% 65%); border: 1px solid hsl(167 46% 46% / 0.25); }
+.role-badge-accountant{ background: hsl(280 60% 55% / 0.15); color: hsl(280 60% 75%); border: 1px solid hsl(280 60% 55% / 0.25); }

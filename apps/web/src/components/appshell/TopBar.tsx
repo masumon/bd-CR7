@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Bell, Languages, LogOut, Menu, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SyncBadge } from "@/components/appshell/SyncBadge";
 import { apiClient } from "@/lib/apiClient";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -90,10 +91,11 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
           </Link>
 
           <span
-            className={cn("h-2.5 w-2.5 rounded-full", online ? "bg-emerald-400" : "bg-rose-500")}
+            className={cn("h-2.5 w-2.5 rounded-full flex-shrink-0", online ? "bg-emerald-400" : "bg-rose-500")}
             aria-label={online ? "Online" : "Offline"}
             title={online ? "Online" : "Offline"}
           />
+          <SyncBadge online={online} language={language} />
         </div>
 
         <div className="flex items-center gap-0.5">

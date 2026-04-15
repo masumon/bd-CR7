@@ -29,7 +29,7 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
         {primaryItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const Icon = item.icon;
-          const compactLabel = item.label.split("/")[0]?.trim() || item.label;
+          const compactLabel = item.label;
           return (
             <Link
               key={item.href}
