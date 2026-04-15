@@ -148,7 +148,16 @@ function ensureAuthSubscription() {
     return;
   }
 
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    // INITIAL_SESSION: handled explicitly by initialize() via getSession().
+    //   Letting it through races with the loading: true set in initialize() and
+    //   can write userId: null before the real session is confirmed — triggering
+    //   a spurious redirect to /login.
+    // SIGNED_IN: handled by login() / register() / OAuth callback directly.
+    //   Allowing it here causes a duplicate fetchUserRole() DB call that can
+    //   overwrite state written by those explicit auth calls.
+    if (event === "INITIAL_SESSION" || event === "SIGNED_IN") return;
+
     void applySessionToState(session, (partial) => {
       useAuthStore.setState(partial);
       if (!session?.user?.id) {

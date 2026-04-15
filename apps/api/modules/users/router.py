@@ -106,24 +106,8 @@ async def delete_user(user_id: str, user: UserContext = Depends(require_roles("s
 @router.get("/users/me/profile")
 async def get_my_profile(user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     client = require_supabase_service()
-    try:
-        row = (
-            client.table("users")
-            .select("id,email,full_name,phone,profile_image_url,user_code")
-            .eq("id", user.user_id)
-            .limit(1)
-            .execute()
-        )
-        data = row.data or []
-    except Exception:
-        row = (
-            client.table("users")
-            .select("id,email,full_name,phone,profile_image_url")
-            .eq("id", user.user_id)
-            .limit(1)
-            .execute()
-        )
-        data = row.data or []
+    row = client.table("users").select("id,email,full_name,phone,profile_image_url").eq("id", user.user_id).limit(1).execute()
+    data = row.data or []
     if not data:
         raise HTTPException(status_code=404, detail="User profile not found")
     profile = data[0]
@@ -134,7 +118,7 @@ async def get_my_profile(user: UserContext = Depends(get_current_user)) -> dict[
 @router.patch("/users/me/profile")
 async def update_my_profile(payload: dict[str, Any], user: UserContext = Depends(get_current_user)) -> dict[str, Any]:
     client = require_supabase_service()
-    allowed_keys = {"full_name", "phone", "profile_image_url", "user_code"}
+    allowed_keys = {"full_name", "phone", "profile_image_url"}
     safe_payload = {k: v for k, v in payload.items() if k in allowed_keys}
     if not safe_payload:
         return {"updated": False, "data": {}}
