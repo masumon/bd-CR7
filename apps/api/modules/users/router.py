@@ -71,7 +71,7 @@ async def update_user(user_id: str, payload: dict[str, Any], user: UserContext =
 async def update_user_role(user_id: str, payload: dict[str, Any], user: UserContext = Depends(require_roles("super_admin", "admin"))) -> dict[str, Any]:
     client = require_supabase_service()
     role = str(payload.get("role") or "").strip().lower()
-    allowed_roles = {"super_admin", "admin", "supervisor", "engineer", "maker", "checker", "viewer", "worker"}
+    allowed_roles = {"super_admin", "admin", "manager", "accountant", "supervisor", "engineer", "maker", "checker", "viewer", "worker"}
     if role not in allowed_roles:
         raise HTTPException(status_code=422, detail="Invalid role")
 

@@ -8,7 +8,7 @@ import { getErrorMessage } from "@/lib/errorUtils";
 
 const VALID_ROLES = new Set([
   "super_admin", "admin", "checker", "maker",
-  "supervisor", "engineer", "mason", "worker", "viewer",
+  "supervisor", "engineer", "manager", "accountant", "mason", "worker", "viewer",
 ]);
 
 async function fetchUserRole(userId: string): Promise<string> {

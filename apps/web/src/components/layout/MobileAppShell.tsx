@@ -165,7 +165,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("bdcr7:request-queued", onQueued as EventListener);
       window.removeEventListener("bdcr7:sync-result", onSyncResult as EventListener);
     };
-  }, [language]);
+  }, [language, toast]);
 
   useEffect(() => {
     if (!supabase) return;
