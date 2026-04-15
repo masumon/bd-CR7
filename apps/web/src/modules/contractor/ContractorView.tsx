@@ -18,7 +18,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
 import { ExportPDFButton } from "@/components/ui/ExportPDFButton";
 import { ProjectFilesPanel } from "@/components/ui/ProjectFilesPanel";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, isQueuedApiResult } from "@/lib/apiClient";
 import { exportCSV } from "@/lib/exportCSV";
 import { exportHTML } from "@/lib/exportHTML";
 import { createClient } from "@/lib/supabase/client";
@@ -177,7 +177,7 @@ function AddContractorForm({
     //   notes: notes.trim() || null,
     // });
     try {
-      await apiClient<{ id?: string }>("/api/contractor/contractors", {
+      const result = await apiClient<{ id?: string }>("/api/contractor/contractors", {
         method: "POST",
         body: JSON.stringify({
           name: name.trim(),
@@ -190,6 +190,12 @@ function AddContractorForm({
           notes: notes.trim() || null,
         }),
       });
+      if (isQueuedApiResult(result)) {
+        setSaving(false);
+        setMsg("ঠিকাদারটি অফলাইনে সংরক্ষিত হয়েছে। ইন্টারনেট ফিরলে স্বয়ংক্রিয়ভাবে সিঙ্ক হবে।");
+        reset();
+        return;
+      }
     } catch (err) {
       error = { message: err instanceof Error ? err.message : "Request failed" };
     }
@@ -261,7 +267,7 @@ function AddContractForm({
     //   description: description.trim() || null,
     // });
     try {
-      await apiClient<{ id?: string }>("/api/contractor/contractor_contracts", {
+      const result = await apiClient<{ id?: string }>("/api/contractor/contractor_contracts", {
         method: "POST",
         body: JSON.stringify({
           contractor_id: contractorId,
@@ -273,6 +279,12 @@ function AddContractForm({
           description: description.trim() || null,
         }),
       });
+      if (isQueuedApiResult(result)) {
+        setSaving(false);
+        setMsg("চুক্তিটি অফলাইনে সংরক্ষিত হয়েছে। ইন্টারনেট ফিরলে স্বয়ংক্রিয়ভাবে সিঙ্ক হবে।");
+        setProjectName(""); setContractAmount("0"); setStartDate(""); setEndDate(""); setDescription("");
+        return;
+      }
     } catch (err) {
       error = { message: err instanceof Error ? err.message : "Request failed" };
     }
@@ -340,6 +352,7 @@ function AddPaymentForm({
     e.preventDefault();
     if (!contractorId) { setMsg("ঠিকাদার নির্বাচন করুন।"); return; }
     setSaving(true);
+    let queued = false;
 
     let payErr: { message: string } | null = null;
     // OLD (DISABLED - SAFE)
@@ -352,7 +365,7 @@ function AddPaymentForm({
     //   notes: notes.trim() || null,
     // });
     try {
-      await apiClient<{ id?: string }>("/api/contractor/contractor_payments", {
+      const result = await apiClient<{ id?: string }>("/api/contractor/contractor_payments", {
         method: "POST",
         body: JSON.stringify({
           contractor_id: contractorId,
@@ -363,6 +376,7 @@ function AddPaymentForm({
           notes: notes.trim() || null,
         }),
       });
+      queued = isQueuedApiResult(result);
     } catch (err) {
       payErr = { message: err instanceof Error ? err.message : "Request failed" };
     }
@@ -380,10 +394,11 @@ function AddPaymentForm({
         //   .update({ paid_amount: Number(contract.paid_amount) + Number(amount) })
         //   .eq("id", contractId);
         try {
-          await apiClient<{ id?: string; paid_amount?: string }>(`/api/contractor/payment/${contractId}`, {
+          const result = await apiClient<{ id?: string; paid_amount?: string }>(`/api/contractor/payment/${contractId}`, {
             method: "PATCH",
             body: JSON.stringify({ paid_amount: nextPaidAmount }),
           });
+          queued = queued || isQueuedApiResult(result);
         } catch (err) {
           updateErr = { message: err instanceof Error ? err.message : "Request failed" };
         }
@@ -397,6 +412,11 @@ function AddPaymentForm({
     }
 
     setSaving(false);
+    if (queued) {
+      setMsg("পেমেন্টটি অফলাইনে সংরক্ষিত হয়েছে। ইন্টারনেট ফিরলে স্বয়ংক্রিয়ভাবে সিঙ্ক হবে।");
+      setAmount("0"); setNotes(""); setContractId("");
+      return;
+    }
     setMsg("পেমেন্ট সংরক্ষিত হয়েছে।");
     setAmount("0"); setNotes(""); setContractId("");
     onSaved();

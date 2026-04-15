@@ -7,6 +7,7 @@ import { ArrowDownToLine, RefreshCw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { apiRequest } from "@/lib/api";
+import { isQueuedApiResult } from "@/lib/apiClient";
 import { useToast } from "@/components/ui/toast";
 import { getErrorMessage } from "@/lib/errorUtils";
 import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
@@ -161,6 +162,10 @@ export function WorkerLogsFeature() {
         method: "POST",
         body: JSON.stringify({ worker_id: workerName, latitude: Number(latitude), longitude: Number(longitude) }),
       });
+      if (isQueuedApiResult(result)) {
+        toast.warning("Worker log queued", "Saved offline. The attendance log will sync automatically when internet returns.");
+        return;
+      }
       toast.info("Worker log synced", result.message || "API fallback used");
       fetchLogs();
     } catch (err) {

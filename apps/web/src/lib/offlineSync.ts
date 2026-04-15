@@ -5,6 +5,15 @@ import { getErrorMessage } from '@/lib/errorUtils';
 const MAX_ATTEMPTS = 5;
 let flushInProgress = false;
 
+export type OfflineSyncSummary = {
+  processed: number;
+  succeeded: number;
+  requeued: number;
+  discarded: number;
+  remaining: number;
+  lastError: string | null;
+};
+
 /**
  * Always use same-origin relative paths so that the Next.js API proxy
  * (app/api/[...path]/route.ts) forwards requests to the Python backend.
@@ -15,15 +24,30 @@ function resolveApiBase(): string {
   return '';
 }
 
-async function flushQueueOnce(): Promise<void> {
-  if (flushInProgress) {
+const emitSyncSummary = (summary: OfflineSyncSummary) => {
+  if (typeof window === 'undefined' || summary.processed === 0) {
     return;
   }
+  window.dispatchEvent(new CustomEvent('bdcr7:sync-result', { detail: summary }));
+};
+
+export async function triggerOfflineSync(): Promise<OfflineSyncSummary> {
+  if (flushInProgress) {
+    return { processed: 0, succeeded: 0, requeued: 0, discarded: 0, remaining: useOfflineQueue.getState().queue.length, lastError: null };
+  }
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    return;
+    return { processed: 0, succeeded: 0, requeued: 0, discarded: 0, remaining: useOfflineQueue.getState().queue.length, lastError: 'offline' };
   }
 
   flushInProgress = true;
+  const summary: OfflineSyncSummary = {
+    processed: 0,
+    succeeded: 0,
+    requeued: 0,
+    discarded: 0,
+    remaining: useOfflineQueue.getState().queue.length,
+    lastError: null,
+  };
 
   try {
     const apiBase = resolveApiBase();
@@ -35,6 +59,7 @@ async function flushQueueOnce(): Promise<void> {
       if (!item) {
         break;
       }
+      summary.processed += 1;
 
       try {
         const response = await fetch(`${apiBase}${item.endpoint}`, {
@@ -47,30 +72,45 @@ async function flushQueueOnce(): Promise<void> {
         });
 
         if (response.ok || response.status === 409) {
+          summary.succeeded += 1;
           continue;
         }
 
         const attempts = (item.attempts || 0) + 1;
         if (attempts < MAX_ATTEMPTS) {
           useOfflineQueue.getState().requeue({ ...item, attempts, lastError: `HTTP ${response.status}` });
+          summary.requeued += 1;
+          summary.lastError = `HTTP ${response.status}`;
+        } else {
+          summary.discarded += 1;
+          summary.lastError = `HTTP ${response.status}`;
         }
       } catch (error) {
         const attempts = (item.attempts || 0) + 1;
         if (attempts < MAX_ATTEMPTS) {
           useOfflineQueue.getState().requeue({ ...item, attempts, lastError: getErrorMessage(error) });
+          summary.requeued += 1;
+          summary.lastError = getErrorMessage(error);
+        } else {
+          summary.discarded += 1;
+          summary.lastError = getErrorMessage(error);
         }
       }
     }
   } finally {
+    summary.remaining = useOfflineQueue.getState().queue.length;
     flushInProgress = false;
+    emitSyncSummary(summary);
   }
+
+  return summary;
 }
 
 export function setupOfflineSync(): () => void {
   let timer: ReturnType<typeof setInterval> | null = null;
 
   const trigger = () => {
-    void flushQueueOnce();
+    void triggerOfflineSync();
   };
 
   if (typeof window !== 'undefined') {

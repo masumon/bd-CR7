@@ -5,7 +5,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { useAuthStore } from "@/store/authStore";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, isQueuedApiResult } from "@/lib/apiClient";
 import { validateDualApproval } from "@bdcr7/rbac-engine";
 import { useToast } from "@/components/ui/toast";
 import { EvidenceGate, type EvidenceGateFileReady } from "@/components/ui/EvidenceGate";
@@ -84,7 +84,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
 
     try {
       const finalStatus: ExpenseStatus = status === "approved" && canApprove ? "approved" : "pending";
-      await apiClient(
+      const result = await apiClient(
         "/api/finance/expenses/manual",
         {
           method: "POST",
@@ -104,6 +104,20 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
         },
         token,
       );
+
+      if (isQueuedApiResult(result)) {
+        toast.warning(
+          "Expense queued",
+          "Saved offline. The expense will sync automatically when the connection returns.",
+        );
+        setAmount("");
+        setDescription("");
+        setStatus("pending");
+        setSubcategory(SUBCATEGORIES[category][0]);
+        setProofFileId(null);
+        setProofFileUrl(null);
+        return;
+      }
 
       toast.success(
         "Expense saved",

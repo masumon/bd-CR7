@@ -7,9 +7,11 @@ import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { ChatWidget } from "@/components/ui/ChatWidget";
+import { useToast } from "@/components/ui/toast";
 import { AppLockScreen, useAppLock } from "@/components/auth/AppLockScreen";
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
+import type { OfflineSyncSummary } from "@/lib/offlineSync";
 
 type DashboardNotification = {
   id: string;
@@ -45,6 +47,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const userId = useAuthStore((state) => state.userId);
   const role = useAuthStore((state) => state.role);
   const router = useRouter();
+  const toast = useToast();
 
   const [dark, setDark] = useState(true);
   const [language, setLanguage] = useState<"en" | "bn">("bn");
@@ -111,6 +114,48 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     lockPortrait();
   }, []);
+
+  useEffect(() => {
+    const onQueued = () => {
+      toast.warning(
+        language === "bn" ? "অফলাইনে সংরক্ষিত" : "Saved offline",
+        language === "bn"
+          ? "ইন্টারনেট ফিরলে পরিবর্তনটি স্বয়ংক্রিয়ভাবে সিঙ্ক হবে।"
+          : "This change was queued and will sync automatically when you're back online.",
+      );
+    };
+
+    const onSyncResult = (event: Event) => {
+      const detail = (event as CustomEvent<OfflineSyncSummary>).detail;
+      if (!detail || detail.processed === 0) return;
+
+      if (detail.succeeded > 0 && detail.requeued === 0 && detail.discarded === 0) {
+        toast.success(
+          language === "bn" ? "সিঙ্ক সম্পন্ন" : "Sync complete",
+          language === "bn"
+            ? `${detail.succeeded}টি পরিবর্তন সফলভাবে আপলোড হয়েছে।`
+            : `${detail.succeeded} queued change(s) uploaded successfully.`,
+        );
+        return;
+      }
+
+      if (detail.requeued > 0 || detail.discarded > 0) {
+        toast.warning(
+          language === "bn" ? "সিঙ্ক আংশিক সম্পন্ন" : "Sync incomplete",
+          language === "bn"
+            ? `সফল: ${detail.succeeded}, বাকি: ${detail.remaining}${detail.lastError ? `, সমস্যা: ${detail.lastError}` : ""}`
+            : `Succeeded: ${detail.succeeded}, remaining: ${detail.remaining}${detail.lastError ? `, issue: ${detail.lastError}` : ""}`,
+        );
+      }
+    };
+
+    window.addEventListener("bdcr7:request-queued", onQueued as EventListener);
+    window.addEventListener("bdcr7:sync-result", onSyncResult as EventListener);
+    return () => {
+      window.removeEventListener("bdcr7:request-queued", onQueued as EventListener);
+      window.removeEventListener("bdcr7:sync-result", onSyncResult as EventListener);
+    };
+  }, [language]);
 
   useEffect(() => {
     if (!supabase) return;

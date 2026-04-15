@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { apiClient } from "@/lib/apiClient";
 import { useEffect, useState } from "react";
+import { ContentSkeleton, ErrorCard, StatCardSkeleton } from "@/components/ui/ConsistencySystem";
 
 // ─── Donut Chart ────────────────────────────────────────────────────────────
 function DonutChart({
@@ -89,6 +90,7 @@ const ROLE_QUICK_ACTIONS: Record<string, { icon: typeof Package; label: string; 
     { icon: TrendingUp, label: "Progress আপডেট", sub: "Update", href: "/dashboard/construction" },
     { icon: Package, label: "Material দেখুন", sub: "View Materials", href: "/dashboard/materials" },
   ],
+  viewer: [],
 };
 
 function formatTaka(n: number) {
@@ -110,11 +112,19 @@ export default function DashboardPage() {
 
   const financeStats = useDashboardStats();
   const [projectStats, setProjectStats] = useState<ProjectStats | null>(null);
+  const [projectLoading, setProjectLoading] = useState(true);
+  const [projectError, setProjectError] = useState<string | null>(null);
 
   useEffect(() => {
+    setProjectLoading(true);
+    setProjectError(null);
     apiClient<ProjectStats>("/api/reports/dashboard", { method: "GET" })
       .then(setProjectStats)
-      .catch(() => setProjectStats(null));
+      .catch((error) => {
+        setProjectStats(null);
+        setProjectError(error instanceof Error ? error.message : "Failed to load dashboard report");
+      })
+      .finally(() => setProjectLoading(false));
   }, []);
 
   const completed  = projectStats?.projects.completed ?? 0;
@@ -128,8 +138,8 @@ export default function DashboardPage() {
   const remaining     = Math.max(0, totalFunds - totalExpenses);
   const spentPct      = totalFunds > 0 ? Math.round((totalExpenses / totalFunds) * 100) : 0;
 
-  const normalizedRole = role?.toLowerCase() ?? "manager";
-  const quickActions = ROLE_QUICK_ACTIONS[normalizedRole] ?? ROLE_QUICK_ACTIONS.manager;
+  const normalizedRole = role?.toLowerCase() ?? "viewer";
+  const quickActions = ROLE_QUICK_ACTIONS[normalizedRole] ?? ROLE_QUICK_ACTIONS.viewer;
 
   const progressStats = [
     { val: completed, label: "সম্পন্ন",  valueClass: "text-emerald-500", bgClass: "bg-emerald-500/10" },
@@ -149,6 +159,35 @@ export default function DashboardPage() {
   const coreModules = normalizedRole === "worker"
     ? allCoreModules.filter((m) => ["/dashboard/materials", "/dashboard/construction"].includes(m.href))
     : allCoreModules;
+
+  if (financeStats.loading || projectLoading) {
+    return (
+      <div className="min-h-full overflow-x-hidden bg-background p-3 pb-6 space-y-4">
+        <div className="erp-card p-4 space-y-3">
+          <div className="skeleton h-6 w-40 rounded-md" />
+          <div className="skeleton h-4 w-28 rounded-md" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="erp-card p-4"><StatCardSkeleton count={3} /></div>
+          <div className="erp-card p-4"><ContentSkeleton rows={4} withIcon={false} withValue /></div>
+        </div>
+        <div className="erp-card p-4"><ContentSkeleton rows={6} asGrid /></div>
+      </div>
+    );
+  }
+
+  if ((financeStats.error || projectError) && !projectStats && financeStats.totalProjects === 0 && financeStats.totalExpenses === 0) {
+    return (
+      <div className="min-h-full overflow-x-hidden bg-background p-3 pb-6">
+        <ErrorCard
+          message={financeStats.error || projectError || "Dashboard data could not be loaded."}
+          onRetry={() => router.refresh()}
+          retryLabel="Reload dashboard"
+          className="max-w-2xl"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full overflow-x-hidden bg-background p-3 pb-6">

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { Session, Subscription } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 import useOfflineQueue from "@/store/offlineQueue";
@@ -114,6 +115,51 @@ type AuthState = {
   logout: () => void;
 };
 
+type AuthStateSetter = (partial: Partial<AuthState>) => void;
+
+let authSubscription: Subscription | null = null;
+
+async function applySessionToState(session: Session | null, setState: AuthStateSetter): Promise<void> {
+  if (!session?.user?.id) {
+    setState({ token: null, userId: null, role: null, loading: false, hydrated: true, error: null });
+    return;
+  }
+
+  let roleName: string | null = null;
+  let roleError: string | null = null;
+  try {
+    roleName = await fetchUserRole(session.user.id);
+  } catch (roleErr) {
+    roleError = getErrorMessage(roleErr);
+  }
+
+  setState({
+    token: session.access_token,
+    userId: session.user.id,
+    role: roleName,
+    loading: false,
+    hydrated: true,
+    error: roleError,
+  });
+}
+
+function ensureAuthSubscription() {
+  if (!supabase || authSubscription) {
+    return;
+  }
+
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    void applySessionToState(session, (partial) => {
+      useAuthStore.setState(partial);
+      if (!session?.user?.id) {
+        useOfflineQueue.getState().clearQueue();
+      }
+    });
+  });
+
+  authSubscription = data.subscription;
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -128,40 +174,14 @@ export const useAuthStore = create<AuthState>()(
           set({ hydrated: true, loading: false });
           return;
         }
+        ensureAuthSubscription();
         set({ loading: true, error: null });
         try {
           const { data, error } = await supabase.auth.getSession();
           if (error) {
             throw new Error(error.message || "Failed to restore session");
           }
-          const session = data.session;
-
-          if (session?.user?.id) {
-            // FIX: wrap role fetch in its own try/catch so a DB error (RLS,
-            // network timeout, missing row) does NOT clear the valid Supabase
-            // session. Without this, any fetchUserRole() throw propagates to
-            // the outer catch which sets userId:null, causing MobileAppShell
-            // to redirect to /login while the Supabase cookie is still valid
-            // — creating an infinite /login ↔ /dashboard redirect loop.
-            let roleName: string | null = null;
-            let roleError: string | null = null;
-            try {
-              roleName = await fetchUserRole(session.user.id);
-            } catch (roleErr) {
-              roleError = getErrorMessage(roleErr);
-            }
-            set({
-              token: session.access_token,
-              userId: session.user.id,
-              role: roleName,          // null if role fetch failed — RBAC falls back to "viewer"
-              loading: false,
-              hydrated: true,
-              error: roleError,        // surfaced to UI but does NOT block access
-            });
-            return;
-          }
-
-          set({ token: null, userId: null, role: null, loading: false, hydrated: true });
+          await applySessionToState(data.session, set);
         } catch (err) {
           // Only the supabase.auth.getSession() call itself failed here.
           // It is safe to clear auth state in this case.

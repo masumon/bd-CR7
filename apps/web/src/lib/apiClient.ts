@@ -1,4 +1,5 @@
 import { appConfig, IS_PRODUCTION, LOCALHOST_URL_PATTERN } from "@/core/config";
+import { getErrorMessage } from "@/lib/errorUtils";
 import { supabase } from "@/lib/supabase";
 import useOfflineQueue, { type QueueMethod } from "@/store/offlineQueue";
 
@@ -7,6 +8,22 @@ type ApiEnvelope<T> = {
   data: T;
   error?: string | null;
 };
+
+export type QueuedApiResult = {
+  __queued: true;
+  __queueId: string;
+  __queueMethod: QueueMethod;
+  __queuePath: string;
+};
+
+export function isQueuedApiResult(value: unknown): value is QueuedApiResult {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    (value as { __queued?: unknown }).__queued === true &&
+    typeof (value as { __queueId?: unknown }).__queueId === "string"
+  );
+}
 
 const buildUrl = (path: string) => {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -50,6 +67,18 @@ const normalizeMethod = (method?: string): QueueMethod | null => {
   const upper = (method || "GET").toUpperCase();
   return QUEUEABLE_METHODS.includes(upper as QueueMethod) ? (upper as QueueMethod) : null;
 };
+
+const dispatchBrowserEvent = (name: string, detail: Record<string, unknown>) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(name, { detail }));
+};
+
+const buildQueuedResult = (path: string, method: QueueMethod, queueId: string): QueuedApiResult => ({
+  __queued: true,
+  __queueId: queueId,
+  __queueMethod: method,
+  __queuePath: path,
+});
 
 const parseJsonBody = (body: BodyInit | null | undefined): Record<string, unknown> => {
   if (!body) {
@@ -97,8 +126,9 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
 
   const method = normalizeMethod(init.method);
   if (typeof navigator !== "undefined" && !navigator.onLine && method && path.startsWith("/api/")) {
+    const queueId = crypto.randomUUID();
     const added = useOfflineQueue.getState().addToQueueValidated({
-      id: crypto.randomUUID(),
+      id: queueId,
       endpoint: path,
       method,
       payload: parseJsonBody(init.body),
@@ -107,11 +137,12 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
       lastError: "offline",
     });
     if (added) {
+      dispatchBrowserEvent("bdcr7:request-queued", { id: queueId, method, path, reason: "offline" });
       if (process.env.NODE_ENV !== "production") {
         // eslint-disable-next-line no-console
         console.warn(`[apiClient] Offline queue accepted: ${method} ${path}`);
       }
-      return {} as T;
+      return buildQueuedResult(path, method, queueId) as T;
     }
   }
 
@@ -125,8 +156,9 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
     });
   } catch (error) {
     if (method && path.startsWith("/api/")) {
+      const queueId = crypto.randomUUID();
       const added = useOfflineQueue.getState().addToQueueValidated({
-        id: crypto.randomUUID(),
+        id: queueId,
         endpoint: path,
         method,
         payload: parseJsonBody(init.body),
@@ -134,11 +166,12 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
         createdAt: Date.now(),
       });
       if (added) {
+        dispatchBrowserEvent("bdcr7:request-queued", { id: queueId, method, path, reason: getErrorMessage(error) });
         if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
           // eslint-disable-next-line no-console
           console.warn(`[apiClient] Request queued for offline sync: ${method} ${path}`);
         }
-        return {} as T;
+        return buildQueuedResult(path, method, queueId) as T;
       }
     }
     throw error;

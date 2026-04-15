@@ -5,7 +5,7 @@ import { CloudUpload, Clock, Loader2, RefreshCw, Trash2, Wifi, WifiOff } from "l
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { setupOfflineSync } from "@/lib/offlineSync";
+import { setupOfflineSync, triggerOfflineSync, type OfflineSyncSummary } from "@/lib/offlineSync";
 import { cn } from "@/lib/utils";
 import useOfflineQueue from "@/store/offlineQueue";
 
@@ -18,6 +18,7 @@ export function SyncControlPanel({ language }: { language: "en" | "bn" }) {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [autoSync, setAutoSync] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<string>("");
 
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
@@ -33,6 +34,24 @@ export function SyncControlPanel({ language }: { language: "en" | "bn" }) {
   }, []);
 
   useEffect(() => {
+    const onSyncResult = (event: Event) => {
+      const detail = (event as CustomEvent<OfflineSyncSummary>).detail;
+      if (!detail || detail.processed === 0) return;
+      const now = new Date();
+      setLastSync(now);
+      localStorage.setItem("bdcr7-last-sync", now.toISOString());
+      setSyncStatus(
+        detail.requeued === 0 && detail.discarded === 0
+          ? (language === "bn" ? `${detail.succeeded}টি আইটেম সিঙ্ক হয়েছে` : `${detail.succeeded} item(s) synced`)
+          : (language === "bn" ? `সফল ${detail.succeeded}, বাকি ${detail.remaining}` : `Succeeded ${detail.succeeded}, remaining ${detail.remaining}`)
+      );
+    };
+
+    window.addEventListener("bdcr7:sync-result", onSyncResult as EventListener);
+    return () => window.removeEventListener("bdcr7:sync-result", onSyncResult as EventListener);
+  }, [language]);
+
+  useEffect(() => {
     if (!autoSync) return;
     const cleanup = setupOfflineSync();
     return cleanup;
@@ -42,12 +61,10 @@ export function SyncControlPanel({ language }: { language: "en" | "bn" }) {
     if (!isOnline) return;
     setSyncing(true);
     try {
-      const cleanup = setupOfflineSync();
-      await new Promise((r) => setTimeout(r, SYNC_TIMEOUT_MS));
-      cleanup();
-      const now = new Date();
-      setLastSync(now);
-      localStorage.setItem("bdcr7-last-sync", now.toISOString());
+      const summary = await triggerOfflineSync();
+      if (summary.processed === 0) {
+        setSyncStatus(language === "bn" ? "সিঙ্ক করার মতো নতুন কিছু নেই" : "Nothing new to sync");
+      }
     } finally {
       setSyncing(false);
     }
@@ -93,6 +110,7 @@ export function SyncControlPanel({ language }: { language: "en" | "bn" }) {
           <div>
             <p className="text-sm font-medium text-foreground">{L === "bn" ? "শেষ সিঙ্ক" : "Last Sync"}</p>
             <p className="text-xs text-muted-foreground">{lastSync ? lastSync.toLocaleString() : (L === "bn" ? "এখনো সিঙ্ক হয়নি" : "Never synced")}</p>
+            {syncStatus ? <p className="mt-1 text-[11px] text-muted-foreground">{syncStatus}</p> : null}
           </div>
         </div>
 

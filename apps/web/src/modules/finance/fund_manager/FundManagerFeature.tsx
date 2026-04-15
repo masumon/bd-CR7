@@ -5,7 +5,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { CalendarDays, Landmark, Link2, WalletCards } from "lucide-react";
 
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, isQueuedApiResult } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 import { getErrorMessage } from "@/lib/errorUtils";
 
@@ -54,7 +54,7 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
     if (!accountId) { setMessage("No fund account found. Ask your admin to create one first."); return; }
 
     try {
-      await apiClient(
+      const result = await apiClient(
         "/api/finance/fund-entries",
         {
           method: "POST",
@@ -71,6 +71,13 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
         },
         token,
       );
+      if (isQueuedApiResult(result)) {
+        setMessage("Fund entry saved offline. It will sync automatically when the internet connection returns.");
+        setAmount("");
+        setDescription("");
+        setReceiptUrl("");
+        return;
+      }
       setMessage("Fund entry created successfully.");
       setAmount("");
       setDescription("");
