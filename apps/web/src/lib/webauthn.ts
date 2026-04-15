@@ -227,7 +227,6 @@ export async function ensureBiometricCredential(token: string, userId: string, u
         type: item.type,
       })),
       authenticatorSelection: {
-        authenticatorAttachment: "platform",
         residentKey: "preferred",
         userVerification: "required",
       },

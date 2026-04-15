@@ -476,6 +476,26 @@ export default function DocsPage() {
               <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• Offline queue থাকলে online ফিরে sync status নিশ্চিত করুন।</li>
               <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• ডিভাইস পরিবর্তন করলে অবশ্যই Logout করুন।</li>
               <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• Biometric বা Passkey চালু করলে প্রথমে password login দিয়ে enrollment সম্পন্ন করুন।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• iPhone Safari-তে iCloud Keychain, Android Chrome-এ Google Password Manager, Samsung Internet-এ Samsung Pass enabled থাকলে passkey flow সবচেয়ে স্থিতিশীল হবে।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• Third-party password manager ব্যবহার করলে browser/app-level passkey support আগে চালু আছে কি না নিশ্চিত করুন; unsupported manager হলে password login fallback ব্যবহার করুন।</li>
+            </ul>
+          </section>
+
+          <section className="rounded-xl border border-border/60 bg-background/35 p-3">
+            <h3 className="mb-2 text-sm font-semibold">৮) Biometric / Passkey Smoke Test</h3>
+            <ul className="space-y-1.5 text-muted-foreground">
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• iPhone: Safari খুলে password দিয়ে login করুন, তারপর biometric enable করুন, logout করে email লিখে Passkey বা biometric unlock test করুন।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• Android Chrome: screen lock + Google Password Manager active রেখে একই flow repeat করুন।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• Samsung Internet: Samsung Pass active থাকলে login, enroll, logout, passkey sign-in এবং app lock unlock আলাদা করে test করুন।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• কোনো browser-এ passkey prompt না এলে email + password fallback কাজ করছে কি না confirm করুন; সেটাই supported recovery path।</li>
+            </ul>
+          </section>
+
+          <section className="rounded-xl border border-border/60 bg-background/35 p-3">
+            <h3 className="mb-2 text-sm font-semibold">৯) SQL / Deployment Note</h3>
+            <ul className="space-y-1.5 text-muted-foreground">
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• নতুন environment-এ deploy করলে `supabase/migrations/100_arch2_160_extend_user_roles.sql` run করতে হবে, কারণ এতে `manager` এবং `accountant` role add করা হয়েছে।</li>
+              <li className="rounded-lg bg-background/45 px-2.5 py-1.5">• এই বর্তমান production database-এ migration already apply করা হয়েছে; same environment-এ আবার manually run করার দরকার নেই।</li>
             </ul>
           </section>
         </div>
