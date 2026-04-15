@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, XCircle, Info, AlertTriangle, X } from "lucide-react";
 import { create } from "zustand";
@@ -42,16 +42,19 @@ export const useToastStore = create<ToastStore>((set) => ({
 export function useToast() {
   const add = useToastStore((s) => s.add);
 
-  return {
-    success: (title: string, description?: string) =>
-      add({ type: "success", title, description, duration: 4000 }),
-    error: (title: string, description?: string) =>
-      add({ type: "error", title, description, duration: 6000 }),
-    info: (title: string, description?: string) =>
-      add({ type: "info", title, description, duration: 4000 }),
-    warning: (title: string, description?: string) =>
-      add({ type: "warning", title, description, duration: 5000 }),
-  };
+  return useMemo(
+    () => ({
+      success: (title: string, description?: string) =>
+        add({ type: "success", title, description, duration: 4000 }),
+      error: (title: string, description?: string) =>
+        add({ type: "error", title, description, duration: 6000 }),
+      info: (title: string, description?: string) =>
+        add({ type: "info", title, description, duration: 4000 }),
+      warning: (title: string, description?: string) =>
+        add({ type: "warning", title, description, duration: 5000 }),
+    }),
+    [add]
+  );
 }
 
 // ---------------------------------------------------------------------------

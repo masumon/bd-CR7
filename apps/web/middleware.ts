@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { NON_CORE_DASHBOARD_PREFIXES } from "@/lib/dashboardPolicy";
 
+const SUPABASE_AUTH_COOKIE_PATTERN = /^sb-[^.]+-auth-token(?:\.\d+)?$/;
+
 /**
  * Edge middleware — protects /dashboard/* routes.
  *
@@ -83,6 +85,49 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+function getSupabaseAuthCookieValue(request: NextRequest): string | null {
+  const matchingCookies = request.cookies
+    .getAll()
+    .filter((cookie) => SUPABASE_AUTH_COOKIE_PATTERN.test(cookie.name));
+
+  if (matchingCookies.length === 0) {
+    return null;
+  }
+
+  const directCookie = matchingCookies.find((cookie) => cookie.name.endsWith("-auth-token"));
+  if (directCookie) {
+    return directCookie.value;
+  }
+
+  const groupedChunks = new Map<string, Array<{ index: number; value: string }>>();
+  for (const cookie of matchingCookies) {
+    const match = cookie.name.match(/^(sb-[^.]+-auth-token)\.(\d+)$/);
+    if (!match) {
+      continue;
+    }
+
+    const [, baseName, rawIndex] = match;
+    const index = Number.parseInt(rawIndex, 10);
+    if (!Number.isFinite(index)) {
+      continue;
+    }
+
+    const current = groupedChunks.get(baseName) ?? [];
+    current.push({ index, value: cookie.value });
+    groupedChunks.set(baseName, current);
+  }
+
+  const firstChunkGroup = groupedChunks.values().next().value as Array<{ index: number; value: string }> | undefined;
+  if (!firstChunkGroup || firstChunkGroup.length === 0) {
+    return null;
+  }
+
+  return firstChunkGroup
+    .sort((left, right) => left.index - right.index)
+    .map((chunk) => chunk.value)
+    .join("");
+}
+
 /**
  * FIX: Extract the refresh_token from the Supabase session cookie.
  *
@@ -122,11 +167,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/dashboard")) {
-    const authCookie = request.cookies
-      .getAll()
-      .find((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"));
+    const authCookieValue = getSupabaseAuthCookieValue(request);
 
-    const accessToken = authCookie ? extractAccessToken(authCookie.value) : null;
+    const accessToken = authCookieValue ? extractAccessToken(authCookieValue) : null;
     const payload = accessToken ? parseJwtPayload(accessToken) : null;
     const exp = typeof payload?.exp === "number" ? payload.exp : null;
     const isExpired = exp ? Date.now() >= exp * 1000 : false;
@@ -139,7 +182,7 @@ export async function middleware(request: NextRequest) {
       // expiry while a refresh_token is present caused an infinite loop:
       //   expired cookie → /login → client refreshes → /dashboard →
       //   middleware sees old cookie again → /login → …
-      if (isExpired && authCookie && hasRefreshToken(authCookie.value)) {
+      if (isExpired && authCookieValue && hasRefreshToken(authCookieValue)) {
         return NextResponse.next();
       }
 
