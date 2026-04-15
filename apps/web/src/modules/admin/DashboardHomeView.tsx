@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -138,40 +138,53 @@ export function DashboardHomeView() {
   const t = T[lang];
   const bi = (en: string, bn: string) => `${en} / ${bn}`;
 
-  const kpis = [
-    { label: t.budget, value: fmt(s.totalFundsReceived), icon: BadgeDollarSign, cls: "kpi-green", iconCls: "text-emerald-400" },
-    { label: t.cost, value: fmt(s.totalExpenses), icon: TrendingUp, cls: "kpi-red", iconCls: "text-rose-400" },
-    { label: t.balance, value: fmt(s.currentBalance), icon: Wallet, cls: "kpi-gold", iconCls: "text-yellow-400" },
-    { label: t.workers, value: String(s.totalWorkers), icon: Users, cls: "kpi-blue", iconCls: "text-blue-400" },
-  ];
+  const kpis = useMemo(
+    () => [
+      { label: t.budget, value: fmt(s.totalFundsReceived), icon: BadgeDollarSign, cls: "kpi-green", iconCls: "text-emerald-400" },
+      { label: t.cost, value: fmt(s.totalExpenses), icon: TrendingUp, cls: "kpi-red", iconCls: "text-rose-400" },
+      { label: t.balance, value: fmt(s.currentBalance), icon: Wallet, cls: "kpi-gold", iconCls: "text-yellow-400" },
+      { label: t.workers, value: String(s.totalWorkers), icon: Users, cls: "kpi-blue", iconCls: "text-blue-400" },
+    ],
+    [s.currentBalance, s.totalExpenses, s.totalFundsReceived, s.totalWorkers, t.balance, t.budget, t.cost, t.workers]
+  );
 
-  const quickActions = [
-    { label: bi("Add Expense", "খরচ যোগ"), icon: BadgeDollarSign, href: "/dashboard/finance", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
-    { label: bi("Add Worker", "শ্রমিক যোগ"), icon: HardHat, href: "/dashboard/workforce", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
-    { label: bi("Upload", "আপলোড"), icon: Upload, href: "/dashboard/evidence", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
-    { label: bi("Add Material", "মালামাল যোগ"), icon: Building2, href: "/dashboard/materials", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
-  ];
+  const quickActions = useMemo(
+    () => [
+      { label: "Add Expense / খরচ যোগ", icon: BadgeDollarSign, href: "/dashboard/finance", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+      { label: "Add Worker / শ্রমিক যোগ", icon: HardHat, href: "/dashboard/workforce", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+      { label: "Upload / আপলোড", icon: Upload, href: "/dashboard/evidence", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+      { label: "Add Material / মালামাল যোগ", icon: Building2, href: "/dashboard/materials", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+    ],
+    []
+  );
 
-  const activityItems = s.recentActivity?.length ? s.recentActivity : [t.noActivity];
+  const activityItems = useMemo(
+    () => (s.recentActivity?.length ? s.recentActivity : [t.noActivity]),
+    [s.recentActivity, t.noActivity]
+  );
 
-  // Real project progress: ratio of approved expenses vs total funds received (capped 0–100)
-  const projectProgress = s.loading || s.totalFundsReceived === 0
-    ? 0
-    : Math.min(100, Math.round((s.totalExpenses / s.totalFundsReceived) * 100));
+  const projectProgress = useMemo(
+    () => (s.loading || s.totalFundsReceived === 0 ? 0 : Math.min(100, Math.round((s.totalExpenses / s.totalFundsReceived) * 100))),
+    [s.loading, s.totalExpenses, s.totalFundsReceived]
+  );
 
-  // Real pie data from DB categories; fallback to empty array while loading
-  const pieData = s.expenseBreakdown.length > 0 ? s.expenseBreakdown : [];
+  const pieData = useMemo(() => (s.expenseBreakdown.length > 0 ? s.expenseBreakdown : []), [s.expenseBreakdown]);
 
-  // Real monthly bar data from DB
-  const monthlyBarData = s.monthlySeries.map((m) => ({ day: m.name, amount: m.expense }));
+  const monthlyBarData = useMemo(
+    () => s.monthlySeries.map((m) => ({ day: m.name, amount: m.expense })),
+    [s.monthlySeries]
+  );
 
-  // Real progress vs cost line data
-  const progressLineData = s.monthlySeries.map((m, i, arr) => {
-    const cumExpense = arr.slice(0, i + 1).reduce((acc, x) => acc + x.expense, 0);
-    const cumFund = arr.slice(0, i + 1).reduce((acc, x) => acc + x.fund, 0);
-    const pct = cumFund > 0 ? Math.min(100, Math.round((cumExpense / cumFund) * 100)) : 0;
-    return { month: m.name, progress: pct, cost: cumExpense };
-  });
+  const progressLineData = useMemo(() => {
+    let cumulativeExpense = 0;
+    let cumulativeFund = 0;
+    return s.monthlySeries.map((m) => {
+      cumulativeExpense += m.expense;
+      cumulativeFund += m.fund;
+      const pct = cumulativeFund > 0 ? Math.min(100, Math.round((cumulativeExpense / cumulativeFund) * 100)) : 0;
+      return { month: m.name, progress: pct, cost: cumulativeExpense };
+    });
+  }, [s.monthlySeries]);
 
   // Error state
   if (s.error) {
