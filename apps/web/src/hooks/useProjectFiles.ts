@@ -9,6 +9,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/authStore";
 
+import type { FileMetadata } from "@/components/ui/FilePreviewInline";
+
 export interface ProjectFile {
   id: string;
   project_id: string | null;
@@ -32,6 +34,7 @@ export interface ProjectFile {
   version: number;
   status: string;
   created_at: string;
+  metadata: FileMetadata;
 }
 
 export interface InsertProjectFile {
@@ -49,6 +52,7 @@ export interface InsertProjectFile {
   tags?: string[];
   ref_table?: string | null;
   ref_id?: string | null;
+  metadata?: FileMetadata;
 }
 
 export function useProjectFiles(filters?: {

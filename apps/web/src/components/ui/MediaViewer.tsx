@@ -20,9 +20,17 @@ import {
   Tag,
   ChevronDown,
   ChevronUp,
+  MapPinned,
+  HardDrive,
 } from "lucide-react";
 
-import { detectFileType } from "@/components/ui/FilePreviewInline";
+import {
+  detectFileType,
+  formatFileSize,
+  getLocationMapEmbedUrl,
+  getOptimizedPreviewUrl,
+  type FileMetadata,
+} from "@/components/ui/FilePreviewInline";
 
 export interface MediaItem {
   url: string;
@@ -33,6 +41,8 @@ export interface MediaItem {
   tags?: string[];
   relatedModule?: string;
   relatedId?: string;
+  fileSizeBytes?: number | null;
+  metadata?: FileMetadata | null;
 }
 
 interface MediaViewerProps {
@@ -85,6 +95,9 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
   const safeSrc = safeUrl(item.url);
   const isImage = fileType === "image";
   const isVideo = fileType === "video";
+  const mapEmbedUrl = getLocationMapEmbedUrl(item.metadata?.location);
+  const viewerImageSrc = getOptimizedPreviewUrl(safeSrc, fileType, "viewer");
+  const fileSizeLabel = formatFileSize(item.fileSizeBytes ?? item.metadata?.originalSizeBytes ?? null);
 
   const formattedDate = item.uploadedAt
     ? new Date(item.uploadedAt).toLocaleDateString("bn-BD", {
@@ -184,7 +197,7 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   ref={imgRef}
-                  src={safeSrc}
+                  src={viewerImageSrc}
                   alt={item.fileName ?? "Preview"}
                   className="max-h-[65vh] max-w-[90vw] select-none rounded-xl object-contain shadow-2xl"
                   draggable={false}
@@ -198,6 +211,7 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
                 controls
                 playsInline
                 preload="metadata"
+                poster={getOptimizedPreviewUrl(safeSrc, fileType, "viewer")}
                 className="max-h-[65vh] max-w-[90vw] rounded-xl shadow-2xl"
               />
             )}
@@ -240,7 +254,7 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
         </div>
 
         {/* ── Details Panel ── */}
-        {(item.uploadedBy || item.uploadedAt || item.description || (item.tags?.length ?? 0) > 0) && (
+        {(item.uploadedBy || item.uploadedAt || item.description || item.relatedModule || item.fileSizeBytes || item.metadata?.originalSizeBytes || mapEmbedUrl || (item.tags?.length ?? 0) > 0) && (
           <div className="shrink-0 border-t border-border/40 bg-black/55">
             {/* Toggle */}
             <button
@@ -294,6 +308,13 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
                         </div>
                       </div>
                     )}
+                    <div className="flex items-start gap-2">
+                      <HardDrive className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      <div>
+                        <p className="text-[11px] uppercase tracking-wider text-white/45">ফাইল সাইজ</p>
+                        <p className="text-sm text-white/85">{fileSizeLabel}</p>
+                      </div>
+                    </div>
                     {(item.tags?.length ?? 0) > 0 && (
                       <div className="flex items-start gap-2">
                         <Tag className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
@@ -318,6 +339,26 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
                           <p className="text-[11px] uppercase tracking-wider text-white/45">বিবরণ</p>
                           <p className="mt-0.5 text-sm leading-relaxed text-white/80">{item.description}</p>
                         </div>
+                      </div>
+                    )}
+                    {mapEmbedUrl && (
+                      <div className="col-span-2 sm:col-span-4">
+                        <div className="mb-2 flex items-center gap-2 text-white/80">
+                          <MapPinned className="h-4 w-4 text-primary" />
+                          <p className="text-[11px] uppercase tracking-wider text-white/45">লোকেশন ম্যাপ</p>
+                        </div>
+                        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+                          <iframe
+                            title="Location map"
+                            src={mapEmbedUrl}
+                            loading="lazy"
+                            className="h-44 w-full border-0"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+                        <p className="mt-2 text-xs text-white/55">
+                          Upload-এর সময় mobile location থেকে এই map save করা হয়েছে।
+                        </p>
                       </div>
                     )}
                   </div>

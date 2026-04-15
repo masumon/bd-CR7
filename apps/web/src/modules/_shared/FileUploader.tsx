@@ -42,6 +42,10 @@ export function FileUploader({ module, category, subcategory, projectId, refTabl
         file_url: url,
         file_name: file.name,
         file_size_bytes: file.size,
+        metadata: {
+          mimeType: file.type || undefined,
+          originalSizeBytes: file.size,
+        },
       });
       setFile(null);
       setMessage("Upload complete");

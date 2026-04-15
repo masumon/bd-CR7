@@ -51,6 +51,12 @@ export function FileUploadEngine({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const openCameraPicker = () => {
+    if (!cameraRef.current) return;
+    cameraRef.current.setAttribute("capture", "environment");
+    cameraRef.current.click();
+  };
+
   const handleFileSelect = (f: File) => {
     setFile(f);
     setPreview(URL.createObjectURL(f));
@@ -86,6 +92,10 @@ export function FileUploadEngine({
         file_size_bytes: file.size,
         ref_table: refTable ?? null,
         ref_id: refId ?? null,
+        metadata: {
+          mimeType: file.type || undefined,
+          originalSizeBytes: file.size,
+        },
       };
 
       const saved = await insertFile(payload);
@@ -124,7 +134,7 @@ export function FileUploadEngine({
               variant="outline"
               className="text-xs h-8 px-3"
               aria-describedby="file-upload-hint"
-              onClick={() => cameraRef.current?.click()}
+              onClick={openCameraPicker}
             >
               <Camera className="h-3 w-3 mr-1" /> Camera
             </Button>
@@ -162,12 +172,10 @@ export function FileUploadEngine({
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
       />
 
-      {/* Separate dedicated camera input with declarative capture attribute */}
       <input
         ref={cameraRef}
         type="file"
         accept={CAMERA_ACCEPTED}
-        capture="environment"
         aria-label="Capture a photo or video"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}

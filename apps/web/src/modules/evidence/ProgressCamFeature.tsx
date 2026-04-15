@@ -2,12 +2,19 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { detectFileType } from "@/components/ui/FilePreviewInline";
+import {
+  detectFileType,
+  getLocationMapEmbedUrl,
+  getOptimizedPreviewUrl,
+  type FileLocationMetadata,
+} from "@/components/ui/FilePreviewInline";
+import { MediaViewer, useMediaViewer } from "@/components/ui/MediaViewer";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { useProjectFiles } from "@/hooks/useProjectFiles";
 import { PermissionGate } from "@/components/ui/PermissionGate";
-import { FileUploader, PreviewModal } from "@/modules/_shared";
+import { FileUploader } from "@/modules/_shared";
 import { getErrorMessage } from "@/lib/errorUtils";
+import { getCurrentPosition } from "@/lib/permissionHelpers";
 
 const PHASES = ["Foundation", "Structure", "Finishing", "Handover"];
 
@@ -15,8 +22,109 @@ type ProgressEntry = {
   media_url: string;
   phase_category: string;
   caption: string;
+  file_name?: string | null;
+  file_size_bytes?: number | null;
   created_at?: string;
+  metadata?: {
+    location?: FileLocationMetadata;
+  };
 };
+
+function LocationLiveCard({
+  onLocationChange,
+}: {
+  onLocationChange: (location: FileLocationMetadata | null) => void;
+}) {
+  const [currentLocation, setCurrentLocation] = useState<FileLocationMetadata | null>(null);
+  const [status, setStatus] = useState("লোকেশন চালু হলে এখানে live map দেখা যাবে");
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setStatus("এই ডিভাইসে location support পাওয়া যায়নি");
+      onLocationChange(null);
+      return;
+    }
+
+    const syncLocation = (coords: GeolocationCoordinates) => {
+      const nextLocation: FileLocationMetadata = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracyMeters: Math.round(coords.accuracy),
+        capturedAt: new Date().toISOString(),
+        label: "Mobile live location attached",
+      };
+      setCurrentLocation(nextLocation);
+      onLocationChange(nextLocation);
+      setStatus("আপনার বর্তমান লোকেশন live map-এ দেখানো হচ্ছে");
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => syncLocation(position.coords),
+      () => {
+        setStatus("লোকেশন পাওয়া যায়নি, পরে আবার চেষ্টা করুন");
+        onLocationChange(null);
+      },
+      { enableHighAccuracy: true, maximumAge: 20_000, timeout: 12_000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [onLocationChange]);
+
+  const refreshLocation = async () => {
+    try {
+      setStatus("লোকেশন আপডেট করা হচ্ছে...");
+      const coords = await getCurrentPosition();
+      const nextLocation: FileLocationMetadata = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracyMeters: Math.round(coords.accuracy),
+        capturedAt: new Date().toISOString(),
+        label: "Mobile live location attached",
+      };
+      setCurrentLocation(nextLocation);
+      onLocationChange(nextLocation);
+      setStatus("লোকেশন আপডেট হয়েছে");
+    } catch {
+      setStatus("লোকেশন আপডেট করা যায়নি");
+    }
+  };
+
+  const mapEmbedUrl = getLocationMapEmbedUrl(currentLocation);
+
+  return (
+    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Live Location Map</p>
+          <p className="mt-1 text-xs text-muted-foreground">{status}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void refreshLocation()}
+          className="rounded-xl border border-border/70 bg-background px-3 py-2 text-xs font-medium text-foreground transition hover:border-primary/40"
+        >
+          Refresh Location
+        </button>
+      </div>
+      {mapEmbedUrl ? (
+        <div className="mt-3 overflow-hidden rounded-2xl border border-border/70 bg-background">
+          <iframe
+            title="Current location map"
+            src={mapEmbedUrl}
+            loading="lazy"
+            className="h-56 w-full border-0"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      ) : null}
+      {currentLocation?.accuracyMeters ? (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Approximate accuracy: {currentLocation.accuracyMeters}m
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export function ProgressCamFeature() {
   const [file, setFile] = useState<File | null>(null);
@@ -25,8 +133,8 @@ export function ProgressCamFeature() {
   const [caption, setCaption] = useState("");
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewItem, setPreviewItem] = useState<ProgressEntry | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<FileLocationMetadata | null>(null);
+  const { selectedMedia, openMedia, closeMedia } = useMediaViewer();
 
   const {
     files,
@@ -44,7 +152,10 @@ export function ProgressCamFeature() {
         media_url: row.file_url,
         phase_category: row.subcategory || "Uncategorized",
         caption: row.description || "",
+        file_name: row.file_name,
+        file_size_bytes: row.file_size_bytes,
         created_at: row.created_at,
+        metadata: row.metadata,
       })),
     [files]
   );
@@ -82,6 +193,11 @@ export function ProgressCamFeature() {
         file_name: file.name,
         description: caption.trim() || null,
         file_size_bytes: file.size,
+        metadata: {
+          mimeType: file.type || undefined,
+          originalSizeBytes: file.size,
+          location: currentLocation ?? undefined,
+        },
       });
 
       setMessage("Progress media uploaded");
@@ -91,6 +207,7 @@ export function ProgressCamFeature() {
       setPreviewUrl(null);
       setFile(null);
       setCaption("");
+      setCurrentLocation(null);
     } catch (error) {
       setMessage(getErrorMessage(error));
     } finally {
@@ -121,6 +238,11 @@ export function ProgressCamFeature() {
         <p className="mt-1 text-sm text-muted-foreground">Upload image or video evidence by phase category with a clearer visual log.</p>
       </div>
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <PermissionGate type="location">
+            <LocationLiveCard onLocationChange={setCurrentLocation} />
+          </PermissionGate>
+        </div>
         <div className="md:col-span-2">
           {/* Camera capture — wrapped in PermissionGate; file upload shown as fallback */}
           <PermissionGate type="camera" fallback={fileInput}>
@@ -154,12 +276,19 @@ export function ProgressCamFeature() {
         <textarea className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption" rows={2} />
         {previewUrl ? (
           <div className="rounded-2xl border border-border/70 bg-background/75 p-3 md:col-span-2">
-            <p className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">Preview</p>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Preview</p>
+              {currentLocation ? (
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                  Live location attached
+                </span>
+              ) : null}
+            </div>
             {file && file.type.startsWith("video/") ? (
-              <video className="h-48 w-full rounded-xl object-cover" controls src={previewUrl} />
+              <video className="h-48 w-full rounded-xl object-cover" controls preload="none" poster={getOptimizedPreviewUrl(previewUrl, "video", "card")} src={previewUrl} />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt="Selected progress preview" className="h-48 w-full rounded-xl object-cover" />
+              <img src={getOptimizedPreviewUrl(previewUrl, "image", "card")} alt="Selected progress preview" className="h-48 w-full rounded-xl object-cover" />
             )}
           </div>
         ) : null}
@@ -182,8 +311,16 @@ export function ProgressCamFeature() {
             key={`${entry.media_url}-${idx}`}
             type="button"
             onClick={() => {
-              setPreviewItem(entry);
-              setPreviewOpen(true);
+              openMedia({
+                url: entry.media_url,
+                fileName: entry.file_name ?? undefined,
+                uploadedAt: entry.created_at,
+                description: entry.caption || undefined,
+                relatedModule: "evidence",
+                fileSizeBytes: entry.file_size_bytes,
+                metadata: entry.metadata,
+                tags: [entry.phase_category],
+              });
             }}
             className="rounded-xl border border-border/70 bg-background/75 px-3 py-3 text-left transition hover:border-primary/50"
           >
@@ -191,35 +328,18 @@ export function ProgressCamFeature() {
             <p className="mt-1 truncate">{entry.caption || "No caption provided"}</p>
             <div className="mt-2 overflow-hidden rounded-xl border border-border/60 bg-background/90">
               {isVideo(entry.media_url) ? (
-                <video className="h-44 w-full object-cover" muted src={entry.media_url} />
+                <video className="h-44 w-full object-cover" muted preload="none" poster={getOptimizedPreviewUrl(entry.media_url, "video", "card")} src={entry.media_url} />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={entry.media_url} alt={entry.caption || entry.phase_category} className="h-44 w-full object-cover" />
+                <img src={getOptimizedPreviewUrl(entry.media_url, "image", "card")} alt={entry.caption || entry.phase_category} className="h-44 w-full object-cover" loading="lazy" />
               )}
             </div>
             {entry.created_at ? <p className="mt-2 text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleString()}</p> : null}
+            {entry.metadata?.location?.label ? <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">{entry.metadata.location.label}</p> : null}
           </button>
         ))}
       </div>
-
-      <PreviewModal
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        title={previewItem?.phase_category || "Evidence Preview"}
-      >
-        {previewItem ? (
-          <div className="space-y-3">
-            {isVideo(previewItem.media_url) ? (
-              <video className="max-h-[65vh] w-full rounded-xl" controls src={previewItem.media_url} />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="max-h-[65vh] w-full rounded-xl object-contain" src={previewItem.media_url} alt={previewItem.caption || previewItem.phase_category} />
-            )}
-            <p className="text-sm text-foreground">{previewItem.caption || "No caption"}</p>
-            {previewItem.created_at ? <p className="text-xs text-muted-foreground">{new Date(previewItem.created_at).toLocaleString()}</p> : null}
-          </div>
-        ) : null}
-      </PreviewModal>
+      <MediaViewer item={selectedMedia} onClose={closeMedia} />
       {filesError ? <p className="mt-3 text-sm text-rose-500">{filesError}</p> : null}
       {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
     </section>

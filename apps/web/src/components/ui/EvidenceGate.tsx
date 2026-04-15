@@ -90,6 +90,12 @@ export function EvidenceGate({
     onCleared?.();
   };
 
+  const openCameraPicker = () => {
+    if (!cameraRef.current) return;
+    cameraRef.current.setAttribute("capture", "environment");
+    cameraRef.current.click();
+  };
+
   const upload = async () => {
     if (!file) return;
     setUploading(true);
@@ -233,12 +239,13 @@ export function EvidenceGate({
             >
               <Paperclip className="h-3 w-3" /> File
             </label>
-            <label
-              htmlFor={cameraId}
+            <button
+              type="button"
+              onClick={openCameraPicker}
               className="flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
             >
               <Camera className="h-3 w-3" /> Camera
-            </label>
+            </button>
           </div>
         </div>
       )}
@@ -259,7 +266,6 @@ export function EvidenceGate({
         ref={cameraRef}
         type="file"
         accept={CAMERA_ACCEPTED}
-        capture="environment"
         aria-label="Capture proof with camera"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSelect(f); }}

@@ -11,7 +11,7 @@ import { FileText, Loader2, Trash2, Expand } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { detectFileType } from "@/components/ui/FilePreviewInline";
+import { detectFileType, getOptimizedPreviewUrl } from "@/components/ui/FilePreviewInline";
 import { MediaViewer, useMediaViewer, type MediaItem } from "@/components/ui/MediaViewer";
 import { FileUploadEngine } from "@/components/ui/FileUploadEngine";
 import { useProjectFiles } from "@/hooks/useProjectFiles";
@@ -66,6 +66,10 @@ export function ProjectFilesPanel({
       fileName: f.file_name ?? undefined,
       uploadedAt: f.created_at,
       relatedModule: module,
+      description: "description" in f ? (f.description as string | null) ?? undefined : undefined,
+      tags: "tags" in f ? (f.tags as string[] | undefined) : undefined,
+      fileSizeBytes: "file_size_bytes" in f ? (f.file_size_bytes as number | null) ?? undefined : undefined,
+      metadata: "metadata" in f ? (f.metadata as MediaItem["metadata"]) : undefined,
     };
     openMedia(item);
   };
@@ -125,6 +129,7 @@ export function ProjectFilesPanel({
               {files.map((f) => {
                 const fileType = detectFileType(f.file_name ?? f.file_url);
                 const isPreviewable = ["image", "video"].includes(fileType);
+                const thumbnailSrc = getOptimizedPreviewUrl(f.thumbnail_url || f.file_url, fileType as "image" | "video" | "pdf" | "audio" | "document", "card");
 
                 return (
                   <div
@@ -173,7 +178,7 @@ export function ProjectFilesPanel({
                         {fileType === "image" ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={f.file_url}
+                            src={thumbnailSrc}
                             alt={f.file_name ?? "Preview"}
                             className="w-full max-h-40 object-cover group-hover:opacity-90 transition-opacity"
                             loading="lazy"
@@ -181,7 +186,8 @@ export function ProjectFilesPanel({
                         ) : (
                           <video
                             src={f.file_url}
-                            preload="metadata"
+                            preload="none"
+                            poster={thumbnailSrc}
                             className="w-full max-h-40 object-cover"
                             muted
                           />
@@ -206,6 +212,11 @@ export function ProjectFilesPanel({
                         {f.extracted_text}
                       </p>
                     )}
+                    {f.metadata?.location?.label ? (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                        {f.metadata.location.label}
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}
