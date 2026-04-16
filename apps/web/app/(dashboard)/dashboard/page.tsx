@@ -110,7 +110,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { role } = useAuthStore();
 
-  const financeStats = useDashboardStats();
+  const financeStats = useDashboardStats({ includeDetails: false });
   const [projectStats, setProjectStats] = useState<ProjectStats | null>(null);
   const [projectLoading, setProjectLoading] = useState(true);
   const [projectError, setProjectError] = useState<string | null>(null);

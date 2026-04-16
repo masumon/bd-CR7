@@ -61,21 +61,23 @@ type CachedDashboardStats = DashboardStats & {
   cachedAt: number;
 };
 
+type DashboardStatsMode = "light" | "detailed";
+
 const dashboardMemoryCache = new Map<string, CachedDashboardStats>();
 const dashboardRequestCache = new Map<string, Promise<DashboardStats>>();
 
-function getCacheKey(token: string): string {
-  return `${DASHBOARD_STORAGE_PREFIX}${token.slice(0, 16)}`;
+function getCacheKey(token: string, mode: DashboardStatsMode): string {
+  return `${DASHBOARD_STORAGE_PREFIX}${mode}:${token.slice(0, 16)}`;
 }
 
 function isFresh(cachedAt: number): boolean {
   return Date.now() - cachedAt < DASHBOARD_CACHE_TTL_MS;
 }
 
-function readSessionCache(token: string): CachedDashboardStats | null {
+function readSessionCache(token: string, mode: DashboardStatsMode): CachedDashboardStats | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(getCacheKey(token));
+    const raw = window.sessionStorage.getItem(getCacheKey(token, mode));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedDashboardStats;
     if (typeof parsed?.cachedAt !== "number") return null;
@@ -85,11 +87,11 @@ function readSessionCache(token: string): CachedDashboardStats | null {
   }
 }
 
-function writeSessionCache(token: string, stats: DashboardStats): void {
+function writeSessionCache(token: string, mode: DashboardStatsMode, stats: DashboardStats): void {
   if (typeof window === "undefined") return;
   try {
     window.sessionStorage.setItem(
-      getCacheKey(token),
+      getCacheKey(token, mode),
       JSON.stringify({ ...stats, cachedAt: Date.now() } satisfies CachedDashboardStats)
     );
   } catch {
@@ -97,27 +99,49 @@ function writeSessionCache(token: string, stats: DashboardStats): void {
   }
 }
 
-async function fetchDashboardStats(authToken: string): Promise<DashboardStats> {
-  const inFlight = dashboardRequestCache.get(authToken);
+async function fetchDashboardStats(authToken: string, mode: DashboardStatsMode): Promise<DashboardStats> {
+  const requestKey = `${mode}:${authToken}`;
+  const inFlight = dashboardRequestCache.get(requestKey);
   if (inFlight) {
     return inFlight;
   }
 
   const request = (async () => {
-    const [dashboard, expensesResp] = await Promise.all([
-      apiClient<DashboardApi>("/api/finance/dashboard", { method: "GET" }, authToken),
-      apiClient<ExpensesResponse>("/api/finance/expenses?limit=200&offset=0", { method: "GET" }, authToken),
-    ]);
-
-    const expenses = expensesResp.expenses || [];
-    const totalExpenses = expenses
-      .filter((e) => String(e.status || "").toLowerCase() === "approved")
-      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
-
+    const dashboard = await apiClient<DashboardApi>("/api/finance/dashboard", { method: "GET" }, authToken);
     const recentActivity = (dashboard.recent_expenses || []).slice(0, 5).map((item) => {
       const created = item.created_at ? new Date(item.created_at) : new Date();
       return `${item.description || "Expense"} · ${Number(item.amount || 0).toLocaleString("en-BD")} · ${created.toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}`;
     });
+
+    const totalFundsReceived = Number(dashboard.monthly_sales || 0);
+
+    if (mode === "light") {
+      const nextStats: DashboardStats = {
+        totalFundsReceived,
+        currentBalance: Number(dashboard.fund_balance || dashboard.total_balance || 0),
+        totalExpenses: Number(dashboard.total_expenses || 0),
+        pendingExpenses: Number(dashboard.pending_expenses || 0),
+        totalWorkers: Number(dashboard.total_workers || 0),
+        totalProjects: Number(dashboard.total_projects || 0),
+        totalExpenseEntries: Array.isArray(dashboard.recent_expenses) ? dashboard.recent_expenses.length : 0,
+        pendingApprovals: 0,
+        recentActivity: recentActivity.length ? recentActivity : ["No recent activity recorded"],
+        monthlySeries: [],
+        expenseBreakdown: [],
+        loading: false,
+        error: null,
+      };
+
+      dashboardMemoryCache.set(requestKey, { ...nextStats, cachedAt: Date.now() });
+      writeSessionCache(authToken, mode, nextStats);
+      return nextStats;
+    }
+
+    const expensesResp = await apiClient<ExpensesResponse>("/api/finance/expenses?limit=200&offset=0", { method: "GET" }, authToken);
+    const expenses = expensesResp.expenses || [];
+    const totalExpenses = expenses
+      .filter((e) => String(e.status || "").toLowerCase() === "approved")
+      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
     const now = new Date();
     const monthlyExpenses = Array.from({ length: 6 }, (_, i) => {
@@ -135,7 +159,6 @@ async function fetchDashboardStats(authToken: string): Promise<DashboardStats> {
     });
 
     const totalMonthlyExpense = monthlyExpenses.reduce((s, m) => s + m.expense, 0);
-    const totalFundsReceived = Number(dashboard.monthly_sales || 0);
     const monthlySeries = monthlyExpenses.map((m) => {
       const fund =
         totalMonthlyExpense > 0
@@ -170,27 +193,28 @@ async function fetchDashboardStats(authToken: string): Promise<DashboardStats> {
       error: null,
     };
 
-    dashboardMemoryCache.set(authToken, { ...nextStats, cachedAt: Date.now() });
-    writeSessionCache(authToken, nextStats);
+    dashboardMemoryCache.set(requestKey, { ...nextStats, cachedAt: Date.now() });
+    writeSessionCache(authToken, mode, nextStats);
     return nextStats;
   })();
 
-  dashboardRequestCache.set(authToken, request);
+  dashboardRequestCache.set(requestKey, request);
 
   try {
     return await request;
   } finally {
-    dashboardRequestCache.delete(authToken);
+    dashboardRequestCache.delete(requestKey);
   }
 }
 
-export function useDashboardStats(): DashboardStats {
+export function useDashboardStats(options: { includeDetails?: boolean } = {}): DashboardStats {
   const token = useAuthStore((state) => state.token ?? undefined);
+  const mode: DashboardStatsMode = options.includeDetails === false ? "light" : "detailed";
   const [stats, setStats] = useState<DashboardStats>(DEFAULT);
   const cachedSnapshot = useMemo(() => {
     if (!token) return null;
-    return dashboardMemoryCache.get(token) ?? readSessionCache(token);
-  }, [token]);
+    return dashboardMemoryCache.get(`${mode}:${token}`) ?? readSessionCache(token, mode);
+  }, [mode, token]);
 
   useEffect(() => {
     if (!token) {
@@ -200,7 +224,7 @@ export function useDashboardStats(): DashboardStats {
     let cancelled = false;
 
     if (cachedSnapshot) {
-      dashboardMemoryCache.set(token, cachedSnapshot);
+      dashboardMemoryCache.set(`${mode}:${token}`, cachedSnapshot);
       setStats({ ...cachedSnapshot, loading: false, error: null });
       if (isFresh(cachedSnapshot.cachedAt)) {
         return;
@@ -209,7 +233,7 @@ export function useDashboardStats(): DashboardStats {
       setStats((prev) => ({ ...prev, loading: true, error: null }));
     }
 
-    void fetchDashboardStats(token)
+    void fetchDashboardStats(token, mode)
       .then((nextStats) => {
         if (!cancelled) {
           setStats(nextStats);
@@ -229,7 +253,7 @@ export function useDashboardStats(): DashboardStats {
     return () => {
       cancelled = true;
     };
-  }, [token, cachedSnapshot]);
+  }, [mode, token, cachedSnapshot]);
 
   return stats;
 }
