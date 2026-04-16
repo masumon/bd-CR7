@@ -31,6 +31,7 @@ import {
   getOptimizedPreviewUrl,
   type FileMetadata,
 } from "@/components/ui/FilePreviewInline";
+import { PdfFrame } from "@/components/ui/PdfFrame";
 
 export interface MediaItem {
   url: string;
@@ -217,8 +218,8 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
             )}
 
             {fileType === "pdf" && (
-              <iframe
-                src={`${safeSrc}#toolbar=0&view=FitH`}
+              <PdfFrame
+                url={safeSrc}
                 title={item.fileName ?? "PDF"}
                 className="h-[65vh] w-[min(90vw,800px)] rounded-xl border border-border/40"
               />

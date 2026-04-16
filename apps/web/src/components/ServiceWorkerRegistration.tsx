@@ -4,12 +4,18 @@ import { useEffect } from "react";
 
 import { setupOfflineSync } from "@/lib/offlineSync";
 
-const SW_RESET_KEY = "bdcr7-sw-reset-2026-04-05";
-const PAGE_CACHE_NAME = "others";
-const START_URL_CACHE_NAME = "start-url";
+const CACHE_VERSION = "bdcr7-v2026-04-16";
+const SW_RESET_KEY = `bdcr7-sw-reset-${CACHE_VERSION}`;
+const PAGE_CACHE_NAME = `${CACHE_VERSION}-others`;
+const START_URL_CACHE_NAME = `${CACHE_VERSION}-start-url`;
+const ACTIVE_CACHE_NAMES = new Set([PAGE_CACHE_NAME, START_URL_CACHE_NAME]);
 
 async function cacheCurrentRoute(pathname: string, search: string) {
   if (typeof window === "undefined" || !("caches" in window) || !window.navigator.onLine) {
+    return;
+  }
+
+  if (pathname.startsWith("/api") || pathname.startsWith("/auth") || pathname.startsWith("/login")) {
     return;
   }
 
@@ -53,6 +59,10 @@ export default function ServiceWorkerRegistration() {
         return;
       }
 
+      if (process.env.NODE_ENV !== "production") {
+        return;
+      }
+
       try {
         // One-time reset to remove stale workers/caches from older versions.
         if (window.localStorage.getItem(SW_RESET_KEY) !== "done") {
@@ -61,7 +71,11 @@ export default function ServiceWorkerRegistration() {
 
           if ("caches" in window) {
             const cacheKeys = await caches.keys();
-            await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+            await Promise.all(
+              cacheKeys
+                .filter((key) => !ACTIVE_CACHE_NAMES.has(key))
+                .map((key) => caches.delete(key))
+            );
           }
 
           window.localStorage.setItem(SW_RESET_KEY, "done");
@@ -88,13 +102,13 @@ export default function ServiceWorkerRegistration() {
           (registration as SyncRegistration).sync
             .register("bdcr7-queue-sync")
             .catch((err) => {
-              if (process.env.NODE_ENV === "development") {
+              if (process.env.NODE_ENV !== "production") {
                 console.warn("[SW] Background sync registration failed:", err);
               }
             });
         }
       } catch (err) {
-        if (process.env.NODE_ENV === "development") {
+        if (process.env.NODE_ENV !== "production") {
           console.warn("[SW] Registration failed:", err);
         }
       }

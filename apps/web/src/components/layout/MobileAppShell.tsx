@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 
 import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
+import { ErrorCard } from "@/components/ui/ConsistencySystem";
 import { Dialog } from "@/components/ui/dialog";
 import { ChatWidget } from "@/components/ui/ChatWidget";
 import { useToast } from "@/components/ui/toast";
 import { AppLockScreen, useAppLock } from "@/components/auth/AppLockScreen";
+import { SESSION_EXPIRED_MESSAGE } from "@/lib/authSession";
+import { emitNetworkStatus, probeNetworkReachability } from "@/lib/networkReachability";
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 import type { OfflineSyncSummary } from "@/lib/offlineSync";
@@ -46,6 +49,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const loading = useAuthStore((state) => state.loading);
   const userId = useAuthStore((state) => state.userId);
   const role = useAuthStore((state) => state.role);
+  const authError = useAuthStore((state) => state.error);
   const router = useRouter();
   const toast = useToast();
 
@@ -54,6 +58,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const [online, setOnline] = useState(true);
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [openNotifications, setOpenNotifications] = useState(false);
+  const [sessionRetryCount, setSessionRetryCount] = useState(0);
 
   // App-level biometric/password lock — activates when app is minimized or backgrounded
   const appLock = useAppLock();
@@ -63,16 +68,6 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void initialize();
   }, [initialize]);
-
-  // Redirect to login when the session is confirmed to be gone.
-  // This must live in a useEffect — calling router.replace() during render
-  // is an anti-pattern that can fire before the component settles and cause
-  // an infinite redirect loop in React's concurrent rendering model.
-  useEffect(() => {
-    if (hydrated && !loading && !userId) {
-      router.replace("/login");
-    }
-  }, [hydrated, loading, userId, router]);
 
   // PHASE 10 — Theme: stored preference or system preference
   useEffect(() => {
@@ -109,16 +104,58 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const syncReachability = async (source: string) => {
+      const reachable = await probeNetworkReachability();
+      if (!cancelled) {
+        setOnline(reachable);
+        emitNetworkStatus({ online: reachable, source });
+      }
+    };
+
     setOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
+    void syncReachability("shell-mount");
+
+    const onOnline = () => {
+      void syncReachability("browser-online");
+    };
+    const onOffline = () => {
+      void syncReachability("browser-offline");
+    };
+    const onNetworkStatus = (event: Event) => {
+      const detail = (event as CustomEvent<{ online?: boolean }>).detail;
+      if (typeof detail?.online === "boolean") {
+        setOnline(detail.online);
+      }
+    };
+
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    window.addEventListener("bdcr7:network-status", onNetworkStatus as EventListener);
     return () => {
+      cancelled = true;
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      window.removeEventListener("bdcr7:network-status", onNetworkStatus as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    const onExpired = () => {
+      toast.warning(
+        language === "bn" ? "সেশন শেষ হয়েছে" : "Session expired",
+        language === "bn"
+          ? "আবার সাইন ইন করুন।"
+          : "Please sign in again.",
+      );
+    };
+
+    window.addEventListener("bdcr7:auth-expired", onExpired as EventListener);
+    return () => {
+      window.removeEventListener("bdcr7:auth-expired", onExpired as EventListener);
+    };
+  }, [language, toast]);
 
   // PHASE 11 — Lock screen orientation to portrait
   useEffect(() => {
@@ -233,8 +270,25 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!userId) {
-    // The useEffect above will redirect to /login; render nothing in the meantime.
-    return null;
+    const retryDisabled = sessionRetryCount >= 2;
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background p-4 text-sm text-muted-foreground">
+        <div className="w-full max-w-sm rounded-2xl border border-border/70 bg-card/80 p-4 shadow-soft">
+          <ErrorCard
+            message={authError || SESSION_EXPIRED_MESSAGE}
+            onRetry={retryDisabled ? undefined : () => {
+              setSessionRetryCount((count) => count + 1);
+              void initialize();
+            }}
+            retryLabel={retryDisabled ? "Retry limit reached" : "Retry session"}
+          />
+          <div className="mt-4 flex gap-2">
+            <Button className="flex-1" onClick={() => router.replace("/login")}>Sign in</Button>
+            <Button variant="outline" className="flex-1" onClick={() => router.refresh()}>Reload</Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

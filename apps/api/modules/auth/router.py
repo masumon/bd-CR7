@@ -1,24 +1,39 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timezone
+import hashlib
+import hmac
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials
 
 from core.audit import audit_log
-from core.auth import UserContext, get_current_user
+from core.auth import UserContext, bearer, get_current_user
 from core.config import settings
 from core.supabase import get_supabase_anon, get_supabase_service, require_supabase_service
 from core.exceptions import AuthError
-from schemas.auth import AuthResponse, LoginRequest, RegisterRequest
+from schemas.auth import AuthResponse, LoginRequest, PinSetRequest, PinVerifyRequest, RegisterRequest, SecuritySettingsResponse, SecuritySettingsUpdateRequest
 from modules.auth.phone_otp_service import OtpError, send_phone_otp, verify_phone_otp
 
 router = APIRouter()
 
 SELF_SERVICE_ROLE = "viewer"
 WEBAUTHN_CHALLENGE_TTL_SECONDS = 120
+PIN_MAX_ATTEMPTS = 5
+PIN_LOCK_MINUTES = 5
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _get_current_user_optional(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> UserContext | None:
+    if credentials is None:
+        return None
+    return get_current_user(credentials)
 
 
 def _parse_timestamp(raw: str | None) -> datetime | None:
@@ -31,6 +46,178 @@ def _parse_timestamp(raw: str | None) -> datetime | None:
         return parsed.astimezone(timezone.utc)
     except ValueError:
         return None
+
+
+def _device_binding_hash(request: Request) -> str:
+    user_agent = request.headers.get("user-agent", "").strip().lower()
+    platform = request.headers.get("sec-ch-ua-platform", "").replace('"', "").strip().lower()
+    accept_language = request.headers.get("accept-language", "").split(",", 1)[0].strip().lower()
+    mobile_hint = request.headers.get("sec-ch-ua-mobile", "").strip().lower()
+    raw = "|".join([user_agent, platform, accept_language, mobile_hint])
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _device_label(request: Request) -> str:
+    platform = request.headers.get("sec-ch-ua-platform", "").replace('"', "").strip()
+    user_agent = request.headers.get("user-agent", "").strip()
+    browser = "Browser"
+    lowered = user_agent.lower()
+    if "edg/" in lowered:
+        browser = "Edge"
+    elif "chrome/" in lowered and "edg/" not in lowered:
+        browser = "Chrome"
+    elif "safari/" in lowered and "chrome/" not in lowered:
+        browser = "Safari"
+    elif "firefox/" in lowered:
+        browser = "Firefox"
+
+    if not platform:
+        if "iphone" in lowered or "ipad" in lowered or "ios" in lowered:
+            platform = "iOS"
+        elif "android" in lowered:
+            platform = "Android"
+        elif "windows" in lowered:
+            platform = "Windows"
+        elif "mac os" in lowered or "macintosh" in lowered:
+            platform = "macOS"
+        elif "linux" in lowered:
+            platform = "Linux"
+        else:
+            platform = "Web"
+    return f"{platform} {browser}".strip()
+
+
+def _ensure_security_settings(user_id: str) -> dict[str, Any]:
+    svc = require_supabase_service()
+    result = (
+        svc.table("user_security_settings")
+        .select("*")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if result.data:
+        return result.data[0]
+
+    row = {
+        "user_id": user_id,
+        "biometric_enabled": False,
+        "pin_enabled": False,
+        "pin_hash": None,
+        "pin_failed_attempts": 0,
+        "pin_locked_until": None,
+        "trusted_device_hash": None,
+        "trusted_device_label": None,
+        "last_verified_at": None,
+        "created_at": _utcnow().isoformat(),
+        "updated_at": _utcnow().isoformat(),
+    }
+    svc.table("user_security_settings").upsert(row, on_conflict="user_id").execute()
+    return row
+
+
+def _update_security_settings(user_id: str, updates: dict[str, Any]) -> dict[str, Any]:
+    svc = require_supabase_service()
+    payload = {"user_id": user_id, **updates, "updated_at": _utcnow().isoformat()}
+    result = svc.table("user_security_settings").upsert(payload, on_conflict="user_id").execute()
+    if result.data:
+        return result.data[0]
+    return _ensure_security_settings(user_id)
+
+
+def _count_active_credentials(user_id: str) -> int:
+    svc = require_supabase_service()
+    result = (
+        svc.table("biometric_credentials")
+        .select("credential_id", count="exact")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+    if getattr(result, "count", None) is not None:
+        return int(result.count or 0)
+    return len(result.data or [])
+
+
+def _is_current_device_trusted(settings_row: dict[str, Any], current_device_hash: str) -> bool:
+    trusted_hash = str(settings_row.get("trusted_device_hash") or "").strip()
+    if not trusted_hash:
+        return False
+    return hmac.compare_digest(trusted_hash, current_device_hash)
+
+
+def _require_trusted_device(settings_row: dict[str, Any], current_device_hash: str) -> None:
+    trusted_hash = str(settings_row.get("trusted_device_hash") or "").strip()
+    if trusted_hash and not hmac.compare_digest(trusted_hash, current_device_hash):
+        raise HTTPException(
+            status_code=403,
+            detail="This device is not trusted for biometric or PIN sign-in. Sign in with password and register this device again.",
+        )
+
+
+def _validate_pin_value(pin: str) -> None:
+    if not pin.isdigit():
+        raise HTTPException(status_code=422, detail="PIN must contain only digits")
+    if len(pin) < 4 or len(pin) > 8:
+        raise HTTPException(status_code=422, detail="PIN must be 4 to 8 digits")
+
+
+def _hash_pin_value(pin: str) -> str:
+    import bcrypt  # type: ignore[import-not-found]
+
+    return bcrypt.hashpw(pin.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
+
+
+def _verify_pin_value(pin: str, pin_hash: str) -> bool:
+    import bcrypt  # type: ignore[import-not-found]
+
+    try:
+        return bcrypt.checkpw(pin.encode("utf-8"), pin_hash.encode("utf-8"))
+    except ValueError:
+        return False
+
+
+def _increment_pin_failure(user_id: str, settings_row: dict[str, Any]) -> dict[str, Any]:
+    attempts = int(settings_row.get("pin_failed_attempts") or 0) + 1
+    updates: dict[str, Any] = {"pin_failed_attempts": attempts}
+    if attempts >= PIN_MAX_ATTEMPTS:
+        updates["pin_locked_until"] = (_utcnow() + timedelta(minutes=PIN_LOCK_MINUTES)).isoformat()
+    return _update_security_settings(user_id, updates)
+
+
+def _clear_pin_failures(user_id: str) -> dict[str, Any]:
+    return _update_security_settings(
+        user_id,
+        {
+            "pin_failed_attempts": 0,
+            "pin_locked_until": None,
+            "last_verified_at": _utcnow().isoformat(),
+        },
+    )
+
+
+def _serialize_security_settings(
+    settings_row: dict[str, Any],
+    credential_count: int,
+    current_device_hash: str,
+    email_hint: str | None = None,
+) -> SecuritySettingsResponse:
+    locked_until = _parse_timestamp(settings_row.get("pin_locked_until"))
+    pin_hash = str(settings_row.get("pin_hash") or "").strip()
+    current_device_trusted = _is_current_device_trusted(settings_row, current_device_hash)
+    return SecuritySettingsResponse(
+        biometric_enabled=bool(settings_row.get("biometric_enabled", False)),
+        pin_enabled=bool(settings_row.get("pin_enabled", False)),
+        pin_configured=bool(pin_hash),
+        pin_failed_attempts=int(settings_row.get("pin_failed_attempts") or 0),
+        pin_locked_until=locked_until.isoformat() if locked_until else None,
+        trusted_device_label=str(settings_row.get("trusted_device_label") or "").strip() or None,
+        current_device_trusted=current_device_trusted,
+        credential_count=credential_count,
+        can_register_biometric=credential_count == 0 or not current_device_trusted,
+        has_biometric_credentials=credential_count > 0,
+        email_hint=email_hint,
+    )
 
 
 def _store_webauthn_challenge(user_id: str, challenge: str) -> None:
@@ -295,6 +482,148 @@ async def logout(user: UserContext = Depends(get_current_user)):
     return {"message": f"Logged out {user.user_id}"}
 
 
+@router.get("/security-settings", response_model=SecuritySettingsResponse)
+async def get_security_settings(
+    request: Request,
+    email: str | None = None,
+    user: UserContext | None = Depends(_get_current_user_optional),
+):
+    current_device_hash = _device_binding_hash(request)
+
+    if user is not None:
+        svc = require_supabase_service()
+        profile = (
+            svc.table("users")
+            .select("email")
+            .eq("id", user.user_id)
+            .limit(1)
+            .execute()
+        )
+        email_hint = None
+        if profile.data:
+            email_hint = str(profile.data[0].get("email") or "").strip() or None
+        settings_row = _ensure_security_settings(user.user_id)
+        credential_count = _count_active_credentials(user.user_id)
+        return _serialize_security_settings(settings_row, credential_count, current_device_hash, email_hint)
+
+    normalized_email = str(email or "").strip().lower()
+    if not normalized_email:
+        raise HTTPException(status_code=401, detail="Authentication required or provide email query parameter")
+
+    user_row = _load_active_user_by_email(normalized_email)
+    user_id = str(user_row.get("id") or "")
+    settings_row = _ensure_security_settings(user_id)
+    credential_count = _count_active_credentials(user_id)
+    return _serialize_security_settings(settings_row, credential_count, current_device_hash, normalized_email)
+
+
+@router.patch("/security-settings", response_model=SecuritySettingsResponse)
+async def update_security_settings(
+    payload: SecuritySettingsUpdateRequest,
+    request: Request,
+    user: UserContext = Depends(get_current_user),
+):
+    current_device_hash = _device_binding_hash(request)
+    current_device_label = _device_label(request)
+    settings_row = _ensure_security_settings(user.user_id)
+    credential_count = _count_active_credentials(user.user_id)
+
+    updates: dict[str, Any] = {}
+    if payload.biometric_enabled is not None:
+        if payload.biometric_enabled and credential_count <= 0:
+            raise HTTPException(status_code=400, detail="Register a biometric credential on this device before enabling biometric sign-in")
+        updates["biometric_enabled"] = payload.biometric_enabled
+        if payload.biometric_enabled:
+            updates["trusted_device_hash"] = current_device_hash
+            updates["trusted_device_label"] = current_device_label
+
+    if payload.pin_enabled is not None:
+        pin_hash = str(settings_row.get("pin_hash") or "").strip()
+        if payload.pin_enabled and not pin_hash:
+            raise HTTPException(status_code=400, detail="Set a PIN before enabling PIN sign-in")
+        updates["pin_enabled"] = payload.pin_enabled
+        if payload.pin_enabled:
+            updates["trusted_device_hash"] = current_device_hash
+            updates["trusted_device_label"] = current_device_label
+
+    if updates:
+        settings_row = _update_security_settings(user.user_id, updates)
+
+    audit_log(
+        user_id=user.user_id,
+        action="auth.security_settings.update",
+        meta={
+            "biometric_enabled": bool(settings_row.get("biometric_enabled", False)),
+            "pin_enabled": bool(settings_row.get("pin_enabled", False)),
+        },
+    )
+    return _serialize_security_settings(settings_row, credential_count, current_device_hash)
+
+
+@router.post("/pin/set", response_model=SecuritySettingsResponse)
+async def set_login_pin(payload: PinSetRequest, request: Request, user: UserContext = Depends(get_current_user)):
+    pin = payload.pin.strip()
+    confirm_pin = payload.confirm_pin.strip()
+    if pin != confirm_pin:
+        raise HTTPException(status_code=400, detail="PIN confirmation does not match")
+
+    _validate_pin_value(pin)
+    current_device_hash = _device_binding_hash(request)
+    current_device_label = _device_label(request)
+    credential_count = _count_active_credentials(user.user_id)
+    settings_row = _update_security_settings(
+        user.user_id,
+        {
+            "pin_hash": _hash_pin_value(pin),
+            "pin_enabled": True,
+            "pin_failed_attempts": 0,
+            "pin_locked_until": None,
+            "trusted_device_hash": current_device_hash,
+            "trusted_device_label": current_device_label,
+        },
+    )
+
+    audit_log(user_id=user.user_id, action="auth.pin.set")
+    return _serialize_security_settings(settings_row, credential_count, current_device_hash)
+
+
+@router.post("/pin/verify")
+async def verify_login_pin(payload: PinVerifyRequest, request: Request):
+    normalized_email = payload.email.strip().lower()
+    pin = payload.pin.strip()
+    _validate_pin_value(pin)
+
+    user_row = _load_active_user_by_email(normalized_email)
+    user_id = str(user_row.get("id") or "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User account is missing id")
+
+    settings_row = _ensure_security_settings(user_id)
+    pin_hash = str(settings_row.get("pin_hash") or "").strip()
+    if not bool(settings_row.get("pin_enabled", False)) or not pin_hash:
+        raise HTTPException(status_code=400, detail="PIN sign-in is not enabled for this account")
+
+    current_device_hash = _device_binding_hash(request)
+    _require_trusted_device(settings_row, current_device_hash)
+
+    locked_until = _parse_timestamp(settings_row.get("pin_locked_until"))
+    if locked_until and _utcnow() < locked_until:
+        raise HTTPException(status_code=423, detail="PIN sign-in is temporarily locked. Wait 5 minutes or sign in with password.")
+
+    if not _verify_pin_value(pin, pin_hash):
+        updated_row = _increment_pin_failure(user_id, settings_row)
+        attempts = int(updated_row.get("pin_failed_attempts") or 0)
+        next_locked_until = _parse_timestamp(updated_row.get("pin_locked_until"))
+        if next_locked_until and _utcnow() < next_locked_until:
+            raise HTTPException(status_code=423, detail="Too many incorrect PIN attempts. PIN login locked for 5 minutes.")
+        remaining = max(PIN_MAX_ATTEMPTS - attempts, 0)
+        raise HTTPException(status_code=401, detail=f"Incorrect PIN. {remaining} attempts remaining.")
+
+    _clear_pin_failures(user_id)
+    audit_log(user_id=user_id, action="auth.pin.verify", meta={"role": _extract_role_name(user_row)})
+    return _create_magic_link_login_payload(user_row)
+
+
 @router.post("/webauthn/register/challenge")
 async def create_webauthn_registration_challenge(request: Request, user: UserContext = Depends(get_current_user)):
     svc = require_supabase_service()
@@ -326,6 +655,8 @@ async def create_webauthn_registration_challenge(request: Request, user: UserCon
 @router.post("/webauthn/register")
 async def register_webauthn_credential(payload: dict, request: Request, user: UserContext = Depends(get_current_user)):
     svc = require_supabase_service()
+    current_device_hash = _device_binding_hash(request)
+    current_device_label = _device_label(request)
 
     credential_id = str(payload.get("credential_id") or "").strip()
     public_key = str(payload.get("public_key") or "").strip()
@@ -333,7 +664,7 @@ async def register_webauthn_credential(payload: dict, request: Request, user: Us
     attestation_object = str(payload.get("attestation_object") or "").strip()
     client_data_json = str(payload.get("client_data_json") or "").strip()
     transports = payload.get("transports") or []
-    device_name = str(payload.get("device_name") or "This device")
+    device_name = str(payload.get("device_name") or current_device_label or "This device")
 
     sign_count = int(payload.get("sign_count") or 0)
 
@@ -385,12 +716,25 @@ async def register_webauthn_credential(payload: dict, request: Request, user: Us
         "credential_id": credential_id,
         "public_key": public_key,
         "device_name": device_name,
+        "device_binding_hash": current_device_hash,
+        "device_platform": current_device_label,
         "transports": transports,
         "is_active": True,
         "sign_count": sign_count,
+        "last_used_at": _utcnow().isoformat(),
     }
 
     result = svc.table("biometric_credentials").upsert(row, on_conflict="user_id,credential_id").execute()
+    _update_security_settings(
+        user.user_id,
+        {
+            "biometric_enabled": True,
+            "trusted_device_hash": current_device_hash,
+            "trusted_device_label": current_device_label,
+            "last_verified_at": _utcnow().isoformat(),
+        },
+    )
+    audit_log(user_id=user.user_id, action="auth.webauthn.register", meta={"device": current_device_label})
     return {"ok": True, "credential": (result.data or [row])[0]}
 
 
@@ -440,6 +784,11 @@ async def create_passkey_login_challenge(payload: dict, request: Request):
     user_id = str(user_row.get("id") or "")
     if not user_id:
         raise HTTPException(status_code=400, detail="User account is missing id")
+
+    settings_row = _ensure_security_settings(user_id)
+    if not bool(settings_row.get("biometric_enabled", False)):
+        raise HTTPException(status_code=403, detail="Biometric sign-in is disabled for this account")
+    _require_trusted_device(settings_row, _device_binding_hash(request))
 
     svc = require_supabase_service()
     rows = (
@@ -559,6 +908,13 @@ async def login_with_passkey(payload: dict, request: Request):
         raise HTTPException(status_code=400, detail="User account is missing id")
 
     svc = require_supabase_service()
+    settings_row = _ensure_security_settings(user_id)
+    if not bool(settings_row.get("biometric_enabled", False)):
+        raise HTTPException(status_code=403, detail="Biometric sign-in is disabled for this account")
+
+    current_device_hash = _device_binding_hash(request)
+    current_device_label = _device_label(request)
+    _require_trusted_device(settings_row, current_device_hash)
 
     challenge_state = _load_webauthn_challenge(user_id)
     if not challenge_state:
@@ -625,9 +981,23 @@ async def login_with_passkey(payload: dict, request: Request):
     finally:
         _clear_webauthn_challenge(user_id)
 
-    svc.table("biometric_credentials").update({"sign_count": int(verification.new_sign_count)}).eq(
+    svc.table("biometric_credentials").update({
+        "sign_count": int(verification.new_sign_count),
+        "last_used_at": _utcnow().isoformat(),
+        "device_binding_hash": current_device_hash,
+        "device_platform": current_device_label,
+    }).eq(
         "user_id", user_id
     ).eq("credential_id", credential_id).execute()
+
+    _update_security_settings(
+        user_id,
+        {
+            "trusted_device_hash": current_device_hash,
+            "trusted_device_label": current_device_label,
+            "last_verified_at": _utcnow().isoformat(),
+        },
+    )
 
     audit_log(user_id=user_id, action="auth.passkey.login", meta={"role": _extract_role_name(user_row)})
     return _create_magic_link_login_payload(user_row)
@@ -661,7 +1031,7 @@ async def list_biometric_credentials(user: UserContext = Depends(get_current_use
     svc = require_supabase_service()
     rows = (
         svc.table("biometric_credentials")
-        .select("id,credential_id,device_name,transports,is_active,sign_count,created_at,updated_at")
+        .select("id,credential_id,device_name,device_platform,transports,is_active,sign_count,last_used_at,created_at,updated_at")
         .eq("user_id", user.user_id)
         .order("created_at", desc=True)
         .execute()

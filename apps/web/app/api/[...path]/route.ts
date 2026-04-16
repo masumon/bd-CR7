@@ -160,8 +160,12 @@ async function proxyRequest(
   if (auth) forwardHeaders.set("authorization", auth);
   const ct = request.headers.get("content-type");
   if (ct) forwardHeaders.set("content-type", ct);
-  // Always request JSON from the backend.
-  forwardHeaders.set("accept", "application/json");
+  const accept = request.headers.get("accept");
+  if (accept) {
+    forwardHeaders.set("accept", accept);
+  } else {
+    forwardHeaders.set("accept", "application/json");
+  }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   let body: string | undefined;
@@ -211,9 +215,29 @@ async function proxyRequest(
   }
   clearTimeout(timeoutId);
 
+  const upstreamContentType = upstream.headers.get("content-type") ?? "";
+
+  if (upstreamContentType.includes("application/pdf")) {
+    const headers = new Headers();
+    headers.set("content-type", "application/pdf");
+    headers.set("access-control-allow-origin", "*");
+    const contentDisposition = upstream.headers.get("content-disposition");
+    if (contentDisposition) {
+      headers.set("content-disposition", contentDisposition);
+    }
+    const cacheControl = upstream.headers.get("cache-control");
+    if (cacheControl) {
+      headers.set("cache-control", cacheControl);
+    }
+
+    return new NextResponse(upstream.body, {
+      status: upstream.status,
+      headers,
+    });
+  }
+
   // Read the upstream response body as text first (handles non-JSON too).
   const rawBody = await upstream.text();
-  const upstreamContentType = upstream.headers.get("content-type") ?? "";
 
   // If upstream already returned JSON, stream it through unchanged.
   if (upstreamContentType.includes("application/json")) {

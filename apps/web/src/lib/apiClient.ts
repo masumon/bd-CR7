@@ -1,13 +1,27 @@
 import { appConfig, IS_PRODUCTION, LOCALHOST_URL_PATTERN } from "@/core/config";
+import { getAccessToken, refreshAccessToken, SESSION_EXPIRED_MESSAGE } from "@/lib/authSession";
 import { getErrorMessage } from "@/lib/errorUtils";
-import { supabase } from "@/lib/supabase";
+import { detectActualOffline, emitNetworkStatus, isNetworkFailure } from "@/lib/networkReachability";
 import useOfflineQueue, { type QueueMethod } from "@/store/offlineQueue";
+import { useAuthStore } from "@/store/authStore";
 
 type ApiEnvelope<T> = {
   success: boolean;
   data: T;
   error?: string | null;
 };
+
+export class ApiRequestError extends Error {
+  status?: number;
+  code: "auth" | "permission" | "server" | "network" | "offline" | "request";
+
+  constructor(message: string, code: ApiRequestError["code"], status?: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.code = code;
+    this.status = status;
+  }
+}
 
 export type QueuedApiResult = {
   __queued: true;
@@ -97,7 +111,29 @@ const parseJsonBody = (body: BodyInit | null | undefined): Record<string, unknow
   return {};
 };
 
-export async function apiClient<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
+const isAuthRoute = (path: string) => path.startsWith("/api/auth/");
+
+const createApiError = (status: number, payload: unknown) => {
+  if (status === 401) {
+    return new ApiRequestError(SESSION_EXPIRED_MESSAGE, "auth", status);
+  }
+
+  if (status === 403) {
+    return new ApiRequestError("You do not have permission to perform this action.", "permission", status);
+  }
+
+  if (status >= 500) {
+    return new ApiRequestError(toErrorMessage(payload, status), "server", status);
+  }
+
+  return new ApiRequestError(toErrorMessage(payload, status), "request", status);
+};
+
+type InternalRequestInit = RequestInit & {
+  __bdcr7RetriedAuth?: boolean;
+};
+
+export async function apiClient<T>(path: string, init: InternalRequestInit = {}, token?: string): Promise<T> {
   if (!appConfig.apiBaseUrl && path.startsWith("/api/")) {
     // Keep same-origin behavior, but provide a clearer path for debugging in production.
     // Some deployments rely on reverse-proxy rewriting /api/* to the Python API.
@@ -109,9 +145,8 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
 
   // Auto-resolve bearer token from active Supabase session when caller omits it.
   let resolvedToken = token;
-  if (!resolvedToken && supabase) {
-    const { data: sessionData } = await supabase.auth.getSession();
-    resolvedToken = sessionData?.session?.access_token ?? undefined;
+  if (!resolvedToken) {
+    resolvedToken = (await getAccessToken()) ?? undefined;
   }
 
   // Diagnostic: log token status in development to help trace auth issues.
@@ -121,28 +156,38 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
   }
 
   const headers = new Headers(init.headers || {});
-  if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");
+  if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   if (resolvedToken) headers.set("Authorization", `Bearer ${resolvedToken}`);
 
   const method = normalizeMethod(init.method);
-  if (typeof navigator !== "undefined" && !navigator.onLine && method && path.startsWith("/api/")) {
-    const queueId = crypto.randomUUID();
-    const added = useOfflineQueue.getState().addToQueueValidated({
-      id: queueId,
-      endpoint: path,
-      method,
-      payload: parseJsonBody(init.body),
-      attempts: 0,
-      createdAt: Date.now(),
-      lastError: "offline",
-    });
-    if (added) {
-      dispatchBrowserEvent("bdcr7:request-queued", { id: queueId, method, path, reason: "offline" });
-      if (process.env.NODE_ENV !== "production") {
-        // eslint-disable-next-line no-console
-        console.warn(`[apiClient] Offline queue accepted: ${method} ${path}`);
+  if (typeof navigator !== "undefined" && method && path.startsWith("/api/") && !isAuthRoute(path) && !navigator.onLine) {
+    const isOffline = await detectActualOffline();
+    if (!isOffline) {
+      emitNetworkStatus({ online: true, source: "offline-hint-cleared" });
+    }
+
+    if (isOffline) {
+      emitNetworkStatus({ online: false, source: "offline-precheck" });
+      const queueId = crypto.randomUUID();
+      const added = useOfflineQueue.getState().addToQueueValidated({
+        id: queueId,
+        endpoint: path,
+        method,
+        payload: parseJsonBody(init.body),
+        attempts: 0,
+        createdAt: Date.now(),
+        lastError: "offline",
+      });
+      if (added) {
+        dispatchBrowserEvent("bdcr7:request-queued", { id: queueId, method, path, reason: "offline" });
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.warn(`[apiClient] Offline queue accepted: ${method} ${path}`);
+        }
+        return buildQueuedResult(path, method, queueId) as T;
       }
-      return buildQueuedResult(path, method, queueId) as T;
     }
   }
 
@@ -154,8 +199,16 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
       credentials: "same-origin",
       cache: "no-store",
     });
+    emitNetworkStatus({ online: true, source: "api-success" });
   } catch (error) {
-    if (method && path.startsWith("/api/")) {
+    const offline = await detectActualOffline(error);
+    if (offline) {
+      emitNetworkStatus({ online: false, source: "api-failure", reason: getErrorMessage(error) });
+    } else {
+      emitNetworkStatus({ online: true, source: "api-failure-server" });
+    }
+
+    if (offline && method && path.startsWith("/api/") && !isAuthRoute(path)) {
       const queueId = crypto.randomUUID();
       const added = useOfflineQueue.getState().addToQueueValidated({
         id: queueId,
@@ -164,6 +217,7 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
         payload: parseJsonBody(init.body),
         attempts: 0,
         createdAt: Date.now(),
+        lastError: "offline",
       });
       if (added) {
         dispatchBrowserEvent("bdcr7:request-queued", { id: queueId, method, path, reason: getErrorMessage(error) });
@@ -173,21 +227,48 @@ export async function apiClient<T>(path: string, init: RequestInit = {}, token?:
         }
         return buildQueuedResult(path, method, queueId) as T;
       }
+      throw new ApiRequestError("You appear to be offline. The request was queued for retry.", "offline");
     }
+
+    if (isNetworkFailure(error)) {
+      throw new ApiRequestError("Network error while contacting the API.", offline ? "offline" : "network");
+    }
+
     throw error;
   }
 
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json") ? await response.json() : await response.text();
 
+  if (response.status === 401 && !init.__bdcr7RetriedAuth && !isAuthRoute(path)) {
+    const refreshedToken = await refreshAccessToken();
+    if (refreshedToken) {
+      return apiClient<T>(
+        path,
+        {
+          ...init,
+          __bdcr7RetriedAuth: true,
+        },
+        refreshedToken,
+      );
+    }
+
+    emitNetworkStatus({ online: true, source: "auth-expired" });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("bdcr7:auth-expired", { detail: { path } }));
+    }
+    useAuthStore.getState().logout();
+    throw createApiError(response.status, payload);
+  }
+
   if (!response.ok) {
-    throw new Error(toErrorMessage(payload, response.status));
+    throw createApiError(response.status, payload);
   }
 
   if (payload && typeof payload === "object" && "success" in (payload as Record<string, unknown>)) {
     const envelope = payload as ApiEnvelope<T>;
     if (!envelope.success) {
-      throw new Error(envelope.error || `Request failed (${response.status})`);
+      throw new ApiRequestError(envelope.error || `Request failed (${response.status})`, "request", response.status);
     }
     return envelope.data;
   }

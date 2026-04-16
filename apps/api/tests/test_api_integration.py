@@ -104,6 +104,18 @@ class AuthEndpointTests(unittest.TestCase):
         r = client.post("/api/auth/logout")
         self.assertEqual(r.status_code, 401)
 
+    def test_security_settings_without_auth_or_email_returns_401(self) -> None:
+        r = client.get("/api/auth/security-settings")
+        self.assertEqual(r.status_code, 401)
+
+    def test_pin_set_without_token_returns_401(self) -> None:
+        r = client.post("/api/auth/pin/set", json={"pin": "1234", "confirm_pin": "1234"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_pin_verify_missing_fields_returns_422(self) -> None:
+        r = client.post("/api/auth/pin/verify", json={})
+        self.assertEqual(r.status_code, 422)
+
 
 @unittest.skipUnless(CLIENT_AVAILABLE, "TestClient could not be created")
 class FinanceEndpointAuthTests(unittest.TestCase):

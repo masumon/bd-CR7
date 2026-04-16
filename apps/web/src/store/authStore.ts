@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Session, Subscription } from "@supabase/supabase-js";
 
+import { resolveValidatedSession, SESSION_EXPIRED_MESSAGE, signOutSession } from "@/lib/authSession";
+import { isNetworkFailure } from "@/lib/networkReachability";
 import { supabase } from "@/lib/supabase";
 import useOfflineQueue from "@/store/offlineQueue";
 import { getErrorMessage } from "@/lib/errorUtils";
@@ -143,6 +145,39 @@ async function applySessionToState(session: Session | null, setState: AuthStateS
   });
 }
 
+async function restoreSessionFromApi(setState: AuthStateSetter): Promise<boolean> {
+  const resolved = await resolveValidatedSession().catch((error) => {
+    if (isNetworkFailure(error)) {
+      throw error;
+    }
+    return null;
+  });
+
+  if (!resolved?.session || !resolved.profile) {
+    return false;
+  }
+
+  let roleName = resolved.profile.role;
+  let roleError: string | null = null;
+  if (!roleName && resolved.session.user?.id) {
+    try {
+      roleName = await fetchUserRole(resolved.session.user.id);
+    } catch (error) {
+      roleError = getErrorMessage(error);
+    }
+  }
+
+  setState({
+    token: resolved.session.access_token,
+    userId: resolved.profile.id || resolved.session.user.id,
+    role: roleName,
+    loading: false,
+    hydrated: true,
+    error: roleError,
+  });
+  return true;
+}
+
 function ensureAuthSubscription() {
   if (!supabase || authSubscription) {
     return;
@@ -184,6 +219,7 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
         ensureAuthSubscription();
+        const previousState = useAuthStore.getState();
 
         // If we already have a live, hydrated session in memory (e.g. user just
         // signed in and was navigated to the dashboard), do NOT reset the loading
@@ -195,22 +231,17 @@ export const useAuthStore = create<AuthState>()(
         if (alreadyHydrated && currentUserId !== null && currentUserId !== undefined) {
           // Capture the non-null client for use inside the async callback.
           const client = supabase;
-          void client.auth
-            .getSession()
-            .then(async ({ data }) => {
-              if (!data.session) {
-                // Access token gone — try refreshing before giving up.
-                const { data: refreshed } = await client.auth.refreshSession();
-                if (!refreshed.session) {
-                  set({
-                    token: null,
-                    userId: null,
-                    role: null,
-                    loading: false,
-                    hydrated: true,
-                    error: null,
-                  });
-                }
+          void restoreSessionFromApi((partial) => set(partial))
+            .then((restored) => {
+              if (!restored) {
+                set({
+                  token: null,
+                  userId: null,
+                  role: null,
+                  loading: false,
+                  hydrated: true,
+                  error: SESSION_EXPIRED_MESSAGE,
+                });
               }
             })
             .catch((err: unknown) => {
@@ -225,28 +256,37 @@ export const useAuthStore = create<AuthState>()(
 
         set({ loading: true, error: null });
         try {
-          const { data, error } = await supabase.auth.getSession();
-          if (error) {
-            throw new Error(error.message || "Failed to restore session");
+          const restored = await restoreSessionFromApi((partial) => set(partial));
+          if (!restored) {
+            set({
+              token: null,
+              role: null,
+              userId: null,
+              loading: false,
+              hydrated: true,
+              error: SESSION_EXPIRED_MESSAGE,
+            });
           }
-          let session = data.session;
-          // If no session was returned but a refresh token may still be valid,
-          // attempt a silent refresh before clearing auth state.
-          if (!session) {
-            const { data: refreshed } = await supabase.auth.refreshSession();
-            session = refreshed.session;
-          }
-          await applySessionToState(session, set);
         } catch (err) {
-          // Only the supabase.auth.getSession() call itself failed here.
-          // It is safe to clear auth state in this case.
+          if (isNetworkFailure(err) && previousState.userId) {
+            set({
+              token: previousState.token,
+              role: previousState.role,
+              userId: previousState.userId,
+              loading: false,
+              hydrated: true,
+              error: null,
+            });
+            return;
+          }
+
           set({
             token: null,
             role: null,
             userId: null,
             loading: false,
             hydrated: true,
-            error: getErrorMessage(err),
+            error: isNetworkFailure(err) ? null : getErrorMessage(err),
           });
         }
       },
@@ -314,7 +354,7 @@ export const useAuthStore = create<AuthState>()(
         set({ token: accessToken, role: null, userId: data.user.id, loading: false, hydrated: true });
       },
       logout: () => {
-        void supabase?.auth.signOut();
+        void signOutSession();
         // Clear persisted offline queue so a subsequent user on the same device
         // cannot view or replay the previous user's queued financial operations.
         useOfflineQueue.getState().clearQueue();

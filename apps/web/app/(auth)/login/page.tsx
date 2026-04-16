@@ -10,6 +10,7 @@ import type { View } from "./types";
 import { useAuthFlow } from "./hooks/useAuthFlow";
 import { LandingView } from "./views/LandingView";
 import { OtpView } from "./views/OtpView";
+import { PinView } from "./views/PinView";
 import { SigninView } from "./views/SigninView";
 import { SignupView } from "./views/SignupView";
 import { SplashView } from "./views/SplashView";
@@ -46,6 +47,7 @@ function LoginPageController() {
                   onSignin={() => goTo("signin")}
                   onSignup={() => goTo("signup")}
                   onEmailOtp={() => goTo("otp")}
+                  onPin={() => goTo("pin")}
                   onBiometric={flow.biometric.trigger}
                   onPasskey={() => void flow.passkey.trigger()}
                   passkeyLoading={flow.passkey.loading}
@@ -53,6 +55,10 @@ function LoginPageController() {
                   bioLoading={flow.biometric.loading}
                   bioError={flow.biometric.error}
                   bioState={flow.biometric.state}
+                  showBiometric={flow.security.showBiometric}
+                  showPin={flow.security.showPin}
+                  rememberedEmail={flow.security.emailHint}
+                  securityHint={flow.security.hint}
                 />
               );
             })()}
@@ -64,9 +70,11 @@ function LoginPageController() {
                 onSignup={() => flow.setView("signup")}
                 onEmailOtp={() => flow.setView("otp")}
                 onPasskey={() => void flow.passkey.trigger(flow.signin.email)}
+                onPin={() => flow.setView("pin")}
                 onGoogle={flow.oauth.loginWithGoogle}
                 loading={flow.signin.loading}
                 passkeyLoading={flow.passkey.loading}
+                pinAvailable={flow.security.showPin}
                 onSubmit={flow.signin.submit}
                 email={flow.signin.email}
                 setEmail={flow.signin.setEmail}
@@ -80,6 +88,22 @@ function LoginPageController() {
                 setCapsLock={flow.signin.setCapsLock}
                 error={flow.signin.error}
                 passkeyError={flow.passkey.error}
+              />
+            )}
+
+            {flow.view === "pin" && (
+              <PinView
+                key="pin"
+                onBack={() => flow.setView("landing")}
+                onPassword={() => flow.setView("signin")}
+                onEmailOtp={() => flow.setView("otp")}
+                onSubmit={flow.pin.submit}
+                loading={flow.pin.loading}
+                error={flow.pin.error}
+                email={flow.signin.email}
+                setEmail={flow.signin.setEmail}
+                pin={flow.pin.code}
+                setPin={flow.pin.setCode}
               />
             )}
 

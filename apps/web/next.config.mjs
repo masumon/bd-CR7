@@ -1,4 +1,25 @@
 import withPWA from "next-pwa";
+import defaultRuntimeCaching from "next-pwa/cache.js";
+
+const CACHE_VERSION = "bdcr7-v2026-04-16";
+
+const runtimeCaching = defaultRuntimeCaching
+  .filter((entry) => entry?.options?.cacheName !== "apis")
+  .map((entry) => ({
+    ...entry,
+    options: entry.options?.cacheName
+      ? {
+          ...entry.options,
+          cacheName: `${CACHE_VERSION}-${entry.options.cacheName}`,
+        }
+      : entry.options,
+  }));
+
+runtimeCaching.push({
+  urlPattern: ({ url }) => self.origin === url.origin && url.pathname.startsWith("/api/"),
+  handler: "NetworkOnly",
+  method: "GET",
+});
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
@@ -69,6 +90,8 @@ const pwaConfig = withPWA({
   disable: process.env.NODE_ENV === "development",
   register: false,
   skipWaiting: true,
+  clientsClaim: true,
+  runtimeCaching,
 });
 
 export default pwaConfig(nextConfig);

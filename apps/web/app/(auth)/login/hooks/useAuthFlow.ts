@@ -2,6 +2,8 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getErrorMessage } from "@/lib/errorUtils";
+import { fetchSecuritySettings, verifyPinLogin, type SecuritySettings } from "@/lib/securityAuth";
 import { supabase } from "@/lib/supabase";
 import { ensureBiometricCredential, signInWithPasskey, verifyBiometricAssertion } from "@/lib/webauthn";
 import { useAuthStore } from "@/store/authStore";
@@ -79,6 +81,8 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
   }, []);
 
   const autoTriggeredRef = useRef(false);
+  const [securityMethods, setSecurityMethods] = useState<SecuritySettings | null>(null);
+  const [securityLoading, setSecurityLoading] = useState(false);
   const [siEmail, setSiEmail] = useState("");
   const [siPassword, setSiPassword] = useState("");
   const [siShowPass, setSiShowPass] = useState(false);
@@ -88,6 +92,9 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
   const [siError, setSiError] = useState("");
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [passkeyError, setPasskeyError] = useState("");
+  const [pinCode, setPinCode] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState("");
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setSiError("");
@@ -131,10 +138,47 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       userId: userId || data.user.id,
       role: role || null,
     });
+    if (typeof window !== "undefined") {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (localStorage.getItem("bdcr7-remember-me") === "1" || !localStorage.getItem("bdcr7-remember-email")) {
+        localStorage.setItem("bdcr7-remember-email", normalizedEmail);
+      }
+    }
     await fetchUser().catch(() => {});
     setShowOverlay(true);
     setAuthDone(true);
   }, [fetchUser]);
+
+  const refreshSecurityMethods = useCallback(async (emailHint?: string) => {
+    const candidateEmail = (emailHint || siEmail || localStorage.getItem("bdcr7-remember-email") || "").trim().toLowerCase();
+    if (!candidateEmail || !candidateEmail.includes("@")) {
+      setSecurityMethods(null);
+      return;
+    }
+
+    setSecurityLoading(true);
+    try {
+      const next = await fetchSecuritySettings({ email: candidateEmail });
+      setSecurityMethods(next);
+    } catch {
+      setSecurityMethods(null);
+    } finally {
+      setSecurityLoading(false);
+    }
+  }, [siEmail]);
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("bdcr7-remember-email") || "";
+    const candidateEmail = (siEmail || rememberedEmail).trim().toLowerCase();
+    if (!candidateEmail) {
+      setSecurityMethods(null);
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      void refreshSecurityMethods(candidateEmail);
+    }, 220);
+    return () => window.clearTimeout(timeout);
+  }, [refreshSecurityMethods, siEmail, view]);
 
   const handlePasskey = useCallback(async (emailHint?: string) => {
     const candidateEmail = (emailHint || siEmail || localStorage.getItem("bdcr7-remember-email") || "").trim().toLowerCase();
@@ -146,11 +190,12 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
 
     setPasskeyLoading(true);
     setPasskeyError("");
+    setPinError("");
     try {
       const result = await signInWithPasskey(candidateEmail);
       await completeMagicLinkLogin(result.token_hash, result.email, result.role || null, result.user_id || null);
     } catch (err) {
-      const message = (err as Error).message || "Passkey sign in failed.";
+      const message = getErrorMessage(err) || "Passkey sign in failed.";
       setPasskeyError(`${message} Use password or Email OTP fallback if this continues.`);
       setAuthDone(false);
       setShowOverlay(false);
@@ -158,6 +203,29 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       setPasskeyLoading(false);
     }
   }, [completeMagicLinkLogin, siEmail]);
+
+  const handlePinSignIn = useCallback(async (event: FormEvent) => {
+    event.preventDefault();
+    const candidateEmail = (siEmail || localStorage.getItem("bdcr7-remember-email") || "").trim().toLowerCase();
+    if (!candidateEmail) {
+      setPinError("PIN ব্যবহার করতে আগে আপনার ইমেইল দিন।");
+      return;
+    }
+
+    setPinLoading(true);
+    setPinError("");
+    setPasskeyError("");
+    try {
+      const result = await verifyPinLogin(candidateEmail, pinCode);
+      await completeMagicLinkLogin(result.token_hash, result.email, result.role || null, result.user_id || null);
+    } catch (err) {
+      setPinError(getErrorMessage(err) || "PIN sign in failed.");
+      setAuthDone(false);
+      setShowOverlay(false);
+    } finally {
+      setPinLoading(false);
+    }
+  }, [completeMagicLinkLogin, pinCode, siEmail]);
 
   const [suFullName, setSuFullName] = useState("");
   const [suUserId, setSuUserId] = useState("");
@@ -321,8 +389,17 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       const session = existingSession?.data.session;
       const hasSession = Boolean(persistedToken || session);
       if (!hasSession) {
-        setBioError("Sign in with email once first to enable biometric.");
-        setBioState("failed");
+        const candidateEmail = (siEmail || localStorage.getItem("bdcr7-remember-email") || "").trim().toLowerCase();
+        if (!candidateEmail) {
+          setBioError("Sign in with email once first to enable biometric.");
+          setBioState("failed");
+          setView("signin");
+          setBioLoading(false);
+          return;
+        }
+        const result = await signInWithPasskey(candidateEmail);
+        await completeMagicLinkLogin(result.token_hash, result.email, result.role || null, result.user_id || null);
+        setBioState("success");
         setBioLoading(false);
         return;
       }
@@ -341,12 +418,12 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       setShowOverlay(true);
       setAuthDone(true);
     } catch (err) {
-      setBioError((err as Error).message || "Biometric failed.");
+      setBioError(getErrorMessage(err) || "Biometric failed.");
       setBioState("failed");
     } finally {
       setBioLoading(false);
     }
-  }, [persistedToken, persistedUserId]);
+  }, [completeMagicLinkLogin, persistedToken, persistedUserId, siEmail]);
 
   // Trusted device: when remember-me is set and landing shows, auto-open biometric
   // so the user taps the fingerprint once instead of typing email + password.
@@ -354,11 +431,23 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     if (view !== "landing") return;
     if (autoTriggeredRef.current) return;
     const remembered = localStorage.getItem("bdcr7-remember-me") === "1";
-    if (!remembered) return;
+    if (!remembered || !securityMethods?.biometric_enabled || !securityMethods.current_device_trusted) return;
     autoTriggeredRef.current = true;
     const t = setTimeout(() => void handleBiometric(), 900);
     return () => clearTimeout(t);
-  }, [view, handleBiometric]);
+  }, [handleBiometric, securityMethods?.biometric_enabled, securityMethods?.current_device_trusted, view]);
+
+  const rememberedEmail = typeof window !== "undefined" ? (localStorage.getItem("bdcr7-remember-email") || "") : "";
+  const activeEmailHint = (siEmail || rememberedEmail || securityMethods?.email_hint || "").trim().toLowerCase();
+  const showBiometric = Boolean(securityMethods?.biometric_enabled && securityMethods.current_device_trusted);
+  const showPin = Boolean(securityMethods?.pin_enabled && securityMethods.current_device_trusted);
+  const securityHint = securityLoading
+    ? "Checking trusted-device login methods..."
+    : activeEmailHint
+      ? showBiometric || showPin
+        ? "Trusted-device sign-in methods are available for this account."
+        : "Password sign-in remains available. Extra methods appear after you enable them in Security settings."
+      : "Enter your email once to discover biometric or PIN login on this device.";
 
   const handleGoogleOAuth = async () => {
     if (!supabase) return;
@@ -381,6 +470,13 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     signin: { email: siEmail, setEmail: setSiEmail, password: siPassword, setPassword: setSiPassword, showPass: siShowPass, setShowPass: setSiShowPass, remember: siRemember, setRemember: setSiRemember, capsLock: siCapsLock, setCapsLock: setSiCapsLock, loading: siLoading, error: siError, submit: handleSignIn },
     signup: { fullName: suFullName, setFullName: setSuFullName, userId: suUserId, setUserId: setSuUserId, email: suEmail, setEmail: setSuEmail, phone: suPhone, setPhone: setSuPhone, password: suPassword, setPassword: setSuPassword, confirmPass: suConfirmPass, setConfirmPass: setSuConfirmPass, showPass: suShowPass, setShowPass: setSuShowPass, showConfirm: suShowConfirm, setShowConfirm: setSuShowConfirm, loading: suLoading, error: suError, success: suSuccess, submit: handleSignUp },
     passkey: { loading: passkeyLoading, error: passkeyError, trigger: handlePasskey },
+    pin: {
+      code: pinCode,
+      setCode: setPinCode,
+      loading: pinLoading,
+      error: pinError,
+      submit: handlePinSignIn,
+    },
     otp: {
       contact: otpContact,
       setContact: setOtpContact,
@@ -404,6 +500,14 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       },
     },
     biometric: { loading: bioLoading, error: bioError, state: bioState, setState: setBioState, trigger: handleBiometric },
+    security: {
+      loading: securityLoading,
+      emailHint: activeEmailHint,
+      showBiometric,
+      showPin,
+      hint: securityHint,
+      refresh: refreshSecurityMethods,
+    },
     oauth: { loginWithGoogle: handleGoogleOAuth, signUpWithGoogle: handleGoogleOAuth },
   };
 }

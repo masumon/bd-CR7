@@ -13,9 +13,11 @@ type SigninViewProps = {
   onSignup: () => void;
   onEmailOtp: () => void;
   onPasskey: () => void;
+  onPin: () => void;
   onGoogle: () => void;
   loading: boolean;
   passkeyLoading: boolean;
+  pinAvailable: boolean;
   onSubmit: (e: FormEvent) => void;
   email: string;
   setEmail: (v: string) => void;
@@ -36,9 +38,11 @@ export function SigninView({
   onSignup,
   onEmailOtp,
   onPasskey,
+  onPin,
   onGoogle,
   loading,
   passkeyLoading,
+  pinAvailable,
   onSubmit,
   email,
   setEmail,
@@ -109,8 +113,15 @@ export function SigninView({
 
           <button type="button" onClick={onPasskey} disabled={passkeyLoading || !email.trim()} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border py-2 text-[12px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50">
             {passkeyLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-            Sign in with Passkey
+            Sign in with Face / Fingerprint
           </button>
+
+          {pinAvailable ? (
+            <button type="button" onClick={onPin} className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border py-2 text-[12px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary">
+              <Lock className="h-3.5 w-3.5" />
+              Sign in with PIN
+            </button>
+          ) : null}
 
           <button type="button" onClick={onEmailOtp} className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] text-muted-foreground transition-colors hover:text-primary">
             <Mail className="h-3.5 w-3.5" />

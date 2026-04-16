@@ -7,6 +7,7 @@
  */
 
 import { FileText } from "lucide-react";
+import { PdfFrame } from "@/components/ui/PdfFrame";
 
 export type FileType = "image" | "video" | "pdf" | "audio" | "document";
 
@@ -163,11 +164,10 @@ export function FilePreviewInline({ url, fileName, fileType, className = "" }: F
   if (type === "pdf") {
     return (
       <div className={base}>
-        <iframe
-          src={`${safeSrc}#toolbar=0&view=FitH`}
+        <PdfFrame
+          url={safeSrc}
           title={fileName ?? "PDF Preview"}
           className="w-full h-64 border-0"
-          loading="lazy"
         />
       </div>
     );

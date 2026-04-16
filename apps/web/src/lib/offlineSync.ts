@@ -1,6 +1,7 @@
 import useOfflineQueue from '@/store/offlineQueue';
-import { useAuthStore } from '@/store/authStore';
+import { getAccessToken, refreshAccessToken, SESSION_EXPIRED_MESSAGE } from '@/lib/authSession';
 import { getErrorMessage } from '@/lib/errorUtils';
+import { detectActualOffline, emitNetworkStatus } from '@/lib/networkReachability';
 
 const MAX_ATTEMPTS = 5;
 let flushInProgress = false;
@@ -35,7 +36,9 @@ export async function triggerOfflineSync(): Promise<OfflineSyncSummary> {
   if (flushInProgress) {
     return { processed: 0, succeeded: 0, requeued: 0, discarded: 0, remaining: useOfflineQueue.getState().queue.length, lastError: null };
   }
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+  const actuallyOffline = await detectActualOffline();
+  if (actuallyOffline) {
+    emitNetworkStatus({ online: false, source: 'offline-sync-precheck' });
     return { processed: 0, succeeded: 0, requeued: 0, discarded: 0, remaining: useOfflineQueue.getState().queue.length, lastError: 'offline' };
   }
 
@@ -51,7 +54,7 @@ export async function triggerOfflineSync(): Promise<OfflineSyncSummary> {
 
   try {
     const apiBase = resolveApiBase();
-    const token = useAuthStore.getState().token;
+    let token = await getAccessToken();
     const maxBatch = 50;
 
     for (let i = 0; i < maxBatch; i += 1) {
@@ -69,9 +72,56 @@ export async function triggerOfflineSync(): Promise<OfflineSyncSummary> {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(item.payload),
+          credentials: 'same-origin',
+          cache: 'no-store',
         });
 
+        if (response.status === 401) {
+          token = await refreshAccessToken();
+          if (!token) {
+            summary.requeued += 1;
+            summary.lastError = SESSION_EXPIRED_MESSAGE;
+            useOfflineQueue.getState().requeue({ ...item, attempts: item.attempts || 0, lastError: SESSION_EXPIRED_MESSAGE });
+            break;
+          }
+
+          const retryResponse = await fetch(`${apiBase}${item.endpoint}`, {
+            method: item.method,
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(item.payload),
+            credentials: 'same-origin',
+            cache: 'no-store',
+          });
+
+          if (retryResponse.ok || retryResponse.status === 409) {
+            summary.succeeded += 1;
+            continue;
+          }
+
+          if (retryResponse.status === 401) {
+            useOfflineQueue.getState().requeue({ ...item, attempts: item.attempts || 0, lastError: SESSION_EXPIRED_MESSAGE });
+            summary.requeued += 1;
+            summary.lastError = SESSION_EXPIRED_MESSAGE;
+            break;
+          }
+
+          const retryAttempts = (item.attempts || 0) + 1;
+          if (retryAttempts < MAX_ATTEMPTS) {
+            useOfflineQueue.getState().requeue({ ...item, attempts: retryAttempts, lastError: `HTTP ${retryResponse.status}` });
+            summary.requeued += 1;
+            summary.lastError = `HTTP ${retryResponse.status}`;
+          } else {
+            summary.discarded += 1;
+            summary.lastError = `HTTP ${retryResponse.status}`;
+          }
+          continue;
+        }
+
         if (response.ok || response.status === 409) {
+          emitNetworkStatus({ online: true, source: 'offline-sync-success' });
           summary.succeeded += 1;
           continue;
         }
@@ -86,14 +136,18 @@ export async function triggerOfflineSync(): Promise<OfflineSyncSummary> {
           summary.lastError = `HTTP ${response.status}`;
         }
       } catch (error) {
+        const offline = await detectActualOffline(error);
         const attempts = (item.attempts || 0) + 1;
+        if (offline) {
+          emitNetworkStatus({ online: false, source: 'offline-sync-error', reason: getErrorMessage(error) });
+        }
         if (attempts < MAX_ATTEMPTS) {
-          useOfflineQueue.getState().requeue({ ...item, attempts, lastError: getErrorMessage(error) });
+          useOfflineQueue.getState().requeue({ ...item, attempts, lastError: offline ? 'offline' : getErrorMessage(error) });
           summary.requeued += 1;
-          summary.lastError = getErrorMessage(error);
+          summary.lastError = offline ? 'offline' : getErrorMessage(error);
         } else {
           summary.discarded += 1;
-          summary.lastError = getErrorMessage(error);
+          summary.lastError = offline ? 'offline' : getErrorMessage(error);
         }
       }
     }

@@ -17,17 +17,23 @@ type LandingViewProps = {
   onSignup: () => void;
   onEmailOtp: () => void;
   onBiometric: () => void;
+  onPin: () => void;
   onPasskey: () => void;
   passkeyLoading: boolean;
   passkeyError: string;
   bioLoading: boolean;
   bioError: string;
   bioState: BiometricState;
+  showBiometric: boolean;
+  showPin: boolean;
+  rememberedEmail: string;
+  securityHint: string;
 };
 
 export function LandingView({
-  onSignin, onSignup, onEmailOtp, onBiometric, onPasskey,
+  onSignin, onSignup, onEmailOtp, onBiometric, onPin, onPasskey,
   passkeyLoading, passkeyError, bioLoading, bioError, bioState,
+  showBiometric, showPin, rememberedEmail, securityHint,
 }: LandingViewProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -60,29 +66,33 @@ export function LandingView({
       {/* ── PRIMARY: Phone + OTP ── */}
       <div className="w-full max-w-sm space-y-3">
 
-        {/* Biometric hero (if available) */}
-        <div className="flex flex-col items-center gap-2 pb-1">
-          <AnimatePresence mode="wait">
-            {bioState === "success" ? (
-              <motion.div key="bio-success" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.7, opacity: 0 }} className="flex flex-col items-center gap-1">
-                <CheckCircle2 className="h-10 w-10 text-emerald-400" />
-                <p className="text-[11px] text-emerald-300">বায়োমেট্রিক সম্পন্ন!</p>
-              </motion.div>
-            ) : (
-              <motion.div key="bio-button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1.5">
-                <div className={`fingerprint-ring relative flex h-[84px] w-[84px] items-center justify-center rounded-full border-2 transition-colors ${bioState === "scanning" ? "border-amber-300/70" : bioState === "failed" ? "border-rose-400/50" : "border-amber-300/40"}`}>
-                  {bioState === "scanning" && <div className="fingerprint-scan-line" />}
-                  <button type="button" onClick={onBiometric} disabled={bioLoading} aria-label="আঙুলের ছাপ স্ক্যান করুন" className="biometric-hero-btn flex h-[66px] w-[66px] items-center justify-center rounded-full">
-                    {bioState === "scanning" ? <Loader2 className="h-6 w-6 animate-spin text-amber-200/80" /> : <Fingerprint className={`h-[44%] w-[44%] ${bioState === "failed" ? "text-rose-300/80" : "text-amber-200/90"}`} />}
-                  </button>
-                </div>
-                <p className="text-[10px] text-muted-foreground">
-                  {bioState === "scanning" ? "স্ক্যান হচ্ছে..." : bioState === "failed" ? "বায়োমেট্রিক ব্যর্থ" : "আঙুল রাখুন"}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {showBiometric ? (
+          <div className="flex flex-col items-center gap-2 pb-1">
+            <AnimatePresence mode="wait">
+              {bioState === "success" ? (
+                <motion.div key="bio-success" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.7, opacity: 0 }} className="flex flex-col items-center gap-1">
+                  <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+                  <p className="text-[11px] text-emerald-300">বায়োমেট্রিক সম্পন্ন!</p>
+                </motion.div>
+              ) : (
+                <motion.div key="bio-button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1.5">
+                  <div className={`fingerprint-ring relative flex h-[84px] w-[84px] items-center justify-center rounded-full border-2 transition-colors ${bioState === "scanning" ? "border-amber-300/70" : bioState === "failed" ? "border-rose-400/50" : "border-amber-300/40"}`}>
+                    {bioState === "scanning" && <div className="fingerprint-scan-line" />}
+                    <button type="button" onClick={onBiometric} disabled={bioLoading} aria-label="আঙুলের ছাপ স্ক্যান করুন" className="biometric-hero-btn flex h-[66px] w-[66px] items-center justify-center rounded-full">
+                      {bioState === "scanning" ? <Loader2 className="h-6 w-6 animate-spin text-amber-200/80" /> : <Fingerprint className={`h-[44%] w-[44%] ${bioState === "failed" ? "text-rose-300/80" : "text-amber-200/90"}`} />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {bioState === "scanning" ? "স্ক্যান হচ্ছে..." : bioState === "failed" ? "বায়োমেট্রিক ব্যর্থ" : "আঙুল রাখুন"}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : null}
+
+        {rememberedEmail ? <p className="text-center text-[11px] text-muted-foreground">Trusted account: {rememberedEmail}</p> : null}
+        {securityHint ? <p className="text-center text-[11px] text-muted-foreground">{securityHint}</p> : null}
 
         {/* Primary CTA: OTP (Phone / Email) */}
         <button
@@ -96,16 +106,30 @@ export function LandingView({
         </button>
 
         {/* Secondary: Passkey */}
-        <button
-          type="button"
-          onClick={onPasskey}
-          disabled={passkeyLoading}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card/60 text-sm font-medium text-foreground transition-all hover:border-primary/40 hover:bg-card active:scale-[0.97] disabled:opacity-60"
-          aria-label="পাসকি দিয়ে প্রবেশ করুন"
-        >
-          {passkeyLoading ? <Loader2 className="h-5 w-5 animate-spin text-amber-300/80" /> : <Shield className="h-5 w-5 text-amber-300/70" />}
-          Passkey দিয়ে প্রবেশ করুন
-        </button>
+        {showBiometric ? (
+          <button
+            type="button"
+            onClick={onPasskey}
+            disabled={passkeyLoading}
+            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card/60 text-sm font-medium text-foreground transition-all hover:border-primary/40 hover:bg-card active:scale-[0.97] disabled:opacity-60"
+            aria-label="বায়োমেট্রিক দিয়ে প্রবেশ করুন"
+          >
+            {passkeyLoading ? <Loader2 className="h-5 w-5 animate-spin text-amber-300/80" /> : <Shield className="h-5 w-5 text-amber-300/70" />}
+            Face / Fingerprint দিয়ে প্রবেশ করুন
+          </button>
+        ) : null}
+
+        {showPin ? (
+          <button
+            type="button"
+            onClick={onPin}
+            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card/60 text-sm font-medium text-foreground transition-all hover:border-primary/40 hover:bg-card active:scale-[0.97]"
+            aria-label="পিন দিয়ে প্রবেশ করুন"
+          >
+            <Lock className="h-5 w-5 text-amber-300/70" />
+            PIN দিয়ে প্রবেশ করুন
+          </button>
+        ) : null}
 
         {/* Error display */}
         {(passkeyError || (bioError && bioState !== "failed")) && (
@@ -118,7 +142,6 @@ export function LandingView({
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
             className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-            aria-expanded={showAdvanced ? "true" : "false"}
           >
             {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             {showAdvanced ? "লুকাও" : "অন্যান্য অপশন"}

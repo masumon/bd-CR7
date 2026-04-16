@@ -21,6 +21,7 @@ import { SyncControlPanel } from "@/modules/settings/tabs/SyncControlPanel";
 import { AdvancedTab } from "@/modules/settings/tabs/AdvancedTab";
 import { IntegrationsTab } from "@/modules/settings/tabs/IntegrationsTab";
 import { ProfileTab } from "@/modules/settings/tabs/ProfileTab";
+import { SecurityTab } from "@/modules/settings/tabs/SecurityTab";
 import { SettingsCatalogTab } from "@/modules/settings/tabs/SettingsCatalogTab";
 import { SettingsGroupedNav } from "@/modules/settings/tabs/SettingsGroupedNav";
 import { WorkspaceTab } from "@/modules/settings/tabs/WorkspaceTab";
@@ -337,7 +338,7 @@ export function SettingsFeature() {
 
       {activeTab === "Workspace" ? <WorkspaceTab dark={dark} language={language} setDark={setDark} setLanguage={setLanguage} /> : null}
 
-      {activeTab === "Workspace" || activeTab === "Notifications" || activeTab === "Security" || activeTab === "Data" ? (
+      {activeTab === "Workspace" || activeTab === "Notifications" || activeTab === "Data" ? (
         <SettingsCatalogTab
           activeTab={activeTab}
           categoryTotals={categoryTotals}
@@ -347,6 +348,8 @@ export function SettingsFeature() {
           onToggle={toggleSetting}
         />
       ) : null}
+
+      {activeTab === "Security" ? <SecurityTab token={token} userId={userId} profile={profile} /> : null}
 
       {activeTab === "Integrations" ? (
         <IntegrationsTab
