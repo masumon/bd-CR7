@@ -134,6 +134,17 @@ export const ROLE_ACCESS: Record<string, string[]> = {
     "/dashboard/construction/projects",
     "/dashboard/settings",
   ],
+  mason: [
+    "/dashboard",
+    "/dashboard/docs",
+    "/dashboard/construction",
+    "/dashboard/workforce",
+    "/dashboard/materials",
+    "/dashboard/evidence",
+    "/dashboard/finance",
+    "/dashboard/construction/projects",
+    "/dashboard/settings",
+  ],
 };
 
 export function normalizeRoleName(role: string | null | undefined): string {
@@ -153,6 +164,7 @@ export function normalizeRoleName(role: string | null | undefined): string {
     engineer: "engineer",
     maker: "maker",
     checker: "checker",
+    mason: "mason",
     viewer: "viewer",
     worker: "worker",
   };

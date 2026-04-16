@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpenText, Download, FileText, ShieldCheck, Users } from "lucide-react";
 
 import { ModulePageHeader } from "@/components/ui/ModulePageHeader";
+import { PdfFrame } from "@/components/ui/PdfFrame";
 import { useAuthStore } from "@/store/authStore";
 
-type RoleKey = "super_admin" | "admin" | "manager" | "accountant" | "supervisor" | "engineer" | "maker" | "checker" | "worker" | "viewer";
+type RoleKey = "super_admin" | "admin" | "manager" | "accountant" | "supervisor" | "engineer" | "maker" | "checker" | "mason" | "worker" | "viewer";
 
 type ModuleGuide = {
   name: string;
@@ -254,6 +255,18 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
     canView: ["Dashboard", "Docs", "Construction", "Workforce", "Materials", "Evidence", "Finance", "Projects", "Settings"],
     caution: "নিজের কাজের বাইরে record edit বা অন্যের data পরিবর্তন করার চেষ্টা করবেন না।",
   },
+  mason: {
+    label: "Mason",
+    labelBn: "রাজমিস্ত্রি",
+    summary: "সাইটের বাস্তব কাজ, attendance, material usage context এবং assigned construction task follow করেন।",
+    tasks: [
+      "নিজের assigned construction কাজ ও attendance দেখা",
+      "প্রয়োজনে evidence বা progress proof জমা দেওয়া",
+      "material issue বা site problem supervisor-কে জানানো"
+    ],
+    canView: ["Dashboard", "Docs", "Construction", "Workforce", "Materials", "Evidence", "Finance", "Projects", "Settings"],
+    caution: "Mason role field execution-এর জন্য; অন্যের record change বা approval decision নেবেন না।",
+  },
   viewer: {
     label: "Viewer",
     labelBn: "ভিউয়ার",
@@ -268,11 +281,11 @@ const ROLE_GUIDE: Record<RoleKey, RoleGuide> = {
   },
 };
 
-const ORDER: RoleKey[] = ["super_admin", "admin", "manager", "accountant", "supervisor", "engineer", "maker", "checker", "worker", "viewer"];
+const ORDER: RoleKey[] = ["super_admin", "admin", "manager", "accountant", "supervisor", "engineer", "maker", "checker", "mason", "worker", "viewer"];
 
 function normalizeRole(value: string | null | undefined): RoleKey {
   const role = (value || "").toLowerCase();
-  if (role === "super_admin" || role === "admin" || role === "manager" || role === "accountant" || role === "supervisor" || role === "engineer" || role === "maker" || role === "checker" || role === "worker" || role === "viewer") {
+  if (role === "super_admin" || role === "admin" || role === "manager" || role === "accountant" || role === "supervisor" || role === "engineer" || role === "maker" || role === "checker" || role === "mason" || role === "worker" || role === "viewer") {
     return role;
   }
   return "viewer";
@@ -294,6 +307,15 @@ export default function DocsPage() {
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
   }, [pdfUrl]);
+
+  useEffect(() => {
+    setPdfUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+  }, [selectedRole]);
 
   const guide = useMemo(() => ROLE_GUIDE[selectedRole], [selectedRole]);
 
@@ -322,8 +344,13 @@ export default function DocsPage() {
         .toPdf()
         .outputPdf("blob");
 
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(URL.createObjectURL(blob));
+      const pdfBlob = blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" });
+      setPdfUrl((current) => {
+        if (current) {
+          URL.revokeObjectURL(current);
+        }
+        return URL.createObjectURL(pdfBlob);
+      });
     } finally {
       setPdfBusy(false);
     }
@@ -507,11 +534,14 @@ export default function DocsPage() {
           In-App PDF Viewer
         </div>
         {pdfUrl ? (
-          <iframe
-            src={pdfUrl}
-            title="Role guide PDF preview"
-            className="h-[70vh] w-full rounded-xl border border-border/70 bg-background"
-          />
+          <div className="space-y-2">
+            <PdfFrame
+              url={pdfUrl}
+              title="Role guide PDF preview"
+              className="h-[70vh] w-full rounded-xl border border-border/70 bg-background"
+            />
+            <p className="text-xs text-muted-foreground">Role পরিবর্তন করলে নতুন preview generate করতে আবার `PDF Preview` চাপুন।</p>
+          </div>
         ) : (
           <p className="text-xs text-muted-foreground">PDF Preview বাটনে ক্লিক করলে এখানে অ্যাপের ভেতরেই PDF দেখা যাবে।</p>
         )}
