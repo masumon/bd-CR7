@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import useOfflineQueue from "@/store/offlineQueue";
 import {
   BadgeDollarSign,
   BarChart3,
@@ -23,6 +24,7 @@ import { Sidebar } from "@/components/appshell/Sidebar";
 import { UserDrawer } from "@/components/appshell/UserDrawer";
 import { CORE_MAIN_DASHBOARD_PATHS } from "@/lib/dashboardPolicy";
 import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
+import { cn } from "@/lib/utils";
 
 import type { NavItem } from "./types";
 
@@ -42,6 +44,7 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const pendingSyncCount = useOfflineQueue((state) => state.queue.length);
   const normalizedRole = normalizeRoleName(role);
   const corePathSet = useMemo<Set<string>>(() => new Set(CORE_MAIN_DASHBOARD_PATHS), []);
   const allowedPaths = useMemo(
@@ -96,6 +99,11 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
     return coreItems.filter((item) => !primaryHrefs.has(item.href));
   }, [coreItems, bottomPrimaryItems]);
 
+  const roleLabel = (normalizedRole || "viewer")
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
   return (
     <div className="relative min-h-dvh app-gradient text-foreground">
       <TopBar
@@ -117,6 +125,24 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
       <main className="app-main-scroll page-enter px-3 lg:ml-64 lg:px-5 lg:pb-5">
         <div className="mx-auto max-w-6xl">
           <div className="module-surface shadow-soft relative z-[1] min-h-[calc(100dvh-72px-72px-env(safe-area-inset-bottom)-env(safe-area-inset-top))] overflow-visible rounded-[1.75rem] border border-border/45 p-3 backdrop-blur-[3px] lg:min-h-[calc(100dvh-72px-28px)] lg:p-3.5">
+            <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-border/45 pb-3">
+              <span className="rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-primary">
+                {language === "bn" ? `রোল · ${roleLabel}` : `ROLE · ${roleLabel}`}
+              </span>
+              <span className={cn(
+                "rounded-full px-3 py-1 text-[11px] font-medium",
+                online
+                  ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                  : "border border-amber-500/20 bg-amber-500/10 text-amber-300"
+              )}>
+                {online ? (language === "bn" ? "লাইভ সংযোগ" : "Live connection") : (language === "bn" ? "অফলাইন মোড" : "Offline mode")}
+              </span>
+              {pendingSyncCount > 0 ? (
+                <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[11px] font-medium text-sky-300">
+                  {language === "bn" ? `${pendingSyncCount}টি পরিবর্তন সিঙ্ক অপেক্ষায়` : `${pendingSyncCount} change(s) waiting to sync`}
+                </span>
+              ) : null}
+            </div>
             {children}
           </div>
         </div>

@@ -51,7 +51,7 @@ function lockPortrait() {
 export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const initialize = useAuthStore((state) => state.initialize);
   const hydrated = useAuthStore((state) => state.hydrated);
-  const loading = useAuthStore((state) => state.loading);
+  const initializing = useAuthStore((state) => state.initializing);
   const userId = useAuthStore((state) => state.userId);
   const role = useAuthStore((state) => state.role);
   const authError = useAuthStore((state) => state.error);
@@ -263,12 +263,26 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
     [language, notifications]
   );
 
-  if (!hydrated || loading) {
+  const showBlockingShellLoader = !hydrated || (initializing && !userId);
+
+  if (showBlockingShellLoader) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background p-4 text-sm text-muted-foreground">
-        <div className="w-full max-w-xs rounded-2xl border border-border/70 bg-card/75 p-4 text-center shadow-soft">
-          <div className="mx-auto mb-3 h-9 w-9 animate-pulse rounded-full bg-primary/25" />
-          {language === "bn" ? "ড্যাশবোর্ড প্রস্তুত হচ্ছে..." : "Preparing your dashboard..."}
+        <div className="w-full max-w-sm rounded-[2rem] border border-border/70 bg-card/82 p-5 text-center shadow-soft backdrop-blur-xl">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
+            <div className="h-6 w-6 animate-pulse rounded-xl bg-primary/30" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">
+            {language === "bn" ? "ড্যাশবোর্ড প্রস্তুত হচ্ছে" : "Preparing your dashboard"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {language === "bn" ? "সেশন, রোল ও অফলাইন স্টেট রিস্টোর করা হচ্ছে।" : "Restoring session, role and offline state."}
+          </p>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="h-14 animate-pulse rounded-2xl bg-muted/65" />
+            <div className="h-14 animate-pulse rounded-2xl bg-muted/45" />
+            <div className="h-14 animate-pulse rounded-2xl bg-muted/65" />
+          </div>
         </div>
       </div>
     );

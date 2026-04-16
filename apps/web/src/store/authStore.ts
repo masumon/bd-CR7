@@ -108,6 +108,7 @@ type AuthState = {
   role: string | null;
   userId: string | null;
   loading: boolean;
+  initializing: boolean;
   hydrated: boolean;
   error: string | null;
   initialize: () => Promise<void>;
@@ -123,7 +124,7 @@ let authSubscription: Subscription | null = null;
 
 async function applySessionToState(session: Session | null, setState: AuthStateSetter): Promise<void> {
   if (!session?.user?.id) {
-    setState({ token: null, userId: null, role: null, loading: false, hydrated: true, error: null });
+    setState({ token: null, userId: null, role: null, loading: false, initializing: false, hydrated: true, error: null });
     return;
   }
 
@@ -140,6 +141,7 @@ async function applySessionToState(session: Session | null, setState: AuthStateS
     userId: session.user.id,
     role: roleName,
     loading: false,
+    initializing: false,
     hydrated: true,
     error: roleError,
   });
@@ -172,6 +174,7 @@ async function restoreSessionFromApi(setState: AuthStateSetter): Promise<boolean
     userId: resolved.profile.id || resolved.session.user.id,
     role: roleName,
     loading: false,
+    initializing: false,
     hydrated: true,
     error: roleError,
   });
@@ -211,11 +214,12 @@ export const useAuthStore = create<AuthState>()(
       role: null,
       userId: null,
       loading: false,
+      initializing: false,
       hydrated: false,
       error: null,
       initialize: async () => {
         if (!supabase) {
-          set({ hydrated: true, loading: false });
+          set({ hydrated: true, loading: false, initializing: false });
           return;
         }
         ensureAuthSubscription();
@@ -239,6 +243,7 @@ export const useAuthStore = create<AuthState>()(
                   userId: null,
                   role: null,
                   loading: false,
+                  initializing: false,
                   hydrated: true,
                   error: SESSION_EXPIRED_MESSAGE,
                 });
@@ -254,7 +259,7 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        set({ loading: true, error: null });
+        set({ initializing: true, error: null });
         try {
           const restored = await restoreSessionFromApi((partial) => set(partial));
           if (!restored) {
@@ -263,6 +268,7 @@ export const useAuthStore = create<AuthState>()(
               role: null,
               userId: null,
               loading: false,
+              initializing: false,
               hydrated: true,
               error: SESSION_EXPIRED_MESSAGE,
             });
@@ -274,6 +280,7 @@ export const useAuthStore = create<AuthState>()(
               role: previousState.role,
               userId: previousState.userId,
               loading: false,
+              initializing: false,
               hydrated: true,
               error: null,
             });
@@ -285,6 +292,7 @@ export const useAuthStore = create<AuthState>()(
             role: null,
             userId: null,
             loading: false,
+            initializing: false,
             hydrated: true,
             error: isNetworkFailure(err) ? null : getErrorMessage(err),
           });

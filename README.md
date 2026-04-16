@@ -8,7 +8,7 @@ A production-grade ERP system purpose-built for construction firms and field-int
 
 <br/>
 
-[![Version](https://img.shields.io/badge/Version-1.0.0-0969da?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/Version-3.0.0-0969da?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/Status-Production-22863a?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/License-Proprietary-6e40c9?style=for-the-badge)](#license)
 
@@ -29,7 +29,15 @@ A production-grade ERP system purpose-built for construction firms and field-int
 
 BD CR7 Ultra Enterprise is a full-stack ERP platform engineered for construction companies, field service businesses, and operationally complex organizations. It delivers a unified experience across financial controls, human resource management, material tracking, project monitoring, and compliance — all accessible from a mobile-first progressive web application.
 
-The system is designed to operate in environments with limited connectivity through offline-first workflows, supports multi-factor authentication including biometric sign-in, and enforces enterprise-grade access control with six distinct user roles.
+The system is designed to operate in environments with limited connectivity through offline-first workflows, supports multi-factor authentication including biometric sign-in, and enforces enterprise-grade access control with production role segmentation across `super_admin`, `admin`, `checker`, `maker`, `manager`, `accountant`, `supervisor`, `engineer`, `mason`, `worker`, and `viewer`.
+
+## Version 3.0.0 Highlights
+
+- Non-blocking dashboard shell boot flow so module navigation no longer falls back to a full-screen auth loader during normal in-app movement.
+- Lightweight dashboard stats mode for the main home screen, reducing unnecessary finance expense fetches on first dashboard load.
+- Shared profile caching for top bar, user drawer, and settings to avoid repeated `/api/users/me/profile` requests.
+- Improved PWA navigation behavior by removing duplicate route warm-fetches and keeping offline sync focused on meaningful routes.
+- Smoother cross-role UX with persistent role, connection, and pending sync status inside the shell.
 
 > **Deployment Model**: Cloud-native serverless architecture. Production instances deploy in under 60 seconds with zero-downtime rollouts.
 
@@ -95,7 +103,7 @@ Enterprise-grade security controls are implemented across every layer of the pla
 
 | Control | Implementation |
 |:---|:---|
-| **Role-Based Access Control** | Six roles: `super_admin`, `admin`, `manager`, `accountant`, `supervisor`, `viewer` — enforced server-side on every endpoint |
+| **Role-Based Access Control** | Production role matrix covering `super_admin`, `admin`, `checker`, `maker`, `manager`, `accountant`, `supervisor`, `engineer`, `mason`, `worker`, `viewer` — enforced server-side on every endpoint |
 | **Authentication** | Email/password, OAuth 2.0, phone OTP (Twilio Verify), WebAuthn biometric sign-in |
 | **Trusted Device Flow** | App lock and device trust for seamless repeat authentication |
 | **API Rate Limiting** | Distributed Redis-backed rate limiting with configurable thresholds; in-memory fallback for edge environments |
