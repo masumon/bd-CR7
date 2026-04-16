@@ -8,7 +8,7 @@ import { Bell, Languages, LogOut, Menu, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SyncBadge } from "@/components/appshell/SyncBadge";
-import { apiClient } from "@/lib/apiClient";
+import { getMyProfileCached } from "@/lib/userProfileCache";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
@@ -41,7 +41,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
     let cancelled = false;
     const loadProfileImage = async () => {
       try {
-        const profile = await apiClient<{ profile_image_url?: string | null }>("/api/users/me/profile", { method: "GET" }, token);
+        const profile = await getMyProfileCached(token);
         if (!cancelled) {
           setProfileImageUrl(typeof profile?.profile_image_url === "string" ? profile.profile_image_url : null);
         }

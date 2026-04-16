@@ -9,13 +9,18 @@ const SW_RESET_KEY = `bdcr7-sw-reset-${CACHE_VERSION}`;
 const PAGE_CACHE_NAME = `${CACHE_VERSION}-others`;
 const START_URL_CACHE_NAME = `${CACHE_VERSION}-start-url`;
 const ACTIVE_CACHE_NAMES = new Set([PAGE_CACHE_NAME, START_URL_CACHE_NAME]);
+const ROUTE_WARM_ALLOWLIST = new Set(["/", "/offline"]);
+
+function shouldWarmRoute(pathname: string): boolean {
+  return ROUTE_WARM_ALLOWLIST.has(pathname);
+}
 
 async function cacheCurrentRoute(pathname: string, search: string) {
   if (typeof window === "undefined" || !("caches" in window) || !window.navigator.onLine) {
     return;
   }
 
-  if (pathname.startsWith("/api") || pathname.startsWith("/auth") || pathname.startsWith("/login")) {
+  if (!shouldWarmRoute(pathname)) {
     return;
   }
 
@@ -129,8 +134,32 @@ export default function ServiceWorkerRegistration() {
       return;
     }
 
+    let lastWarmedUrl = "";
+    let idleHandle: number | null = null;
+
     const warmCurrentRoute = () => {
-      void cacheCurrentRoute(window.location.pathname || "/", window.location.search || "");
+      const pathname = window.location.pathname || "/";
+      const search = window.location.search || "";
+      if (!shouldWarmRoute(pathname)) {
+        return;
+      }
+
+      const nextUrl = `${pathname}${search}`;
+      if (nextUrl === lastWarmedUrl) {
+        return;
+      }
+      lastWarmedUrl = nextUrl;
+
+      const schedule = () => {
+        void cacheCurrentRoute(pathname, search);
+      };
+
+      if (typeof window.requestIdleCallback === "function") {
+        idleHandle = window.requestIdleCallback(schedule, { timeout: 1200 });
+        return;
+      }
+
+      idleHandle = window.setTimeout(schedule, 300);
     };
 
     const originalPushState = window.history.pushState.bind(window.history);
@@ -151,6 +180,13 @@ export default function ServiceWorkerRegistration() {
     warmCurrentRoute();
 
     return () => {
+      if (idleHandle !== null) {
+        if (typeof window.cancelIdleCallback === "function") {
+          window.cancelIdleCallback(idleHandle);
+        } else {
+          window.clearTimeout(idleHandle);
+        }
+      }
       window.history.pushState = originalPushState;
       window.history.replaceState = originalReplaceState;
       window.removeEventListener("popstate", warmCurrentRoute);

@@ -6,6 +6,7 @@ import { CheckCircle2 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { uploadToCloudinary } from "@/lib/cloudinaryUpload";
 import { getErrorMessage } from "@/lib/errorUtils";
+import { getMyProfileCached, mergeMyProfileCache, primeMyProfileCache } from "@/lib/userProfileCache";
 import { useAuthStore } from "@/store/authStore";
 import {
   DEFAULT_SETTING_ITEMS,
@@ -208,7 +209,7 @@ export function SettingsFeature() {
     }
     let data: UserProfile | null = null;
     try {
-      data = await apiClient<UserProfile>("/api/users/me/profile", { method: "GET" }, token);
+      data = await getMyProfileCached(token, { force: true }) as UserProfile;
     } catch (loadError) {
       setError(getErrorMessage(loadError) || "Profile not found.");
       setLoading(false);
@@ -237,6 +238,7 @@ export function SettingsFeature() {
           { method: "PATCH", body: JSON.stringify({ profile_image_url: fileUrl }) },
           token,
         );
+        mergeMyProfileCache(token, { profile_image_url: fileUrl });
         setMessage("Profile photo updated successfully.");
         void loadProfile();
       } else {
@@ -278,6 +280,13 @@ export function SettingsFeature() {
         },
         token,
       );
+      primeMyProfileCache(token, {
+        ...profile,
+        full_name: fullName.trim() || profile.full_name,
+        phone: phone.trim() || null,
+        user_code: userCode.trim() || null,
+        profile_image_url: profileImageUrl || null,
+      });
     } catch (err) {
       saveError = getErrorMessage(err);
     }

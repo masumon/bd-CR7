@@ -7,7 +7,7 @@ import { LogOut, Activity, ShieldCheck, User, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/apiClient";
+import { getMyProfileCached } from "@/lib/userProfileCache";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +58,7 @@ export function UserDrawer({ open, onClose, language }: UserDrawerProps) {
     let cancelled = false;
     const loadProfile = async () => {
       try {
-        const data = await apiClient<{ full_name?: string; email?: string; phone?: string | null; user_code?: string | null; profile_image_url?: string | null }>("/api/users/me/profile", { method: "GET" }, token);
+        const data = await getMyProfileCached(token);
         if (!cancelled) setProfile(data);
       } catch {
         if (!cancelled) setProfile(null);

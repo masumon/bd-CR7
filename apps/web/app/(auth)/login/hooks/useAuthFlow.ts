@@ -176,9 +176,9 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     }
     const timeout = window.setTimeout(() => {
       void refreshSecurityMethods(candidateEmail);
-    }, 220);
+    }, 320);
     return () => window.clearTimeout(timeout);
-  }, [refreshSecurityMethods, siEmail, view]);
+  }, [refreshSecurityMethods, siEmail]);
 
   const handlePasskey = useCallback(async (emailHint?: string) => {
     const candidateEmail = (emailHint || siEmail || localStorage.getItem("bdcr7-remember-email") || "").trim().toLowerCase();

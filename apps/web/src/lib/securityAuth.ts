@@ -1,5 +1,28 @@
 import { apiClient } from "@/lib/apiClient";
 
+const SECURITY_SETTINGS_TTL_MS = 60_000;
+
+type CachedSecuritySettings = {
+  data: SecuritySettings;
+  cachedAt: number;
+};
+
+const securitySettingsCache = new Map<string, CachedSecuritySettings>();
+const securitySettingsRequests = new Map<string, Promise<SecuritySettings>>();
+
+function normalizeEmailHint(email?: string): string {
+  return email?.trim().toLowerCase() || "";
+}
+
+function getSecurityCacheKey(options: { token?: string; email?: string }): string | null {
+  if (options.token) {
+    return `token:${options.token.slice(0, 16)}`;
+  }
+
+  const email = normalizeEmailHint(options.email);
+  return email ? `email:${email}` : null;
+}
+
 export type SecuritySettings = {
   biometric_enabled: boolean;
   pin_enabled: boolean;
@@ -23,16 +46,52 @@ export type MagicLinkBootstrap = {
 };
 
 export async function fetchSecuritySettings(options: { token?: string; email?: string } = {}) {
-  const search = options.email ? `?email=${encodeURIComponent(options.email.trim().toLowerCase())}` : "";
-  return apiClient<SecuritySettings>(`/api/auth/security-settings${search}`, { method: "GET" }, options.token);
+  const normalizedEmail = normalizeEmailHint(options.email);
+  const cacheKey = getSecurityCacheKey({ token: options.token, email: normalizedEmail });
+  const now = Date.now();
+
+  if (cacheKey) {
+    const cached = securitySettingsCache.get(cacheKey);
+    if (cached && now - cached.cachedAt < SECURITY_SETTINGS_TTL_MS) {
+      return cached.data;
+    }
+
+    const inFlight = securitySettingsRequests.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+  }
+
+  const search = normalizedEmail ? `?email=${encodeURIComponent(normalizedEmail)}` : "";
+  const request = apiClient<SecuritySettings>(`/api/auth/security-settings${search}`, { method: "GET" }, options.token);
+
+  if (cacheKey) {
+    securitySettingsRequests.set(cacheKey, request);
+  }
+
+  try {
+    const result = await request;
+    if (cacheKey) {
+      securitySettingsCache.set(cacheKey, { data: result, cachedAt: now });
+    }
+    return result;
+  } finally {
+    if (cacheKey) {
+      securitySettingsRequests.delete(cacheKey);
+    }
+  }
 }
 
 export async function updateSecuritySettings(token: string, patch: { biometric_enabled?: boolean; pin_enabled?: boolean }) {
-  return apiClient<SecuritySettings>("/api/auth/security-settings", { method: "PATCH", body: JSON.stringify(patch) }, token);
+  const result = await apiClient<SecuritySettings>("/api/auth/security-settings", { method: "PATCH", body: JSON.stringify(patch) }, token);
+  securitySettingsCache.set(`token:${token.slice(0, 16)}`, { data: result, cachedAt: Date.now() });
+  return result;
 }
 
 export async function setLoginPin(token: string, pin: string, confirmPin: string) {
-  return apiClient<SecuritySettings>("/api/auth/pin/set", { method: "POST", body: JSON.stringify({ pin, confirm_pin: confirmPin }) }, token);
+  const result = await apiClient<SecuritySettings>("/api/auth/pin/set", { method: "POST", body: JSON.stringify({ pin, confirm_pin: confirmPin }) }, token);
+  securitySettingsCache.set(`token:${token.slice(0, 16)}`, { data: result, cachedAt: Date.now() });
+  return result;
 }
 
 export async function verifyPinLogin(email: string, pin: string) {

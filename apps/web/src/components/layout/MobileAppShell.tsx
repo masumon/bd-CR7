@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
 import { AppShell } from "@/components/appshell/AppShell";
 import { Button } from "@/components/ui/button";
 import { ErrorCard } from "@/components/ui/ConsistencySystem";
 import { Dialog } from "@/components/ui/dialog";
-import { ChatWidget } from "@/components/ui/ChatWidget";
 import { useToast } from "@/components/ui/toast";
 import { AppLockScreen, useAppLock } from "@/components/auth/AppLockScreen";
 import { SESSION_EXPIRED_MESSAGE } from "@/lib/authSession";
@@ -15,6 +15,11 @@ import { emitNetworkStatus, probeNetworkReachability } from "@/lib/networkReacha
 import { safeSupabase as supabase } from "@/lib/safeSupabase";
 import { useAuthStore } from "@/store/authStore";
 import type { OfflineSyncSummary } from "@/lib/offlineSync";
+
+const ChatWidget = dynamic(
+  () => import("@/components/ui/ChatWidget").then((module) => module.ChatWidget),
+  { ssr: false }
+);
 
 type DashboardNotification = {
   id: string;
