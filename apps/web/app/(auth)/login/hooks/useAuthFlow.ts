@@ -13,6 +13,33 @@ type RouterLike = {
   replace: (href: string) => void;
 };
 
+/** Converts raw WebAuthn/passkey error messages to user-friendly Bangla strings. */
+function resolveWebAuthnErrorMessage(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (!raw || lower.includes("passkey sign in failed") || lower.includes("biometric failed")) {
+    return "যাচাই ব্যর্থ হয়েছে। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
+  }
+  if (lower.includes("disabled")) {
+    return "এই অ্যাকাউন্টে Passkey/বায়োমেট্রিক নিষ্ক্রিয়। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
+  }
+  if (lower.includes("not enrolled") || lower.includes("no passkey") || lower.includes("no cryptographic")) {
+    return "এই অ্যাকাউন্টে কোনো Passkey নেই। পাসওয়ার্ড দিয়ে প্রথমে লগইন করুন।";
+  }
+  if (lower.includes("not trusted") || lower.includes("untrusted device") || lower.includes("device is not trusted")) {
+    return "এই ডিভাইসটি বিশ্বস্ত নয়। পাসওয়ার্ড বা Email OTP দিয়ে লগইন করুন।";
+  }
+  if (lower.includes("cancelled") || lower.includes("verification failed")) {
+    return "যাচাই বাতিল বা ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
+  }
+  if (lower.includes("not supported") || lower.includes("webauthn is not supported")) {
+    return "এই ডিভাইস বা ব্রাউজার WebAuthn সাপোর্ট করে না।";
+  }
+  if (lower.includes("backend") || lower.includes("not configured") || lower.includes("backend unreachable")) {
+    return "সার্ভিস পাওয়া যাচ্ছে না। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
+  }
+  return `${raw} পাসওয়ার্ড বা Email OTP ব্যবহার করুন।`;
+}
+
 export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard") {
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
@@ -195,8 +222,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       const result = await signInWithPasskey(candidateEmail);
       await completeMagicLinkLogin(result.token_hash, result.email, result.role || null, result.user_id || null);
     } catch (err) {
-      const message = getErrorMessage(err) || "Passkey sign in failed.";
-      setPasskeyError(`${message} Use password or Email OTP fallback if this continues.`);
+      setPasskeyError(resolveWebAuthnErrorMessage(getErrorMessage(err)));
       setAuthDone(false);
       setShowOverlay(false);
     } finally {
@@ -298,7 +324,10 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     }
     const { error } = await supabase.auth.signInWithOtp({
       email: contact,
-      options: { shouldCreateUser: false },
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
     setOtpLoading(false);
     if (error) {
@@ -391,7 +420,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       if (!hasSession) {
         const candidateEmail = (siEmail || localStorage.getItem("bdcr7-remember-email") || "").trim().toLowerCase();
         if (!candidateEmail) {
-          setBioError("Sign in with email once first to enable biometric.");
+          setBioError("বায়োমেট্রিক চালু করতে আগে একবার ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।");
           setBioState("failed");
           setView("signin");
           setBioLoading(false);
@@ -407,7 +436,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       const userId = persistedUserId || session?.user?.id;
       const userEmail = session?.user?.email || "bdcr7.user@local";
       if (!token || !userId) {
-        setBioError("Session expired. Sign in with email/password first.");
+        setBioError("সেশন শেষ হয়েছে। ইমেইল ও পাসওয়ার্ড দিয়ে আবার লগইন করুন।");
         setBioState("failed");
         setBioLoading(false);
         return;
@@ -418,7 +447,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       setShowOverlay(true);
       setAuthDone(true);
     } catch (err) {
-      setBioError(getErrorMessage(err) || "Biometric failed.");
+      setBioError(resolveWebAuthnErrorMessage(getErrorMessage(err)));
       setBioState("failed");
     } finally {
       setBioLoading(false);
@@ -431,7 +460,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     if (view !== "landing") return;
     if (autoTriggeredRef.current) return;
     const remembered = localStorage.getItem("bdcr7-remember-me") === "1";
-    if (!remembered || !securityMethods?.biometric_enabled || !securityMethods.current_device_trusted) return;
+    if (!remembered || !securityMethods?.biometric_enabled || !securityMethods.current_device_trusted || !securityMethods.has_biometric_credentials) return;
     autoTriggeredRef.current = true;
     const t = setTimeout(() => void handleBiometric(), 900);
     return () => clearTimeout(t);
@@ -439,15 +468,15 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
 
   const rememberedEmail = typeof window !== "undefined" ? (localStorage.getItem("bdcr7-remember-email") || "") : "";
   const activeEmailHint = (siEmail || rememberedEmail || securityMethods?.email_hint || "").trim().toLowerCase();
-  const showBiometric = Boolean(securityMethods?.biometric_enabled && securityMethods.current_device_trusted);
+  const showBiometric = Boolean(securityMethods?.biometric_enabled && securityMethods.current_device_trusted && securityMethods.has_biometric_credentials);
   const showPin = Boolean(securityMethods?.pin_enabled && securityMethods.current_device_trusted);
   const securityHint = securityLoading
-    ? "Checking trusted-device login methods..."
+    ? "বিশ্বস্ত ডিভাইস লগইন পদ্ধতি যাচাই হচ্ছে..."
     : activeEmailHint
       ? showBiometric || showPin
-        ? "Trusted-device sign-in methods are available for this account."
-        : "Password sign-in remains available. Extra methods appear after you enable them in Security settings."
-      : "Enter your email once to discover biometric or PIN login on this device.";
+        ? "এই অ্যাকাউন্টের জন্য বিশ্বস্ত ডিভাইস লগইন পদ্ধতি পাওয়া গেছে।"
+        : "পাসওয়ার্ড লগইন সক্রিয় আছে। Security Settings থেকে বায়োমেট্রিক বা PIN চালু করুন।"
+      : "বায়োমেট্রিক বা PIN লগইন খুঁজতে আপনার ইমেইল একবার দিন।";
 
   const handleGoogleOAuth = async () => {
     if (!supabase) return;
