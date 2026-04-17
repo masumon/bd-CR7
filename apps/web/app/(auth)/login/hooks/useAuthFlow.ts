@@ -13,6 +13,33 @@ type RouterLike = {
   replace: (href: string) => void;
 };
 
+/** Converts raw WebAuthn/passkey error messages to user-friendly Bangla strings. */
+function resolveWebAuthnErrorMessage(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (!raw || lower.includes("passkey sign in failed") || lower.includes("biometric failed")) {
+    return "যাচাই ব্যর্থ হয়েছে। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
+  }
+  if (lower.includes("disabled")) {
+    return "এই অ্যাকাউন্টে Passkey/বায়োমেট্রিক নিষ্ক্রিয়। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
+  }
+  if (lower.includes("not enrolled") || lower.includes("no passkey") || lower.includes("no cryptographic")) {
+    return "এই অ্যাকাউন্টে কোনো Passkey নেই। পাসওয়ার্ড দিয়ে প্রথমে লগইন করুন।";
+  }
+  if (lower.includes("not trusted") || lower.includes("untrusted device") || lower.includes("device is not trusted")) {
+    return "এই ডিভাইসটি বিশ্বস্ত নয়। পাসওয়ার্ড বা Email OTP দিয়ে লগইন করুন।";
+  }
+  if (lower.includes("cancelled") || lower.includes("verification failed")) {
+    return "যাচাই বাতিল বা ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
+  }
+  if (lower.includes("not supported") || lower.includes("webauthn is not supported")) {
+    return "এই ডিভাইস বা ব্রাউজার WebAuthn সাপোর্ট করে না।";
+  }
+  if (lower.includes("backend") || lower.includes("not configured") || lower.includes("backend unreachable")) {
+    return "সার্ভিস পাওয়া যাচ্ছে না। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
+  }
+  return `${raw} পাসওয়ার্ড বা Email OTP ব্যবহার করুন।`;
+}
+
 export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard") {
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
@@ -195,24 +222,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       const result = await signInWithPasskey(candidateEmail);
       await completeMagicLinkLogin(result.token_hash, result.email, result.role || null, result.user_id || null);
     } catch (err) {
-      const raw = getErrorMessage(err) || "";
-      let message: string;
-      if (!raw || raw.toLowerCase().includes("passkey sign in failed")) {
-        message = "Passkey লগইন ব্যর্থ হয়েছে। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
-      } else if (raw.toLowerCase().includes("disabled")) {
-        message = "এই অ্যাকাউন্টে Passkey/বায়োমেট্রিক নিষ্ক্রিয়। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
-      } else if (raw.toLowerCase().includes("not enrolled") || raw.toLowerCase().includes("no passkey")) {
-        message = "এই অ্যাকাউন্টে কোনো Passkey নেই। পাসওয়ার্ড দিয়ে প্রথমে লগইন করুন।";
-      } else if (raw.toLowerCase().includes("trusted") || raw.toLowerCase().includes("device")) {
-        message = "এই ডিভাইসটি বিশ্বস্ত নয়। পাসওয়ার্ড বা Email OTP দিয়ে লগইন করুন।";
-      } else if (raw.toLowerCase().includes("cancelled") || raw.toLowerCase().includes("failed")) {
-        message = "Passkey যাচাই বাতিল বা ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
-      } else if (raw.toLowerCase().includes("backend") || raw.toLowerCase().includes("not configured")) {
-        message = "সার্ভিস পাওয়া যাচ্ছে না। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
-      } else {
-        message = `${raw} পাসওয়ার্ড বা Email OTP ব্যবহার করুন।`;
-      }
-      setPasskeyError(message);
+      setPasskeyError(resolveWebAuthnErrorMessage(getErrorMessage(err)));
       setAuthDone(false);
       setShowOverlay(false);
     } finally {
@@ -437,24 +447,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       setShowOverlay(true);
       setAuthDone(true);
     } catch (err) {
-      const raw = getErrorMessage(err) || "";
-      let bioMsg = raw;
-      if (!raw || raw.toLowerCase().includes("biometric failed")) {
-        bioMsg = "বায়োমেট্রিক যাচাই ব্যর্থ হয়েছে।";
-      } else if (raw.toLowerCase().includes("disabled")) {
-        bioMsg = "এই অ্যাকাউন্টে বায়োমেট্রিক নিষ্ক্রিয়। সেটিংস থেকে চালু করুন।";
-      } else if (raw.toLowerCase().includes("not enrolled") || raw.toLowerCase().includes("no passkey") || raw.toLowerCase().includes("no cryptographic")) {
-        bioMsg = "এই ডিভাইসে কোনো বায়োমেট্রিক নিবন্ধিত নেই। পাসওয়ার্ড দিয়ে প্রথমে লগইন করুন।";
-      } else if (raw.toLowerCase().includes("trusted") || raw.toLowerCase().includes("device")) {
-        bioMsg = "এই ডিভাইসটি বিশ্বস্ত নয়। পাসওয়ার্ড দিয়ে লগইন করুন।";
-      } else if (raw.toLowerCase().includes("cancelled") || raw.toLowerCase().includes("failed")) {
-        bioMsg = "বায়োমেট্রিক স্ক্যান বাতিল বা ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
-      } else if (raw.toLowerCase().includes("not supported")) {
-        bioMsg = "এই ডিভাইস বা ব্রাউজার বায়োমেট্রিক সাপোর্ট করে না।";
-      } else if (raw.toLowerCase().includes("backend") || raw.toLowerCase().includes("not configured")) {
-        bioMsg = "সার্ভিস পাওয়া যাচ্ছে না। পাসওয়ার্ড বা Email OTP ব্যবহার করুন।";
-      }
-      setBioError(bioMsg);
+      setBioError(resolveWebAuthnErrorMessage(getErrorMessage(err)));
       setBioState("failed");
     } finally {
       setBioLoading(false);
