@@ -77,6 +77,9 @@ export function OtpView({
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">ইমেইলে পাঠানো ৬ সংখ্যার কোড লিখুন</p>
                   <p className="mt-0.5 text-sm font-semibold text-amber-300">{contact}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    কোড না পেলে ইমেইলের &ldquo;লগইন লিংক&rdquo;-এ ক্লিক করুন।
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-center gap-2">
