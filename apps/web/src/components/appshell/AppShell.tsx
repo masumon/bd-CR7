@@ -152,6 +152,7 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
         items={bottomPrimaryItems}
         moreItems={moreItems}
         onOpenMore={() => setMoreOpen(true)}
+        language={language}
       />
 
       <MoreDrawer

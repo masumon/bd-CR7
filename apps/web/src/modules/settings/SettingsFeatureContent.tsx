@@ -30,6 +30,29 @@ import { UserManagementTab } from "@/modules/settings/tabs/UserManagementTab";
 import { normalizeRoleName } from "@/lib/rbac";
 import { BackupTab } from "@/modules/settings/tabs/BackupTab";
 
+type IntegrationHealthStatus = "ok" | "missing" | "unknown";
+
+function detectPublicIntegrationHealth(): Partial<Record<keyof IntegrationState, IntegrationHealthStatus>> {
+  const hasCloudinary = Boolean(
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &&
+    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+  );
+  const hasSupabase = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+  return {
+    cloudinary: hasCloudinary ? "ok" : "missing",
+    realtime: hasSupabase ? "ok" : "missing",
+    twilioOtp: "unknown",
+    resendEmail: "unknown",
+    vercelDeploy: "unknown",
+    githubSync: "unknown",
+    aiVoice: "ok",
+    offlineSync: "ok",
+  };
+}
+
 function mergeSettingCatalog(stored: SettingItem[] | null): SettingItem[] {
   if (!stored || stored.length === 0) return DEFAULT_SETTING_ITEMS;
 
@@ -70,7 +93,17 @@ export function SettingsFeature() {
   const [dark, setDark] = useState(false);
   const [language, setLanguage] = useState<"en" | "bn">("en");
   const [activeTab, setActiveTab] = useState<SettingsTab>("Profile");
-  const [integrationState, setIntegrationState] = useState<IntegrationState>({ cloudinary: true, realtime: true, aiVoice: true, offlineSync: true });
+  const [integrationState, setIntegrationState] = useState<IntegrationState>({
+    cloudinary: true,
+    twilioOtp: true,
+    resendEmail: true,
+    vercelDeploy: true,
+    githubSync: true,
+    realtime: true,
+    aiVoice: true,
+    offlineSync: true,
+  });
+  const [integrationHealth, setIntegrationHealth] = useState<Partial<Record<keyof IntegrationState, IntegrationHealthStatus>>>(detectPublicIntegrationHealth());
   const [settingItems, setSettingItems] = useState<SettingItem[]>(DEFAULT_SETTING_ITEMS);
   const [settingsQuery, setSettingsQuery] = useState("");
   const lastSyncedThemeRef = useRef<string | null>(null);
@@ -90,7 +123,10 @@ export function SettingsFeature() {
 
     try {
       const integrationRaw = window.localStorage.getItem("bdcr7-integration-state");
-      if (integrationRaw) setIntegrationState(JSON.parse(integrationRaw) as IntegrationState);
+      if (integrationRaw) {
+        const parsed = JSON.parse(integrationRaw) as Partial<IntegrationState>;
+        setIntegrationState((prev) => ({ ...prev, ...parsed }));
+      }
     } catch {
       setIntegrationState((prev) => prev);
     }
@@ -128,6 +164,41 @@ export function SettingsFeature() {
       cancelled = true;
     };
   }, [dark, language, token, userId]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const loadIntegrationHealth = async () => {
+      try {
+        const health = await apiClient<{
+          cloudinary?: boolean;
+          twilioOtp?: boolean;
+          resendEmail?: boolean;
+          vercelDeploy?: boolean;
+          githubSync?: boolean;
+          supabase?: boolean;
+        }>("/api/settings/integrations/health", { method: "GET" }, token);
+        if (cancelled) return;
+        setIntegrationHealth((prev) => ({
+          ...prev,
+          cloudinary: health.cloudinary === true ? "ok" : "missing",
+          twilioOtp: health.twilioOtp === true ? "ok" : "missing",
+          resendEmail: health.resendEmail === true ? "ok" : "missing",
+          vercelDeploy: health.vercelDeploy === true ? "ok" : "unknown",
+          githubSync: health.githubSync === true ? "ok" : "unknown",
+          realtime: health.supabase === true ? "ok" : prev.realtime ?? "unknown",
+        }));
+      } catch {
+        if (!cancelled) {
+          setIntegrationHealth((prev) => prev);
+        }
+      }
+    };
+    void loadIntegrationHealth();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const persistSettings = useCallback((next: SettingItem[]) => {
     const merged = mergeSettingCatalog(next);
@@ -363,6 +434,8 @@ export function SettingsFeature() {
       {activeTab === "Integrations" ? (
         <IntegrationsTab
           integrationState={integrationState}
+          integrationHealth={integrationHealth}
+          language={language}
           onToggle={(key) => persistIntegrationState({ ...integrationState, [key]: !integrationState[key] })}
         />
       ) : null}
