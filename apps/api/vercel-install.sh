@@ -11,4 +11,9 @@ corepack prepare pnpm@10.17.1 --activate
 pnpm install --frozen-lockfile
 
 # Vendor Python runtime deps into the API package directory so serverless runtime can import them.
-python -m pip install --disable-pip-version-check -r apps/api/requirements.txt -t apps/api
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN=python3
+else
+  PYTHON_BIN=python
+fi
+"$PYTHON_BIN" -m pip install --disable-pip-version-check -r apps/api/requirements.txt -t apps/api
