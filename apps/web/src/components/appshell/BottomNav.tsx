@@ -14,14 +14,17 @@ type BottomNavProps = {
   /** Extra modules shown in the More drawer (not in primary 4). */
   moreItems?: NavItem[];
   onOpenMore?: () => void;
+  language?: "en" | "bn";
 };
 
-export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
+export function BottomNav({ items, moreItems, onOpenMore, language = "en" }: BottomNavProps) {
   const pathname = usePathname();
 
   // Show max 4 primary items + the "More" button
   const primaryItems = items.slice(0, 4);
   const hasMore = (moreItems?.length ?? 0) > 0;
+  const moreLabel = language === "bn" ? "আরো" : "More";
+  const moreAriaLabel = language === "bn" ? "আরো মডিউল" : "More modules";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/60 bg-background/94 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_26px_rgba(0,0,0,0.25)] backdrop-blur-xl lg:hidden">
@@ -60,13 +63,13 @@ export function BottomNav({ items, moreItems, onOpenMore }: BottomNavProps) {
             type="button"
             onClick={onOpenMore}
             className="relative flex min-w-0 flex-col items-center justify-center gap-1 font-[var(--font-outfit)] text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="More modules"
-            title="More modules"
+            aria-label={moreAriaLabel}
+            title={moreAriaLabel}
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all">
               <MoreHorizontal className="h-5 w-5" />
             </span>
-            <span className="px-1 leading-none">More</span>
+            <span className="px-1 leading-none">{moreLabel}</span>
           </button>
         )}
       </div>

@@ -84,6 +84,8 @@ class Settings:
         self.twilio_verify_service_sid = env.get("TWILIO_VERIFY_SERVICE_SID", "").strip()
         self.phone_otp_ttl_seconds = int(env.get("PHONE_OTP_TTL_SECONDS", "600"))   # 10 min
         self.phone_otp_max_attempts = int(env.get("PHONE_OTP_MAX_ATTEMPTS", "5"))
+        self.email_otp_ttl_seconds = int(env.get("EMAIL_OTP_TTL_SECONDS", str(self.phone_otp_ttl_seconds)))
+        self.email_otp_max_attempts = int(env.get("EMAIL_OTP_MAX_ATTEMPTS", str(self.phone_otp_max_attempts)))
         self.has_sms = bool(
             self.twilio_account_sid
             and self.twilio_auth_token

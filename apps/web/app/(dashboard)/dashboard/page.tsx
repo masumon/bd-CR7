@@ -7,6 +7,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { apiClient } from "@/lib/apiClient";
+import { ROLE_ACCESS, normalizeRoleName } from "@/lib/rbac";
 import { useEffect, useState } from "react";
 import { ContentSkeleton, ErrorCard, StatCardSkeleton } from "@/components/ui/ConsistencySystem";
 
@@ -53,15 +54,27 @@ function DonutChart({
 
 // ─── Role display names ────────────────────────────────────────────────────
 const ROLE_DISPLAY: Record<string, string> = {
+  super_admin: "সুপার অ্যাডমিন",
   admin: "অ্যাডমিন",
   manager: "ম্যানেজার",
   supervisor: "সুপারভাইজার",
+  checker: "চেকার",
+  maker: "মেকার",
+  engineer: "ইঞ্জিনিয়ার",
+  mason: "রাজমিস্ত্রি",
   worker: "কর্মী",
   accountant: "হিসাবরক্ষক",
+  viewer: "ভিউয়ার",
 };
 
 // ─── Role-based quick action config ───────────────────────────────────────
 const ROLE_QUICK_ACTIONS: Record<string, { icon: typeof Package; label: string; sub: string; href: string }[]> = {
+  super_admin: [
+    { icon: Users, label: "ইউজার ম্যানেজ", sub: "Manage Users", href: "/dashboard/settings" },
+    { icon: DollarSign, label: "ফাইন্যান্স", sub: "Finance Overview", href: "/dashboard/finance" },
+    { icon: BarChart2, label: "রিপোর্ট", sub: "Business Reports", href: "/dashboard/reports" },
+    { icon: TrendingUp, label: "অডিট", sub: "Audit Trail", href: "/dashboard/audit" },
+  ],
   admin: [
     { icon: Package, label: "Material যোগ", sub: "Add Material", href: "/dashboard/materials" },
     { icon: Users, label: "Worker যোগ", sub: "Add Worker", href: "/dashboard/workforce" },
@@ -73,6 +86,24 @@ const ROLE_QUICK_ACTIONS: Record<string, { icon: typeof Package; label: string; 
     { icon: TrendingUp, label: "Progress আপডেট", sub: "Update", href: "/dashboard/construction" },
     { icon: Package, label: "Material যোগ", sub: "Add Material", href: "/dashboard/materials" },
     { icon: Users, label: "Worker যোগ", sub: "Add Worker", href: "/dashboard/workforce" },
+  ],
+  checker: [
+    { icon: DollarSign, label: "অনুমোদন দেখুন", sub: "Review Approvals", href: "/dashboard/finance" },
+    { icon: BarChart2, label: "অডিট লগ", sub: "Audit Logs", href: "/dashboard/audit" },
+    { icon: TrendingUp, label: "রিপোর্ট", sub: "Reports", href: "/dashboard/reports" },
+    { icon: Package, label: "মালামাল", sub: "Materials", href: "/dashboard/materials" },
+  ],
+  maker: [
+    { icon: DollarSign, label: "খরচ যোগ", sub: "Create Expense", href: "/dashboard/finance" },
+    { icon: Package, label: "Material যোগ", sub: "Add Material", href: "/dashboard/materials" },
+    { icon: Users, label: "শ্রমিক লগ", sub: "Workforce Logs", href: "/dashboard/workforce" },
+    { icon: TrendingUp, label: "প্রজেক্ট", sub: "Projects", href: "/dashboard/construction/projects" },
+  ],
+  engineer: [
+    { icon: TrendingUp, label: "প্রজেক্ট আপডেট", sub: "Project Progress", href: "/dashboard/construction/projects" },
+    { icon: Package, label: "মালামাল", sub: "Materials", href: "/dashboard/materials" },
+    { icon: Users, label: "ওয়ার্কফোর্স", sub: "Workforce", href: "/dashboard/workforce" },
+    { icon: BarChart2, label: "রিপোর্ট", sub: "Reports", href: "/dashboard/reports" },
   ],
   accountant: [
     { icon: DollarSign, label: "খরচ যোগ", sub: "Add Expense", href: "/dashboard/finance" },
@@ -86,11 +117,24 @@ const ROLE_QUICK_ACTIONS: Record<string, { icon: typeof Package; label: string; 
     { icon: Package, label: "Material দেখুন", sub: "View Materials", href: "/dashboard/materials" },
     { icon: BarChart2, label: "রিপোর্ট", sub: "Reports", href: "/dashboard/reports" },
   ],
+  mason: [
+    { icon: TrendingUp, label: "সাইট আপডেট", sub: "Site Updates", href: "/dashboard/construction" },
+    { icon: Package, label: "মালামাল", sub: "Materials", href: "/dashboard/materials" },
+    { icon: Users, label: "ওয়ার্কফোর্স", sub: "Workforce", href: "/dashboard/workforce" },
+    { icon: BarChart2, label: "গাইড", sub: "User Guide", href: "/dashboard/docs" },
+  ],
   worker: [
     { icon: TrendingUp, label: "Progress আপডেট", sub: "Update", href: "/dashboard/construction" },
     { icon: Package, label: "Material দেখুন", sub: "View Materials", href: "/dashboard/materials" },
+    { icon: Users, label: "হাজিরা", sub: "Attendance", href: "/dashboard/workforce" },
+    { icon: BarChart2, label: "গাইড", sub: "User Guide", href: "/dashboard/docs" },
   ],
-  viewer: [],
+  viewer: [
+    { icon: BarChart2, label: "রিপোর্ট", sub: "View Reports", href: "/dashboard/reports" },
+    { icon: TrendingUp, label: "প্রজেক্ট", sub: "Project Status", href: "/dashboard/construction/projects" },
+    { icon: Package, label: "মালামাল", sub: "Materials", href: "/dashboard/materials" },
+    { icon: Users, label: "গাইড", sub: "User Guide", href: "/dashboard/docs" },
+  ],
 };
 
 function formatTaka(n: number) {
@@ -138,8 +182,11 @@ export default function DashboardPage() {
   const remaining     = Math.max(0, totalFunds - totalExpenses);
   const spentPct      = totalFunds > 0 ? Math.round((totalExpenses / totalFunds) * 100) : 0;
 
-  const normalizedRole = role?.toLowerCase() ?? "viewer";
-  const quickActions = ROLE_QUICK_ACTIONS[normalizedRole] ?? ROLE_QUICK_ACTIONS.viewer;
+  const normalizedRole = normalizeRoleName(role);
+  const allowedPaths = new Set(ROLE_ACCESS[normalizedRole] ?? ROLE_ACCESS.viewer);
+  const quickActions = (ROLE_QUICK_ACTIONS[normalizedRole] ?? ROLE_QUICK_ACTIONS.viewer)
+    .filter((action) => allowedPaths.has(action.href))
+    .slice(0, 4);
 
   const progressStats = [
     { val: completed, label: "সম্পন্ন",  valueClass: "text-emerald-500", bgClass: "bg-emerald-500/10" },
@@ -147,7 +194,7 @@ export default function DashboardPage() {
     { val: pending,   label: "বাকি",     valueClass: "text-amber-400",   bgClass: "bg-amber-400/10" },
   ];
 
-  const displayName = (role && ROLE_DISPLAY[role.toLowerCase()]) ?? role ?? "ম্যানেজার";
+  const displayName = ROLE_DISPLAY[normalizedRole] ?? "ব্যবহারকারী";
 
   // Core modules — role-aware visibility
   const allCoreModules = [
@@ -156,9 +203,9 @@ export default function DashboardPage() {
     { icon: DollarSign, label: "খরচ", href: "/dashboard/finance" },
     { icon: BarChart2, label: "অগ্রগতি", href: "/dashboard/construction" },
   ];
-  const coreModules = normalizedRole === "worker"
-    ? allCoreModules.filter((m) => ["/dashboard/materials", "/dashboard/construction"].includes(m.href))
-    : allCoreModules;
+  const coreModules = allCoreModules.filter((module) => allowedPaths.has(module.href));
+  const hasQuickActions = quickActions.length > 0;
+  const hasCoreModules = coreModules.length > 0;
 
   if (financeStats.loading || projectLoading) {
     return (
@@ -322,45 +369,49 @@ export default function DashboardPage() {
         )}
 
         {/* ── QUICK ACTIONS ──────────────────────────────── */}
-        <div className="bento-area-qa">
-          <p className="text-erp-text-secondary text-xs mb-2">⚡ দৈনিক কাজ</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {quickActions.map((a) => (
-              <button
-                key={a.href}
-                type="button"
-                onClick={() => router.push(a.href)}
-                className="erp-card p-3 flex items-center gap-3 text-left"
-              >
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
-                  <a.icon className="w-5 h-5 text-erp-accent" />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-erp-text-primary text-xs font-semibold leading-tight truncate">{a.label}</div>
-                  <div className="text-erp-text-secondary text-[10px]">{a.sub}</div>
-                </div>
-              </button>
-            ))}
+        {hasQuickActions ? (
+          <div className="bento-area-qa">
+            <p className="text-erp-text-secondary text-xs mb-2">⚡ দৈনিক কাজ</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {quickActions.map((a) => (
+                <button
+                  key={a.href}
+                  type="button"
+                  onClick={() => router.push(a.href)}
+                  className="erp-card p-3 flex items-center gap-3 text-left"
+                >
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
+                    <a.icon className="w-5 h-5 text-erp-accent" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-erp-text-primary text-xs font-semibold leading-tight truncate">{a.label}</div>
+                    <div className="text-erp-text-secondary text-[10px]">{a.sub}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {/* ── CORE ACCESS ────────────────────────────────── */}
-        <div className="bento-area-modules">
-          <p className="text-erp-text-secondary text-xs mb-2">🧱 Core Access</p>
-          <div className="grid grid-cols-4 gap-2">
-            {coreModules.map((m) => (
-              <button
-                key={m.href}
-                type="button"
-                onClick={() => router.push(m.href)}
-                className="erp-card p-3 flex flex-col items-center gap-1.5"
-              >
-                <m.icon className="w-5 h-5 text-erp-accent" />
-                <span className="text-erp-text-secondary text-xs text-center leading-tight">{m.label}</span>
-              </button>
-            ))}
+        {hasCoreModules ? (
+          <div className="bento-area-modules">
+            <p className="text-erp-text-secondary text-xs mb-2">🧱 Core Access</p>
+            <div className="grid grid-cols-4 gap-2">
+              {coreModules.map((m) => (
+                <button
+                  key={m.href}
+                  type="button"
+                  onClick={() => router.push(m.href)}
+                  className="erp-card p-3 flex flex-col items-center gap-1.5"
+                >
+                  <m.icon className="w-5 h-5 text-erp-accent" />
+                  <span className="text-erp-text-secondary text-xs text-center leading-tight">{m.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
       </div>{/* end bento grid */}
     </div>

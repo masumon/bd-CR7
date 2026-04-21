@@ -15,6 +15,10 @@ export type SettingsTab = "Profile" | "Workspace" | "Notifications" | "Security"
 
 export type IntegrationState = {
   cloudinary: boolean;
+  twilioOtp: boolean;
+  resendEmail: boolean;
+  vercelDeploy: boolean;
+  githubSync: boolean;
   realtime: boolean;
   aiVoice: boolean;
   offlineSync: boolean;
@@ -188,6 +192,10 @@ export const DEFAULT_SETTING_ITEMS: SettingItem[] = [
 
 export const INTEGRATION_CATALOG: Array<{ key: keyof IntegrationState; label: string; description: string }> = [
   { key: "cloudinary", label: "Cloudinary Upload", description: "Media upload for receipts and progress evidence" },
+  { key: "twilioOtp", label: "Twilio OTP", description: "Phone-based OTP authentication delivery" },
+  { key: "resendEmail", label: "Resend Email", description: "Transactional email notifications and alerts" },
+  { key: "vercelDeploy", label: "Vercel Deploy", description: "Auto deployment and runtime hosting pipeline" },
+  { key: "githubSync", label: "GitHub Sync", description: "Repository connection and deployment source control" },
   { key: "realtime", label: "Supabase Realtime", description: "Live notifications for approvals and project updates" },
   { key: "aiVoice", label: "AI Voice Mode", description: "Speech input/output in SUMONIX AI chat" },
   { key: "offlineSync", label: "Offline Sync", description: "Background queue replay when connection restores" },

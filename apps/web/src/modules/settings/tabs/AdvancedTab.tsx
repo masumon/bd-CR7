@@ -9,6 +9,10 @@ type AdvancedTabProps = {
 };
 
 export function AdvancedTab({ onReset }: AdvancedTabProps) {
+  const publicApiConfigured = Boolean(
+    process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -28,6 +32,9 @@ export function AdvancedTab({ onReset }: AdvancedTabProps) {
             <li>NEXT_PUBLIC_SUPABASE_ANON_KEY configured</li>
             <li>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME configured</li>
             <li>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET configured</li>
+            <li className={publicApiConfigured ? "text-emerald-500" : "text-sky-400"}>
+              Public API endpoint {publicApiConfigured ? "configured" : "using same-origin /api proxy"}
+            </li>
           </ul>
         </div>
 
