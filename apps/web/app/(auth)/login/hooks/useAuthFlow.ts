@@ -317,30 +317,29 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     }
     setOtpLoading(true);
     setOtpError("");
-    if (!supabase) {
-      setOtpLoading(false);
-      setOtpError("সার্ভিস পাওয়া যাচ্ছে না।");
-      return;
-    }
-    const { error } = await supabase.auth.signInWithOtp({
-      email: contact,
-      options: {
-        shouldCreateUser: false,
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    setOtpLoading(false);
-    if (error) {
-      const msg = error.message || "";
-      if (msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("no user")) {
-        setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
-      } else {
-        setOtpError(msg);
+    try {
+      const response = await fetch("/api/auth/otp/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: contact }),
+      });
+      const json = (await response.json().catch(() => null)) as { detail?: string; error?: string } | null;
+      if (!response.ok) {
+        const detail = json?.detail || json?.error || "OTP send failed.";
+        throw new Error(detail);
       }
-    } else {
       setOtpStep(2);
       setOtpResendTimer(60);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch (error) {
+      const msg = getErrorMessage(error);
+      if (msg.toLowerCase().includes("no active account") || msg.toLowerCase().includes("not found")) {
+        setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
+      } else {
+        setOtpError(msg || "OTP পাঠানো যায়নি।");
+      }
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -350,30 +349,45 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       setOtpError("৬টি সংখ্যা পূরণ করুন");
       return;
     }
-    if (!supabase) {
-      setOtpError("সার্ভিস পাওয়া যাচ্ছে না।");
-      return;
-    }
     setOtpLoading(true);
     setOtpError("");
     const contact = otpContact.trim();
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: contact,
-      token: otpCode,
-      type: "email",
-    });
-    if (error || !data.session || !data.user) {
+    try {
+      const response = await fetch("/api/auth/otp/email/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: contact, otp: otpCode }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            detail?: string;
+            error?: string;
+            data?: { token_hash?: string; email?: string; role?: string; user_id?: string };
+            token_hash?: string;
+            email?: string;
+            role?: string;
+            user_id?: string;
+          }
+        | null;
+      const result = payload?.data ?? payload;
+      if (!response.ok) {
+        throw new Error(payload?.detail || payload?.error || "OTP verification failed.");
+      }
+      const tokenHash = result?.token_hash;
+      const verifiedEmail = result?.email;
+      if (!tokenHash || !verifiedEmail) {
+        throw new Error("OTP verification failed. Session data missing.");
+      }
+
+      await completeMagicLinkLogin(tokenHash, verifiedEmail, result?.role || null, result?.user_id || null);
+      setOtpSuccess(true);
+    } catch (error) {
+      setOtpError(getErrorMessage(error) || "OTP যাচাই ব্যর্থ। আবার চেষ্টা করুন।");
+      setAuthDone(false);
+      setShowOverlay(false);
+    } finally {
       setOtpLoading(false);
-      setOtpError(error?.message || "OTP যাচাই ব্যর্থ। আবার চেষ্টা করুন।");
-      return;
     }
-    const { role: currentRole } = useAuthStore.getState();
-    useAuthStore.setState({ token: data.session.access_token, userId: data.user.id, role: currentRole || null });
-    await useAuthStore.getState().fetchUser().catch(() => {});
-    setOtpSuccess(true);
-    setShowOverlay(true);
-    setAuthDone(true);
-    setOtpLoading(false);
   };
 
   const handleOtpInput = (index: number, value: string) => {

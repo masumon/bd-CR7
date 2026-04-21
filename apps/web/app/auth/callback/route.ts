@@ -27,11 +27,18 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  // Handle email confirmation / magic link (token_hash flow)
+  const safeRedirect = (path: string) => {
+    if (!path.startsWith("/")) return "/dashboard";
+    return path;
+  };
+
+  // Handle email confirmation / magic link / recovery (token_hash flow)
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Recovery links should land on login so user can continue reset/login UI.
+      const destination = type === "recovery" ? "/login?reset=verified" : safeRedirect(next);
+      return NextResponse.redirect(`${origin}${destination}`);
     }
   }
 
@@ -39,7 +46,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${origin}${safeRedirect(next)}`);
     }
   }
 

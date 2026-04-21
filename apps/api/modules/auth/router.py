@@ -17,6 +17,7 @@ from core.supabase import get_supabase_anon, get_supabase_service, require_supab
 from core.exceptions import AuthError
 from schemas.auth import AuthResponse, LoginRequest, PinSetRequest, PinVerifyRequest, RegisterRequest, SecuritySettingsResponse, SecuritySettingsUpdateRequest
 from modules.auth.phone_otp_service import OtpError, send_phone_otp, verify_phone_otp
+from modules.auth.email_otp_service import EmailOtpError, send_email_otp, verify_email_otp
 
 router = APIRouter()
 
@@ -50,11 +51,26 @@ def _parse_timestamp(raw: str | None) -> datetime | None:
 
 def _device_binding_hash(request: Request) -> str:
     user_agent = request.headers.get("user-agent", "").strip().lower()
+    # Persist a stable hash based on UA only so browser language/client-hint changes
+    # do not unexpectedly invalidate trusted-device login.
+    return hashlib.sha256(user_agent.encode("utf-8")).hexdigest()
+
+
+def _device_binding_hash_candidates(request: Request) -> set[str]:
+    user_agent = request.headers.get("user-agent", "").strip().lower()
     platform = request.headers.get("sec-ch-ua-platform", "").replace('"', "").strip().lower()
     accept_language = request.headers.get("accept-language", "").split(",", 1)[0].strip().lower()
     mobile_hint = request.headers.get("sec-ch-ua-mobile", "").strip().lower()
-    raw = "|".join([user_agent, platform, accept_language, mobile_hint])
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    raw_variants = (
+        user_agent,
+        "|".join([user_agent, platform, mobile_hint]),
+        "|".join([user_agent, platform, accept_language, mobile_hint]),
+    )
+    return {
+        hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        for raw in raw_variants
+        if raw
+    }
 
 
 def _device_label(request: Request) -> str:
@@ -139,16 +155,29 @@ def _count_active_credentials(user_id: str) -> int:
     return len(result.data or [])
 
 
-def _is_current_device_trusted(settings_row: dict[str, Any], current_device_hash: str) -> bool:
+def _is_current_device_trusted(
+    settings_row: dict[str, Any],
+    current_device_hash: str,
+    candidate_hashes: set[str] | None = None,
+) -> bool:
     trusted_hash = str(settings_row.get("trusted_device_hash") or "").strip()
     if not trusted_hash:
         return False
-    return hmac.compare_digest(trusted_hash, current_device_hash)
+    if hmac.compare_digest(trusted_hash, current_device_hash):
+        return True
+    for candidate in (candidate_hashes or set()):
+        if hmac.compare_digest(trusted_hash, candidate):
+            return True
+    return False
 
 
-def _require_trusted_device(settings_row: dict[str, Any], current_device_hash: str) -> None:
+def _require_trusted_device(
+    settings_row: dict[str, Any],
+    current_device_hash: str,
+    candidate_hashes: set[str] | None = None,
+) -> None:
     trusted_hash = str(settings_row.get("trusted_device_hash") or "").strip()
-    if trusted_hash and not hmac.compare_digest(trusted_hash, current_device_hash):
+    if trusted_hash and not _is_current_device_trusted(settings_row, current_device_hash, candidate_hashes):
         raise HTTPException(
             status_code=403,
             detail="This device is not trusted for biometric or PIN sign-in. Sign in with password and register this device again.",
@@ -200,11 +229,14 @@ def _serialize_security_settings(
     settings_row: dict[str, Any],
     credential_count: int,
     current_device_hash: str,
+    candidate_hashes: set[str] | None = None,
     email_hint: str | None = None,
 ) -> SecuritySettingsResponse:
     locked_until = _parse_timestamp(settings_row.get("pin_locked_until"))
     pin_hash = str(settings_row.get("pin_hash") or "").strip()
-    current_device_trusted = _is_current_device_trusted(settings_row, current_device_hash)
+    current_device_trusted = _is_current_device_trusted(
+        settings_row, current_device_hash, candidate_hashes
+    )
     return SecuritySettingsResponse(
         biometric_enabled=bool(settings_row.get("biometric_enabled", False)),
         pin_enabled=bool(settings_row.get("pin_enabled", False)),
@@ -489,6 +521,7 @@ async def get_security_settings(
     user: UserContext | None = Depends(_get_current_user_optional),
 ):
     current_device_hash = _device_binding_hash(request)
+    current_device_hashes = _device_binding_hash_candidates(request)
 
     if user is not None:
         svc = require_supabase_service()
@@ -504,7 +537,9 @@ async def get_security_settings(
             email_hint = str(profile.data[0].get("email") or "").strip() or None
         settings_row = _ensure_security_settings(user.user_id)
         credential_count = _count_active_credentials(user.user_id)
-        return _serialize_security_settings(settings_row, credential_count, current_device_hash, email_hint)
+        return _serialize_security_settings(
+            settings_row, credential_count, current_device_hash, current_device_hashes, email_hint
+        )
 
     normalized_email = str(email or "").strip().lower()
     if not normalized_email:
@@ -514,7 +549,9 @@ async def get_security_settings(
     user_id = str(user_row.get("id") or "")
     settings_row = _ensure_security_settings(user_id)
     credential_count = _count_active_credentials(user_id)
-    return _serialize_security_settings(settings_row, credential_count, current_device_hash, normalized_email)
+    return _serialize_security_settings(
+        settings_row, credential_count, current_device_hash, current_device_hashes, normalized_email
+    )
 
 
 @router.patch("/security-settings", response_model=SecuritySettingsResponse)
@@ -524,6 +561,7 @@ async def update_security_settings(
     user: UserContext = Depends(get_current_user),
 ):
     current_device_hash = _device_binding_hash(request)
+    current_device_hashes = _device_binding_hash_candidates(request)
     current_device_label = _device_label(request)
     settings_row = _ensure_security_settings(user.user_id)
     credential_count = _count_active_credentials(user.user_id)
@@ -557,7 +595,9 @@ async def update_security_settings(
             "pin_enabled": bool(settings_row.get("pin_enabled", False)),
         },
     )
-    return _serialize_security_settings(settings_row, credential_count, current_device_hash)
+    return _serialize_security_settings(
+        settings_row, credential_count, current_device_hash, current_device_hashes
+    )
 
 
 @router.post("/pin/set", response_model=SecuritySettingsResponse)
@@ -569,6 +609,7 @@ async def set_login_pin(payload: PinSetRequest, request: Request, user: UserCont
 
     _validate_pin_value(pin)
     current_device_hash = _device_binding_hash(request)
+    current_device_hashes = _device_binding_hash_candidates(request)
     current_device_label = _device_label(request)
     credential_count = _count_active_credentials(user.user_id)
     settings_row = _update_security_settings(
@@ -584,7 +625,9 @@ async def set_login_pin(payload: PinSetRequest, request: Request, user: UserCont
     )
 
     audit_log(user_id=user.user_id, action="auth.pin.set")
-    return _serialize_security_settings(settings_row, credential_count, current_device_hash)
+    return _serialize_security_settings(
+        settings_row, credential_count, current_device_hash, current_device_hashes
+    )
 
 
 @router.post("/pin/verify")
@@ -604,7 +647,8 @@ async def verify_login_pin(payload: PinVerifyRequest, request: Request):
         raise HTTPException(status_code=400, detail="PIN sign-in is not enabled for this account")
 
     current_device_hash = _device_binding_hash(request)
-    _require_trusted_device(settings_row, current_device_hash)
+    current_device_hashes = _device_binding_hash_candidates(request)
+    _require_trusted_device(settings_row, current_device_hash, current_device_hashes)
 
     locked_until = _parse_timestamp(settings_row.get("pin_locked_until"))
     if locked_until and _utcnow() < locked_until:
@@ -788,7 +832,9 @@ async def create_passkey_login_challenge(payload: dict, request: Request):
     settings_row = _ensure_security_settings(user_id)
     if not bool(settings_row.get("biometric_enabled", False)):
         raise HTTPException(status_code=403, detail="Biometric sign-in is disabled for this account")
-    _require_trusted_device(settings_row, _device_binding_hash(request))
+    current_device_hash = _device_binding_hash(request)
+    current_device_hashes = _device_binding_hash_candidates(request)
+    _require_trusted_device(settings_row, current_device_hash, current_device_hashes)
 
     svc = require_supabase_service()
     rows = (
@@ -913,8 +959,9 @@ async def login_with_passkey(payload: dict, request: Request):
         raise HTTPException(status_code=403, detail="Biometric sign-in is disabled for this account")
 
     current_device_hash = _device_binding_hash(request)
+    current_device_hashes = _device_binding_hash_candidates(request)
     current_device_label = _device_label(request)
-    _require_trusted_device(settings_row, current_device_hash)
+    _require_trusted_device(settings_row, current_device_hash, current_device_hashes)
 
     challenge_state = _load_webauthn_challenge(user_id)
     if not challenge_state:
@@ -1119,6 +1166,53 @@ async def phone_otp_verify(payload: dict):
         )
         return result
     except OtpError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.post("/otp/email/send")
+async def email_otp_send(payload: dict):
+    """
+    Send a 6-digit OTP code to email via Resend-backed backend service.
+
+    Body: { "email": "user@example.com" }
+    Returns: { "email": str, "expires_in": int }
+    """
+    email = str(payload.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=422, detail="email is required")
+    try:
+        result = send_email_otp(email)
+        return result
+    except EmailOtpError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.post("/otp/email/verify")
+async def email_otp_verify(payload: dict):
+    """
+    Verify email OTP code and return a Supabase magic-link token payload.
+
+    Body: { "email": "user@example.com", "otp": "123456" }
+    Returns: { "token_hash": str, "email": str, "type": "magiclink", "role": str, "user_id": str }
+    """
+    email = str(payload.get("email") or "").strip().lower()
+    otp = str(payload.get("otp") or "").strip()
+    if not email or not otp:
+        raise HTTPException(status_code=422, detail="email and otp are required")
+    try:
+        result = verify_email_otp(email, otp)
+        local_part = email.split("@", 1)[0] if "@" in email else email
+        audit_log(
+            user_id=result.get("user_id", "unknown"),
+            action="auth.email_otp.verify",
+            meta={"email_suffix": local_part[-4:] if local_part else "na", "role": result.get("role")},
+        )
+        return result
+    except EmailOtpError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
