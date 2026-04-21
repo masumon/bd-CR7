@@ -289,27 +289,19 @@ The platform is designed for serverless deployment on Vercel with zero-configura
 | **SSL** | Automatic HTTPS with Let's Encrypt |
 | **CDN** | Global edge caching for static assets |
 
-### GitHub -> Vercel CI/CD
+### GitHub -> Vercel (Direct Push)
 
-A GitHub Actions workflow is included at `.github/workflows/vercel-deploy.yml` to automate:
+This repository uses direct Vercel Git integration (no custom GitHub Actions deployment workflow).
 
-- **Preview deployments** for pull requests
-- **Production deployments** for pushes to `main`
+- Push changes to GitHub
+- Vercel automatically creates preview/production deployments from the connected branch rules
 
-Configure the following repository secrets in GitHub (`Settings -> Secrets and variables -> Actions`):
+For email OTP and notification delivery, configure these Vercel environment variables:
 
-| Secret | Description |
+| Variable | Required for |
 |:---|:---|
-| `VERCEL_TOKEN` | Personal/team token used by the Vercel CLI |
-| `VERCEL_ORG_ID` | Vercel team or user scope ID |
-| `VERCEL_PROJECT_ID` | Target Vercel project ID |
-
-To retrieve IDs from an already linked local project:
-
-```bash
-vercel link
-cat .vercel/project.json
-```
+| `RESEND_API_KEY` | Email OTP + transactional emails |
+| `EMAIL_FROM` | Sender address (must be verified in Resend) |
 
 Custom domain and enterprise deployment options available on request.
 

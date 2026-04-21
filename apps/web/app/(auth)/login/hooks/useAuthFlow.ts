@@ -335,6 +335,8 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       const msg = getErrorMessage(error);
       if (msg.toLowerCase().includes("no active account") || msg.toLowerCase().includes("not found")) {
         setOtpError("এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই। আগে রেজিস্ট্রেশন করুন।");
+      } else if (msg.toLowerCase().includes("email otp provider is not configured")) {
+        setOtpError("Email OTP চালু করতে server env-এ RESEND_API_KEY এবং EMAIL_FROM সেট করুন।");
       } else {
         setOtpError(msg || "OTP পাঠানো যায়নি।");
       }
@@ -478,7 +480,13 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     autoTriggeredRef.current = true;
     const t = setTimeout(() => void handleBiometric(), 900);
     return () => clearTimeout(t);
-  }, [handleBiometric, securityMethods?.biometric_enabled, securityMethods?.current_device_trusted, view]);
+  }, [
+    handleBiometric,
+    securityMethods?.biometric_enabled,
+    securityMethods?.current_device_trusted,
+    securityMethods?.has_biometric_credentials,
+    view,
+  ]);
 
   const rememberedEmail = typeof window !== "undefined" ? (localStorage.getItem("bdcr7-remember-email") || "") : "";
   const activeEmailHint = (siEmail || rememberedEmail || securityMethods?.email_hint || "").trim().toLowerCase();

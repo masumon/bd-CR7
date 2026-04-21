@@ -40,8 +40,10 @@ def send_email_otp(raw_email: str) -> dict:
     if get_supabase_service() is None:
         raise RuntimeError("Supabase service client not configured")
 
-    if not settings.has_email:
-        raise EmailOtpError("Email OTP provider is not configured. Set RESEND_API_KEY and EMAIL_FROM.")
+    if not settings.has_email or not settings.email_from:
+        raise EmailOtpError(
+            "Email OTP provider is not configured. Set RESEND_API_KEY and EMAIL_FROM in environment."
+        )
 
     email = _normalize_email(raw_email)
     if not email or "@" not in email:
@@ -97,7 +99,9 @@ def send_email_otp(raw_email: str) -> dict:
         ),
     )
     if not sent:
-        raise RuntimeError("Failed to send OTP email. Check Resend configuration.")
+        raise RuntimeError(
+            "Failed to send OTP email. Verify RESEND_API_KEY and EMAIL_FROM (verified sender domain) in environment."
+        )
 
     return {"email": email, "expires_in": settings.email_otp_ttl_seconds}
 
