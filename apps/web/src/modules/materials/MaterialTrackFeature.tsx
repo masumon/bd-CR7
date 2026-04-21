@@ -163,10 +163,12 @@ export function MaterialTrackFeature() {
   };
 
   return (
-    <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft space-y-5">
-      <div>
-        <h3 className="text-xl font-semibold text-foreground">Material Tracking</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Record IN / OUT / Adjust. Inbound requires delivery proof.</p>
+    <section className="module app-panel module-surface rounded-[1.2rem] border border-border/70 p-4 shadow-soft space-y-4 sm:p-5">
+      <div className="app-section-head">
+        <div>
+          <h3 className="app-section-title">Material Tracking</h3>
+          <p className="app-section-subtitle">Record IN / OUT / Adjust. Inbound requires delivery proof.</p>
+        </div>
       </div>
 
       {/* Movement type selector first — determines if evidence is required */}
@@ -174,7 +176,7 @@ export function MaterialTrackFeature() {
         <div>
           <label className="mb-1 block text-xs text-muted-foreground uppercase tracking-wide">Movement Type</label>
           <select
-            className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+            className="app-select"
             title="Movement type"
             value={movementType}
             onChange={(e) => {
@@ -188,7 +190,7 @@ export function MaterialTrackFeature() {
         <div>
           <label className="mb-1 block text-xs text-muted-foreground uppercase tracking-wide">Material Name</label>
           <input
-            className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+            className="app-field"
             value={materialName}
             onChange={(e) => setMaterialName(e.target.value)}
             placeholder="Material Name" required
@@ -197,7 +199,7 @@ export function MaterialTrackFeature() {
         <div>
           <label className="mb-1 block text-xs text-muted-foreground uppercase tracking-wide">Unit</label>
           <select
-            className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+            className="app-select"
             title="Unit" value={unit}
             onChange={(e) => setUnit(e.target.value as Unit)}
           >
@@ -225,31 +227,31 @@ export function MaterialTrackFeature() {
 
       {/* Main form */}
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
-        <input
-          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+          <input
+            className="app-field"
           type="number" min="0" value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           placeholder="Quantity" required
         />
-        <input
-          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+          <input
+            className="app-field"
           type="number" min="0" step="0.01" value={unitPrice}
           onChange={(e) => setUnitPrice(e.target.value)}
           placeholder="Unit Price (৳)"
         />
-        <input
-          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+          <input
+            className="app-field"
           value={supplier}
           onChange={(e) => setSupplier(e.target.value)}
           placeholder="Supplier (optional)"
         />
-        <textarea
-          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none resize-none md:col-span-2"
+          <textarea
+            className="app-textarea resize-none md:col-span-2"
           rows={2} value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notes (optional)"
         />
-        <div className="rounded-2xl border border-border/70 bg-background/75 p-4 text-sm text-muted-foreground md:col-span-2">
+          <div className="app-panel-muted p-4 text-sm text-muted-foreground md:col-span-2">
           <p className="text-xs uppercase tracking-[0.14em]">Auto Total Cost</p>
           <p className="mt-1 text-xl font-semibold text-foreground">৳{totalCost.toFixed(2)}</p>
         </div>
@@ -300,14 +302,14 @@ export function MaterialTrackFeature() {
               value={stockQuery}
               onChange={(e) => setStockQuery(e.target.value)}
               placeholder="Search stock by material name..."
-              className="h-9 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none"
+              className="app-field h-9 rounded-xl px-3 text-sm"
             />
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {filteredStockList.map((s) => {
               const low = s.current_qty <= s.low_stock_threshold;
               return (
-                <div key={s.id} className={`rounded-xl border px-3 py-2.5 text-sm ${low ? "border-rose-200 bg-rose-50 dark:bg-rose-950/20" : "border-border/70 bg-muted/30"}`}>
+                <div key={s.id} className={`app-panel-muted px-3 py-2.5 text-sm ${low ? "border-rose-200 bg-rose-50 dark:bg-rose-950/20" : "border-border/70 bg-muted/30"}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-foreground truncate">{s.material_name}</span>
                     {low && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600" />}
@@ -366,9 +368,9 @@ export function MaterialTrackFeature() {
             value={movementQuery}
             onChange={(e) => setMovementQuery(e.target.value)}
             placeholder="Search movement by material, supplier..."
-            className="h-9 min-w-0 w-full flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none sm:min-w-[230px]"
+            className="app-field h-9 min-w-0 w-full flex-1 rounded-xl px-3 text-sm sm:min-w-[230px]"
           />
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+          <div className="app-pill-group">
             {([
               ["all", "All"],
               ["in", "IN"],
@@ -379,7 +381,7 @@ export function MaterialTrackFeature() {
                 key={value}
                 type="button"
                 onClick={() => setMovementFilter(value)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${movementFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                className={`app-pill ${movementFilter === value ? "app-pill-active" : ""}`}
               >
                 {label}
               </button>

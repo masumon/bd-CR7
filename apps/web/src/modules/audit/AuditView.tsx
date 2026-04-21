@@ -161,27 +161,27 @@ export function AuditView() {
       <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
 
       {/* Search + Filter */}
-      <div className="flex flex-wrap items-center gap-2 px-1">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 min-w-[160px]">
+      <div className="app-panel-muted flex flex-wrap items-center gap-2 px-2.5 py-2">
+        <div className="flex min-w-[160px] flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
           <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search logs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+            className="app-field h-auto w-full border-0 bg-transparent px-0 py-0 text-xs placeholder:text-muted-foreground/60"
           />
         </div>
-        <div className="flex gap-1">
+        <div className="app-pill-group">
           {(["ALL", "INSERT", "UPDATE", "DELETE"] as const).map((a) => (
             <button
               key={a}
               type="button"
               onClick={() => setActionFilter(a)}
-              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+              className={`app-pill ${
                 actionFilter === a
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  ? "app-pill-active"
+                  : ""
               }`}
             >
               {a}

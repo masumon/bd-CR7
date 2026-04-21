@@ -136,7 +136,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
   };
 
   return (
-    <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft space-y-5">
+    <section className="module app-panel module-surface rounded-[1.2rem] p-5 shadow-soft space-y-5">
       <div>
         <h3 className="text-xl font-semibold text-foreground">Expense Tracking</h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -169,7 +169,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Amount</span>
             <input
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-field`}
               type="number" min="0" step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -179,7 +179,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Expense Date</span>
             <input
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-field`}
               type="date" title="Expense date" value={date}
               onChange={(e) => setDate(e.target.value)} required
             />
@@ -187,7 +187,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Paid By</span>
             <select
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-select`}
               title="Paid by" value={paidBy}
               onChange={(e) => setPaidBy(e.target.value)}
             >
@@ -197,7 +197,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Category</span>
             <select
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-select`}
               title="Category" value={category}
               onChange={(e) => {
                 setCategory(e.target.value);
@@ -210,7 +210,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Subcategory</span>
             <select
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-select`}
               title="Subcategory" value={subcategory}
               onChange={(e) => setSubcategory(e.target.value)}
             >
@@ -220,7 +220,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Approval Status</span>
             <select
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-select`}
               title="Approval status" value={status}
               onChange={(e) => setStatus(e.target.value as ExpenseStatus)}
             >
@@ -231,7 +231,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground md:col-span-2">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Description</span>
             <textarea
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-textarea`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Description" rows={3}
@@ -240,7 +240,7 @@ export function ExpenseEngineFeature({ onSaved }: { onSaved?: () => void }) {
           <label className="space-y-2 text-sm text-muted-foreground md:col-span-2">
             <span className="text-xs font-medium uppercase tracking-[0.14em]">Approver User ID</span>
             <input
-              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+              className={`${FIELD} app-field`}
               value={approverId}
               onChange={(e) => setApproverId(e.target.value)}
               placeholder="Approver User ID (for Approved)"

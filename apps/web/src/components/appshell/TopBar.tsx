@@ -74,10 +74,10 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
   };
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-10 h-[calc(72px+env(safe-area-inset-top))] border-b border-border/65 bg-background/88 px-2 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+    <header className="fixed left-0 right-0 top-0 z-10 h-[calc(72px+env(safe-area-inset-top))] border-b border-border/65 bg-background/90 px-2 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <Button variant="ghost" className="h-11 w-11 p-0 lg:hidden" onClick={onMenu} aria-label={language === "bn" ? "মেনু খুলুন" : "Open menu"}>
+          <Button variant="ghost" className="h-11 w-11 rounded-xl p-0 lg:hidden" onClick={onMenu} aria-label={language === "bn" ? "মেনু খুলুন" : "Open menu"}>
             <Menu className="h-5 w-5" />
           </Button>
 
@@ -98,18 +98,18 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
           <SyncBadge online={online} language={language} />
         </div>
 
-        <div className="flex items-center gap-0.5">
-          <Button variant="ghost" className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 p-0" onClick={onToggleTheme} aria-label={language === "bn" ? "থিম পরিবর্তন" : "Toggle theme"}>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl p-0" onClick={onToggleTheme} aria-label={language === "bn" ? "থিম পরিবর্তন" : "Toggle theme"}>
             {dark ? <Sun className="h-5 w-5 text-gold" /> : <Moon className="h-5 w-5" />}
             <span className="font-[var(--font-outfit)] text-[11px] leading-none text-muted-foreground">{actionLabels.theme}</span>
           </Button>
 
-          <Button variant="ghost" className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 p-0" type="button" onClick={onToggleLanguage} aria-label={language === "bn" ? "ভাষা পরিবর্তন" : "Toggle language"}>
+          <Button variant="ghost" className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl p-0" type="button" onClick={onToggleLanguage} aria-label={language === "bn" ? "ভাষা পরিবর্তন" : "Toggle language"}>
             <Languages className="h-5 w-5" />
             <span className="font-[var(--font-outfit)] text-[11px] leading-none text-muted-foreground">{actionLabels.language}</span>
           </Button>
 
-          <Button variant="ghost" className="relative flex h-12 w-12 flex-col items-center justify-center gap-0.5 p-0" onClick={onOpenNotifications} aria-label={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
+          <Button variant="ghost" className="relative flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl p-0" onClick={onOpenNotifications} aria-label={language === "bn" ? "নোটিফিকেশন" : "Notifications"}>
             <Bell className="h-5 w-5" />
             <span className="font-[var(--font-outfit)] text-[11px] leading-none text-muted-foreground">{actionLabels.notifications}</span>
             {unread > 0 && (
@@ -121,7 +121,7 @@ export function TopBar({ title, online, unread, dark, language, role, onMenu, on
 
           <Button
             variant="ghost"
-            className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 p-0 text-rose-400 hover:text-rose-300"
+            className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl p-0 text-rose-400 hover:text-rose-300"
             type="button"
             onClick={handleLogout}
             aria-label={language === "bn" ? "লগআউট" : "Logout"}

@@ -42,7 +42,7 @@ export function LandingView({
       key="landing"
       {...fadeUp}
       transition={{ duration: 0.4, ease: easeAuth }}
-      className="flex min-h-[100dvh] w-full flex-col items-center overflow-y-auto overflow-x-hidden px-5 pt-[max(2.5rem,env(safe-area-inset-top))]"
+      className="auth-flow-screen items-center px-5 pt-[max(2.5rem,env(safe-area-inset-top))]"
     >
       {/* ── Brand ── */}
       <header className="flex flex-col items-center gap-3">

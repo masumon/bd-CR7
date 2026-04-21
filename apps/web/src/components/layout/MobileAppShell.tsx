@@ -286,6 +286,9 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
             <div className="h-14 animate-pulse rounded-2xl bg-muted/45" />
             <div className="h-14 animate-pulse rounded-2xl bg-muted/65" />
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground/85">
+            {language === "bn" ? "মোবাইল/PWA লেআউট fit-to-screen কনফিগার করা হচ্ছে।" : "Applying fit-to-screen mobile/PWA layout."}
+          </p>
         </div>
       </div>
     );

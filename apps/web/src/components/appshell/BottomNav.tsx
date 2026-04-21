@@ -39,7 +39,7 @@ export function BottomNav({ items, moreItems, onOpenMore, language = "en" }: Bot
               href={item.href}
               title={item.label}
               className={cn(
-                "relative flex min-w-0 flex-col items-center justify-center gap-1 font-[var(--font-outfit)] text-[11px] font-semibold transition-colors",
+                "relative flex min-w-0 flex-col items-center justify-center gap-1 font-[var(--font-outfit)] text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
               aria-current={active ? "page" : undefined}
@@ -62,7 +62,7 @@ export function BottomNav({ items, moreItems, onOpenMore, language = "en" }: Bot
           <button
             type="button"
             onClick={onOpenMore}
-            className="relative flex min-w-0 flex-col items-center justify-center gap-1 font-[var(--font-outfit)] text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-1 font-[var(--font-outfit)] text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
             aria-label={moreAriaLabel}
             title={moreAriaLabel}
           >

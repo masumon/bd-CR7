@@ -22,8 +22,8 @@ type PinViewProps = {
 
 export function PinView({ onBack, onPassword, onEmailOtp, onSubmit, loading, error, email, setEmail, pin, setPin }: PinViewProps) {
   return (
-    <motion.main key="pin" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="flex min-h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <motion.main key="pin" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="auth-flow-screen">
+      <div className="auth-flow-container">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
             <ChevronLeft className="h-5 w-5" />

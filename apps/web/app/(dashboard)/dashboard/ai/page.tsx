@@ -2,7 +2,7 @@ import { Bot, Sparkles, Zap } from "lucide-react";
 
 export default function DashboardAiPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center p-6">
+    <div className="app-panel mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center gap-6 rounded-[1.35rem] p-6 text-center">
       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15 ring-2 ring-primary/30">
         <Bot className="h-10 w-10 text-primary" />
       </div>

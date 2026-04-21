@@ -397,7 +397,7 @@ export function ReportsFeature() {
       </div>
 
       {/* Expense Table */}
-      <Card>
+      <Card className="app-panel">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>ব্যয় তালিকা</CardTitle>
@@ -428,9 +428,9 @@ export function ReportsFeature() {
               value={expenseQuery}
               onChange={(e) => setExpenseQuery(e.target.value)}
               placeholder="Search expenses by ID/category..."
-              className="h-9 min-w-0 w-full flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none sm:min-w-[230px]"
+              className="app-field h-9 min-w-0 w-full flex-1 rounded-xl px-3 text-sm sm:min-w-[230px]"
             />
-            <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+            <div className="app-pill-group">
               {([
                 ["all", "All"],
                 ["pending", "Pending"],
@@ -440,7 +440,7 @@ export function ReportsFeature() {
                   key={value}
                   type="button"
                   onClick={() => setExpenseStatusFilter(value)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${expenseStatusFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                  className={`app-pill ${expenseStatusFilter === value ? "app-pill-active" : ""}`}
                 >
                   {label}
                 </button>
@@ -492,7 +492,7 @@ export function ReportsFeature() {
       </Card>
 
       {/* Material Table */}
-      <Card>
+      <Card className="app-panel">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>উপকরণ চলাচল</CardTitle>
@@ -524,9 +524,9 @@ export function ReportsFeature() {
               value={materialQuery}
               onChange={(e) => setMaterialQuery(e.target.value)}
               placeholder="Search materials by name/type..."
-              className="h-9 min-w-0 w-full flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none sm:min-w-[230px]"
+              className="app-field h-9 min-w-0 w-full flex-1 rounded-xl px-3 text-sm sm:min-w-[230px]"
             />
-            <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+            <div className="app-pill-group">
               {([
                 ["all", "All"],
                 ["in", "IN"],
@@ -537,7 +537,7 @@ export function ReportsFeature() {
                   key={value}
                   type="button"
                   onClick={() => setMaterialTypeFilter(value)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${materialTypeFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                  className={`app-pill ${materialTypeFilter === value ? "app-pill-active" : ""}`}
                 >
                   {label}
                 </button>
