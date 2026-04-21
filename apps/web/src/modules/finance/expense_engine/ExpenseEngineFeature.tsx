@@ -20,6 +20,7 @@ const SUBCATEGORIES: Record<string, string[]> = {
   Utility: ["Electricity", "Water", "Internet", "Security", "Other"],
   Misc: ["Office", "Permit", "Emergency", "Maintenance", "Other"],
 };
+const FIELD = "app-field";
 
 type ExpenseStatus = "pending" | "approved";
 

@@ -227,31 +227,38 @@ export function MaterialTrackFeature() {
 
       {/* Main form */}
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
-          <input
-            className="app-field"
-          type="number" min="0" value={quantity}
+        <input
+          className="app-field"
+          type="number"
+          min="0"
+          value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
-          placeholder="Quantity" required
+          placeholder="Quantity"
+          required
         />
-          <input
-            className="app-field"
-          type="number" min="0" step="0.01" value={unitPrice}
+        <input
+          className="app-field"
+          type="number"
+          min="0"
+          step="0.01"
+          value={unitPrice}
           onChange={(e) => setUnitPrice(e.target.value)}
           placeholder="Unit Price (৳)"
         />
-          <input
-            className="app-field"
+        <input
+          className="app-field"
           value={supplier}
           onChange={(e) => setSupplier(e.target.value)}
           placeholder="Supplier (optional)"
         />
-          <textarea
-            className="app-textarea resize-none md:col-span-2"
-          rows={2} value={notes}
+        <textarea
+          className="app-textarea resize-none md:col-span-2"
+          rows={2}
+          value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notes (optional)"
         />
-          <div className="app-panel-muted p-4 text-sm text-muted-foreground md:col-span-2">
+        <div className="app-panel-muted p-4 text-sm text-muted-foreground md:col-span-2">
           <p className="text-xs uppercase tracking-[0.14em]">Auto Total Cost</p>
           <p className="mt-1 text-xl font-semibold text-foreground">৳{totalCost.toFixed(2)}</p>
         </div>

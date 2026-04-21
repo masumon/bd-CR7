@@ -21,6 +21,8 @@ const METHOD_OPTIONS = [
   "Other",
 ];
 
+const FIELD = "app-field";
+
 export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
   const userId = useAuthStore((s) => s.userId);
   const token  = useAuthStore((s) => s.token);
