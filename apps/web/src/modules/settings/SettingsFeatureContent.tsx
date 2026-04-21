@@ -386,7 +386,7 @@ export function SettingsFeature() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="app-page space-y-5">
       <div>
         <h2 className="text-2xl font-semibold text-foreground">{language === "bn" ? "সেটিংস" : "Settings"}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{language === "bn" ? "প্রোফাইল, ভাষা, থিম এবং অ্যাপ কনফিগারেশন সহজভাবে ম্যানেজ করুন।" : "Manage profile, language, theme, and app configuration in one place."}</p>

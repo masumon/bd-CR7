@@ -122,9 +122,9 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
 
       <Sidebar items={navItems} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
 
-      <main className="app-main-scroll page-enter px-3 lg:ml-64 lg:px-5 lg:pb-5">
+      <main className="app-main-scroll page-enter px-2.5 lg:ml-64 lg:px-5 lg:pb-5">
         <div className="mx-auto max-w-6xl">
-          <div className="module-surface shadow-soft relative z-[1] min-h-[calc(100dvh-72px-72px-env(safe-area-inset-bottom)-env(safe-area-inset-top))] overflow-visible rounded-[1.75rem] border border-border/45 p-3 backdrop-blur-[3px] lg:min-h-[calc(100dvh-72px-28px)] lg:p-3.5">
+          <div className="app-panel module-surface shadow-soft relative z-[1] min-h-[calc(100dvh-72px-72px-env(safe-area-inset-bottom)-env(safe-area-inset-top))] overflow-visible rounded-[1.45rem] p-3 backdrop-blur-[3px] lg:min-h-[calc(100dvh-72px-28px)] lg:p-3.5">
             <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-border/45 pb-3">
               <span className="rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-primary">
                 {language === "bn" ? `রোল · ${roleLabel}` : `ROLE · ${roleLabel}`}
@@ -143,7 +143,7 @@ export function AppShell({ children, dark, language, online, unread, role, onTog
                 </span>
               ) : null}
             </div>
-            {children}
+            <div className="app-page">{children}</div>
           </div>
         </div>
       </main>

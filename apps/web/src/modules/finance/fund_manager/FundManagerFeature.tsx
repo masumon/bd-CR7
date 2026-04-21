@@ -21,6 +21,8 @@ const METHOD_OPTIONS = [
   "Other",
 ];
 
+const FIELD = "app-field";
+
 export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
   const userId = useAuthStore((s) => s.userId);
   const token  = useAuthStore((s) => s.token);
@@ -89,7 +91,7 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
   };
 
   return (
-    <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft">
+    <section className="module app-panel module-surface rounded-[1.25rem] p-5 shadow-soft">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-xl font-semibold text-foreground">Fund Management</h3>
@@ -107,15 +109,15 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
           )}
         <label className="space-y-2 text-sm text-muted-foreground md:col-span-2">
           <span className="text-xs font-medium uppercase tracking-[0.14em]">Amount</span>
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" required />
+          <input className={FIELD} type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" required />
         </label>
         <label className="space-y-2 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em]"><CalendarDays className="h-3.5 w-3.5" /> Transaction Date</span>
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="date" title="Transaction date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          <input className={FIELD} type="date" title="Transaction date" value={date} onChange={(e) => setDate(e.target.value)} required />
         </label>
         <label className="space-y-2 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em]"><Landmark className="h-3.5 w-3.5" /> Source / Sender</span>
-          <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Source or sender" value={sourceSender} onChange={(e) => setSourceSender(e.target.value)}>
+          <select className={FIELD} title="Source or sender" value={sourceSender} onChange={(e) => setSourceSender(e.target.value)}>
             {SOURCE_OPTIONS.map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
@@ -123,7 +125,7 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
         </label>
         <label className="space-y-2 text-sm text-muted-foreground">
           <span className="text-xs font-medium uppercase tracking-[0.14em]">Payment Method</span>
-          <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Payment method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+          <select className={FIELD} title="Payment method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             {METHOD_OPTIONS.map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
@@ -131,11 +133,11 @@ export function FundManagerFeature({ onSaved }: { onSaved?: () => void }) {
         </label>
         <label className="space-y-2 text-sm text-muted-foreground md:col-span-2">
           <span className="text-xs font-medium uppercase tracking-[0.14em]">Description</span>
-          <textarea className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} />
+          <textarea className={FIELD} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} />
         </label>
           <label className="space-y-2 text-sm text-muted-foreground md:col-span-2">
             <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em]"><Link2 className="h-3.5 w-3.5" /> Receipt URL (optional)</span>
-            <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="url" value={receiptUrl} onChange={(e) => setReceiptUrl(e.target.value)} placeholder="https://..." />
+            <input className={FIELD} type="url" value={receiptUrl} onChange={(e) => setReceiptUrl(e.target.value)} placeholder="https://..." />
           </label>
           <button className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-95 disabled:pointer-events-none disabled:opacity-60 md:col-span-2" type="submit" disabled={!token || noAccount}>Save Fund Entry</button>
       </form>

@@ -16,18 +16,18 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/",
-      "destination": "/apps/web"
+      "src": "/api/(.*)",
+      "dest": "/api/main.py"
     },
     {
-      "source": "/api/:path*",
-      "destination": "/api/main.py"
+      "src": "/",
+      "dest": "/apps/web"
     },
     {
-      "source": "/:path*",
-      "destination": "/apps/web/:path*"
+      "src": "/(.*)",
+      "dest": "/apps/web/$1"
     }
   ]
 }

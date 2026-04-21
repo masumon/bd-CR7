@@ -182,7 +182,7 @@ export function WorkerLogsFeature() {
   return (
     <div className="space-y-5">
       {/* Entry Form */}
-      <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft space-y-4">
+      <section className="module app-panel module-surface rounded-[1.25rem] p-4 shadow-soft space-y-4 sm:p-5">
         <div>
           <h3 className="text-xl font-semibold text-foreground">Worker & HR</h3>
           <p className="mt-1 text-sm text-muted-foreground">Track attendance, wage exposure, and geofence compliance.</p>
@@ -203,20 +203,20 @@ export function WorkerLogsFeature() {
           />
         </div>
 
-        <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="Worker Name" required />
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" />
-          <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Role" value={role} onChange={(e) => setRole(e.target.value as (typeof ROLES)[number])}>
+        <form onSubmit={onSubmit} className="app-form-grid md:grid-cols-2">
+          <input className="app-field" value={workerName} onChange={(e) => setWorkerName(e.target.value)} placeholder="Worker Name" required />
+          <input className="app-field" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" />
+          <select className="app-select" title="Role" value={role} onChange={(e) => setRole(e.target.value as (typeof ROLES)[number])}>
             {ROLES.map((r) => <option key={r}>{r}</option>)}
           </select>
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" min="0" value={dailyWage} onChange={(e) => setDailyWage(e.target.value)} placeholder="Daily Wage (৳)" required />
-          <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Attendance status" value={attendanceStatus} onChange={(e) => setAttendanceStatus(e.target.value as (typeof ATTENDANCE)[number])}>
+          <input className="app-field" type="number" min="0" value={dailyWage} onChange={(e) => setDailyWage(e.target.value)} placeholder="Daily Wage (৳)" required />
+          <select className="app-select" title="Attendance status" value={attendanceStatus} onChange={(e) => setAttendanceStatus(e.target.value as (typeof ATTENDANCE)[number])}>
             {ATTENDANCE.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" min="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Paid Amount (৳)" required />
-          <textarea className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none md:col-span-2 resize-none" rows={2} value={workDescription} onChange={(e) => setWorkDescription(e.target.value)} placeholder="Work description (optional)" />
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude" />
-          <input className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude" />
+          <input className="app-field" type="number" min="0" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="Paid Amount (৳)" required />
+          <textarea className="app-textarea md:col-span-2" rows={2} value={workDescription} onChange={(e) => setWorkDescription(e.target.value)} placeholder="Work description (optional)" />
+          <input className="app-field" type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude" />
+          <input className="app-field" type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude" />
 
           <div className="rounded-2xl border border-border/70 bg-background/75 p-4 text-sm text-muted-foreground">
             <p className="text-xs uppercase tracking-[0.14em]">Unpaid Balance</p>
@@ -240,7 +240,7 @@ export function WorkerLogsFeature() {
       </section>
 
       {/* Attendance Log Table */}
-      <section className="module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft">
+      <section className="app-panel module-surface rounded-[1.25rem] p-4 shadow-soft sm:p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold text-foreground">সাম্প্রতিক উপস্থিতি / Recent Attendance</h3>

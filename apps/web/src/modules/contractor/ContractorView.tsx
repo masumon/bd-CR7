@@ -72,8 +72,7 @@ function fmt(n: number) {
   return `৳${n.toLocaleString()}`;
 }
 
-const FIELD =
-  "w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition";
+const FIELD = "app-field";
 
 const STATUS_CONTRACTOR: Record<string, string> = {
   Active: "bg-emerald-500",

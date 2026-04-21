@@ -218,7 +218,7 @@ export function ProgressCamFeature() {
   /** File input shared between upload and camera fallback */
   const fileInput = (
     <input
-      className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none"
+      className="app-field"
       type="file"
       title="Photo or video upload"
       accept="image/*,video/*"
@@ -232,7 +232,7 @@ export function ProgressCamFeature() {
   );
 
   return (
-    <section className="module module-surface rounded-[1.5rem] border border-border/70 p-5 shadow-soft">
+    <section className="module app-panel module-surface rounded-[1.25rem] p-4 shadow-soft sm:p-5">
       <div className="mb-4">
         <h3 className="text-xl font-semibold text-foreground">Progress Visualizer</h3>
         <p className="mt-1 text-sm text-muted-foreground">Upload image or video evidence by phase category with a clearer visual log.</p>
@@ -270,10 +270,10 @@ export function ProgressCamFeature() {
             </div>
           </PermissionGate>
         </div>
-        <select className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" title="Phase category" value={phaseCategory} onChange={(e) => setPhaseCategory(e.target.value)}>
+        <select className="app-select" title="Phase category" value={phaseCategory} onChange={(e) => setPhaseCategory(e.target.value)}>
           {PHASES.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <textarea className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption" rows={2} />
+        <textarea className="app-textarea min-h-[2.85rem]" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption" rows={2} />
         {previewUrl ? (
           <div className="rounded-2xl border border-border/70 bg-background/75 p-3 md:col-span-2">
             <div className="mb-2 flex items-center justify-between gap-3">

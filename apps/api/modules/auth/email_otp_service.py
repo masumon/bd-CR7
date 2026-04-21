@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from core.config import settings
 from core.email import send_email
-from core.supabase import get_supabase_service, require_supabase_service
+from core.supabase import get_supabase_anon, get_supabase_service, require_supabase_service
 
 
 class EmailOtpError(Exception):
@@ -36,14 +36,45 @@ def _cleanup_expired_email_otps() -> None:
         return
 
 
+def _resolve_redirect_origin() -> str:
+    # Prefer first HTTPS CORS origin as public app URL.
+    for origin in settings.cors_origins:
+        if isinstance(origin, str) and origin.startswith("https://"):
+            return origin.rstrip("/")
+    # Local fallback for development.
+    for origin in settings.cors_origins:
+        if isinstance(origin, str) and origin.startswith("http://"):
+            return origin.rstrip("/")
+    return "https://bd-cr7.vercel.app"
+
+
+def _send_magic_link_with_supabase(email: str) -> dict:
+    anon = get_supabase_anon()
+    if anon is None:
+        raise RuntimeError("Supabase anon client not configured")
+    redirect_to = f"{_resolve_redirect_origin()}/auth/callback"
+    try:
+        anon.auth.sign_in_with_otp(
+            {
+                "email": email,
+                "options": {
+                    "should_create_user": False,
+                    "email_redirect_to": redirect_to,
+                },
+            }
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError("Failed to send Supabase email link fallback.") from exc
+    return {
+        "email": email,
+        "expires_in": settings.email_otp_ttl_seconds,
+        "mode": "magic_link",
+    }
+
+
 def send_email_otp(raw_email: str) -> dict:
     if get_supabase_service() is None:
         raise RuntimeError("Supabase service client not configured")
-
-    if not settings.has_email or not settings.email_from:
-        raise EmailOtpError(
-            "Email OTP provider is not configured. Set RESEND_API_KEY and EMAIL_FROM in environment."
-        )
 
     email = _normalize_email(raw_email)
     if not email or "@" not in email:
@@ -61,6 +92,10 @@ def send_email_otp(raw_email: str) -> dict:
     if not user_rows.data:
         raise EmailOtpError("No active account found for this email.")
 
+    # If Resend config is incomplete, fallback to Supabase email link to keep sign-in usable.
+    if not settings.has_email or not settings.email_from:
+        return _send_magic_link_with_supabase(email)
+
     _cleanup_expired_email_otps()
     try:
         svc.table("email_otp_verifications").delete().eq("email", email).execute()
@@ -73,16 +108,20 @@ def send_email_otp(raw_email: str) -> dict:
     otp_hash = _hash_otp(otp, email, salt)
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.email_otp_ttl_seconds)
 
-    svc.table("email_otp_verifications").insert(
-        {
-            "email": email,
-            "otp_hash": otp_hash,
-            "salt": salt,
-            "expires_at": expires_at.isoformat(),
-            "attempts": 0,
-            "verified": False,
-        }
-    ).execute()
+    try:
+        svc.table("email_otp_verifications").insert(
+            {
+                "email": email,
+                "otp_hash": otp_hash,
+                "salt": salt,
+                "expires_at": expires_at.isoformat(),
+                "attempts": 0,
+                "verified": False,
+            }
+        ).execute()
+    except Exception:
+        # If the OTP storage table is unavailable, degrade to magic-link fallback.
+        return _send_magic_link_with_supabase(email)
 
     sent = send_email(
         to=email,
@@ -103,7 +142,7 @@ def send_email_otp(raw_email: str) -> dict:
             "Failed to send OTP email. Verify RESEND_API_KEY and EMAIL_FROM (verified sender domain) in environment."
         )
 
-    return {"email": email, "expires_in": settings.email_otp_ttl_seconds}
+    return {"email": email, "expires_in": settings.email_otp_ttl_seconds, "mode": "code"}
 
 
 def verify_email_otp(raw_email: str, otp_input: str) -> dict:

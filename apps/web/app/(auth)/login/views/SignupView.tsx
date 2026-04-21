@@ -75,8 +75,8 @@ export function SignupView({
   };
 
   return (
-    <motion.main key="signup" {...slideLeft} transition={{ duration: 0.35, ease: easeAuth }} className="flex min-h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <motion.main key="signup" {...slideLeft} transition={{ duration: 0.35, ease: easeAuth }} className="auth-flow-screen">
+      <div className="auth-flow-container">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="পিছনে যান">
             <ChevronLeft className="h-5 w-5" />
@@ -97,32 +97,32 @@ export function SignupView({
               <div className="bdcr7-input-wrap" data-filled={Boolean(fullName)}>
                 <User className="h-4 w-4 shrink-0 text-amber-300/60" />
                 <label className="bdcr7-input-label bdcr7-input-label-sm">Full Name / <span className="font-[var(--font-hind-var)]">নাম</span></label>
-                <input type="text" autoComplete="name" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} className="bdcr7-input" required aria-label="Full name" />
+                <input type="text" autoComplete="name" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} className="bdcr7-input app-field" required aria-label="Full name" />
               </div>
               <div className="bdcr7-input-wrap" data-filled={Boolean(userId)}>
                 <User className="h-4 w-4 shrink-0 text-amber-300/60" />
                 <label className="bdcr7-input-label bdcr7-input-label-sm">ইউজার আইডি</label>
-                <input type="text" autoComplete="username" placeholder="user123" value={userId} onChange={(e) => setUserId(e.target.value)} disabled={loading} className="bdcr7-input" aria-label="User ID" />
+                <input type="text" autoComplete="username" placeholder="user123" value={userId} onChange={(e) => setUserId(e.target.value)} disabled={loading} className="bdcr7-input app-field" aria-label="User ID" />
               </div>
             </div>
 
             <div className="bdcr7-input-wrap" data-filled={Boolean(email)} data-error={emailError}>
               <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Email / ইমেইল</label>
-              <input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmailBlurred(true)} disabled={loading} className="bdcr7-input" required aria-label="Email address" />
+              <input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmailBlurred(true)} disabled={loading} className="bdcr7-input app-field" required aria-label="Email address" />
             </div>
             {emailError && <p className="text-[11px] text-rose-300/90">সঠিক ইমেইল ঠিকানা লিখুন।</p>}
 
             <div className="bdcr7-input-wrap" data-filled={Boolean(phone)}>
               <Phone className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Phone / মোবাইল</label>
-              <input type="tel" autoComplete="tel" placeholder="+880 1XXX XXXXX" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} disabled={loading} className="bdcr7-input" aria-label="Phone number" />
+              <input type="tel" autoComplete="tel" placeholder="+880 1XXX XXXXX" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} disabled={loading} className="bdcr7-input app-field" aria-label="Phone number" />
             </div>
 
             <div className="bdcr7-input-wrap" data-filled={Boolean(password)} data-error={passwordError} data-success={Boolean(password) && password.length >= 8}>
               <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Password / পাসওয়ার্ড</label>
-              <input type={showPass ? "text" : "password"} autoComplete="new-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} className="bdcr7-input pr-8" required aria-label="Password" />
+              <input type={showPass ? "text" : "password"} autoComplete="new-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} className="bdcr7-input app-field pr-8" required aria-label="Password" />
               <button type="button" onClick={() => setShowPass(!showPass)} disabled={loading} className="min-h-0 shrink-0 text-muted-foreground transition-colors hover:text-foreground">
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -133,7 +133,7 @@ export function SignupView({
             <div className="bdcr7-input-wrap" data-filled={Boolean(confirmPass)} data-error={Boolean(confirmPass) && !passwordsMatch} data-success={passwordsMatch}>
               <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">পাসওয়ার্ড নিশ্চিত করুন</label>
-              <input type={showConfirm ? "text" : "password"} autoComplete="new-password" placeholder="••••••••" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} disabled={loading} className="bdcr7-input pr-8" required aria-label="পাসওয়ার্ড নিশ্চিত করুন" />
+              <input type={showConfirm ? "text" : "password"} autoComplete="new-password" placeholder="••••••••" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} disabled={loading} className="bdcr7-input app-field pr-8" required aria-label="পাসওয়ার্ড নিশ্চিত করুন" />
               <button type="button" onClick={() => setShowConfirm(!showConfirm)} disabled={loading} className="min-h-0 shrink-0 text-muted-foreground transition-colors hover:text-foreground">
                 {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>

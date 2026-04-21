@@ -22,6 +22,7 @@ type OtpViewProps = {
   resendTimer: number;
   loading: boolean;
   error: string;
+  notice?: string;
   success: boolean;
 };
 
@@ -40,11 +41,12 @@ export function OtpView({
   resendTimer,
   loading,
   error,
+  notice = "",
   success,
 }: OtpViewProps) {
   return (
-    <motion.main key="otp" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="flex min-h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <motion.main key="otp" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="auth-flow-screen">
+      <div className="auth-flow-container">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back"><ChevronLeft className="h-5 w-5" /></button>
           <h1 className="font-[var(--font-outfit-var)] text-xl font-bold text-foreground">Email OTP Fallback</h1>
@@ -54,6 +56,11 @@ export function OtpView({
 
         <div className="glass-bdcr7 rounded-3xl p-5 space-y-4">
           {error && <div className="bdcr7-error"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span>{error}</span></div>}
+          {notice && (
+            <div className="rounded-xl border border-emerald-400/30 bg-emerald-900/20 px-3 py-2 text-xs text-emerald-300">
+              {notice}
+            </div>
+          )}
           {success && <div className="bdcr7-success"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 bdcr7-check-in" /><span>ওটিপি যাচাই সম্পন্ন! লগইন করা হচ্ছে...</span></div>}
 
           <AnimatePresence mode="wait">
@@ -63,7 +70,7 @@ export function OtpView({
                 <div className="bdcr7-input-wrap" data-filled={Boolean(contact)}>
                   <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
                   <label className="bdcr7-input-label">Email / ইমেইল</label>
-                  <input type="email" autoComplete="email" placeholder="you@company.com" value={contact} onChange={(e) => setContact(e.target.value)} className="bdcr7-input" aria-label="Email address" />
+                  <input type="email" autoComplete="email" placeholder="you@company.com" value={contact} onChange={(e) => setContact(e.target.value)} className="bdcr7-input app-field" aria-label="Email address" />
                 </div>
                 <button type="button" onClick={onSend} disabled={loading || !contact.trim()} className="btn-bdcr7-gold flex h-12 w-full items-center justify-center gap-2 rounded-2xl">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}

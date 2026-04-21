@@ -1316,3 +1316,174 @@ html.reduce-motion *::after {
 .role-badge-supervisor{ background: hsl(40 93% 64% / 0.15); color: hsl(40 93% 75%); border: 1px solid hsl(40 93% 64% / 0.25); }
 .role-badge-worker    { background: hsl(167 46% 46% / 0.15); color: hsl(167 46% 65%); border: 1px solid hsl(167 46% 46% / 0.25); }
 .role-badge-accountant{ background: hsl(280 60% 55% / 0.15); color: hsl(280 60% 75%); border: 1px solid hsl(280 60% 55% / 0.25); }
+
+/* ─────────────────────────────────────────────
+   UNIFIED UX REDESIGN FOUNDATION (2026)
+   Applied across shell, auth, and module forms
+   ───────────────────────────────────────────── */
+
+.app-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-panel {
+  border: 1px solid hsl(var(--border) / 0.62);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, hsl(var(--card) / 0.94), hsl(var(--card) / 0.84));
+  box-shadow: 0 16px 30px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.app-panel-muted {
+  border: 1px solid hsl(var(--border) / 0.52);
+  border-radius: 0.9rem;
+  background: hsl(var(--background) / 0.72);
+}
+
+.app-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.app-section-title {
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: hsl(var(--foreground));
+}
+
+.app-section-subtitle {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.app-form-grid {
+  display: grid;
+  gap: 0.68rem;
+}
+
+.app-input-label {
+  display: block;
+  margin-bottom: 0.34rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.app-field,
+.app-select,
+.app-textarea {
+  width: 100%;
+  border-radius: 0.86rem;
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: hsl(var(--background) / 0.9);
+  color: hsl(var(--foreground));
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.app-field,
+.app-select {
+  min-height: 2.8rem;
+  padding: 0.62rem 0.85rem;
+  font-size: 0.86rem;
+}
+
+.app-textarea {
+  min-height: 5.5rem;
+  padding: 0.7rem 0.88rem;
+  font-size: 0.86rem;
+  resize: vertical;
+}
+
+.app-field::placeholder,
+.app-textarea::placeholder {
+  color: hsl(var(--muted-foreground) / 0.72);
+}
+
+.app-field:focus-visible,
+.app-select:focus-visible,
+.app-textarea:focus-visible {
+  outline: none;
+  border-color: hsl(var(--primary) / 0.82);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+}
+
+.app-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid hsl(var(--border) / 0.66);
+  border-radius: 0.72rem;
+  padding: 0.22rem;
+  background: hsl(var(--background) / 0.72);
+}
+
+.app-pill {
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.56rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.app-pill:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted) / 0.56);
+}
+
+.app-pill-active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.auth-flow-screen {
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-top: max(1.1rem, env(safe-area-inset-top));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.auth-flow-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 24rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-inline: 1.1rem;
+}
+
+/* Make every module form/control visually consistent by default */
+.module input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.module select,
+.module textarea {
+  border-radius: 0.86rem;
+  border: 1px solid hsl(var(--border) / 0.72);
+  background: hsl(var(--background) / 0.88);
+  color: hsl(var(--foreground));
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.module input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus-visible,
+.module select:focus-visible,
+.module textarea:focus-visible {
+  border-color: hsl(var(--primary) / 0.82);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+  outline: none;
+}
+
+.module table tr {
+  transition: background-color 0.15s ease;
+}

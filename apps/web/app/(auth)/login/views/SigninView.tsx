@@ -58,8 +58,8 @@ export function SigninView({
   passkeyError,
 }: SigninViewProps) {
   return (
-    <motion.main key="signin" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="flex min-h-[100dvh] w-full flex-col overflow-y-auto overflow-x-hidden">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <motion.main key="signin" {...slideRight} transition={{ duration: 0.35, ease: easeAuth }} className="auth-flow-screen">
+      <div className="auth-flow-container">
         <header className="mb-4 flex items-center gap-3">
           <button type="button" onClick={onBack} className="back-btn-bdcr7" aria-label="Go back">
             <ChevronLeft className="h-5 w-5" />
@@ -74,18 +74,18 @@ export function SigninView({
 
         {(error || passkeyError) && <div className="bdcr7-error mb-3"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span>{passkeyError || error}</span></div>}
 
-        <div className="glass-bdcr7 rounded-3xl p-4">
+        <div className="glass-bdcr7 app-panel rounded-3xl p-4">
           <form onSubmit={onSubmit} className="space-y-3">
             <div className="bdcr7-input-wrap" data-filled={Boolean(email)}>
               <Mail className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Email</label>
-              <input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} className="bdcr7-input" required aria-label="Email address" />
+              <input type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} className="bdcr7-input app-field" required aria-label="Email address" />
             </div>
 
             <div className="bdcr7-input-wrap" data-filled={Boolean(password)} data-error={Boolean(error) && !password}>
               <Lock className="h-4 w-4 shrink-0 text-amber-300/60" />
               <label className="bdcr7-input-label">Password</label>
-              <input type={showPass ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => setCapsLock(e.getModifierState("CapsLock"))} className="bdcr7-input pr-8" required aria-label="Password" />
+              <input type={showPass ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => setCapsLock(e.getModifierState("CapsLock"))} className="bdcr7-input app-field pr-8" required aria-label="Password" />
               <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Hide password" : "Show password"} className="min-h-0 shrink-0 text-muted-foreground transition-colors hover:text-foreground">
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>

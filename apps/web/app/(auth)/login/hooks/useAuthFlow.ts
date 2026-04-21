@@ -296,6 +296,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
   const [otpStep, setOtpStep] = useState<1 | 2>(1);
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [otpNotice, setOtpNotice] = useState("");
   const [otpSuccess, setOtpSuccess] = useState(false);
   const [otpResendTimer, setOtpResendTimer] = useState(0);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -317,20 +318,30 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     }
     setOtpLoading(true);
     setOtpError("");
+    setOtpNotice("");
     try {
       const response = await fetch("/api/auth/otp/email/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: contact }),
       });
-      const json = (await response.json().catch(() => null)) as { detail?: string; error?: string } | null;
+      const json = (await response.json().catch(() => null)) as
+        | { detail?: string; error?: string; data?: { mode?: string }; mode?: string }
+        | null;
       if (!response.ok) {
         const detail = json?.detail || json?.error || "OTP send failed.";
         throw new Error(detail);
       }
-      setOtpStep(2);
-      setOtpResendTimer(60);
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      const mode = json?.data?.mode || json?.mode || "code";
+      if (mode === "magic_link") {
+        setOtpStep(1);
+        setOtpResendTimer(60);
+        setOtpNotice("ইমেইলে login link পাঠানো হয়েছে। লিংকে ক্লিক করে সাইন-ইন সম্পন্ন করুন।");
+      } else {
+        setOtpStep(2);
+        setOtpResendTimer(60);
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      }
     } catch (error) {
       const msg = getErrorMessage(error);
       if (msg.toLowerCase().includes("no active account") || msg.toLowerCase().includes("not found")) {
@@ -353,6 +364,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     }
     setOtpLoading(true);
     setOtpError("");
+    setOtpNotice("");
     const contact = otpContact.trim();
     try {
       const response = await fetch("/api/auth/otp/email/verify", {
@@ -419,6 +431,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
     setOtpStep(1);
     setOtpDigits(Array(6).fill(""));
     setOtpError("");
+    setOtpNotice("");
     await handleSendOtp();
   };
 
@@ -535,6 +548,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
       digits: otpDigits,
       loading: otpLoading,
       error: otpError,
+      notice: otpNotice,
       success: otpSuccess,
       resendTimer: otpResendTimer,
       refs: otpRefs,
@@ -547,6 +561,7 @@ export function useAuthFlow(router: RouterLike, returnTo: string = "/dashboard")
         setOtpStep(1);
         setOtpDigits(Array(6).fill(""));
         setOtpError("");
+        setOtpNotice("");
         setView("landing");
       },
     },
