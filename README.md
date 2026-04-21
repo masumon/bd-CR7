@@ -289,6 +289,28 @@ The platform is designed for serverless deployment on Vercel with zero-configura
 | **SSL** | Automatic HTTPS with Let's Encrypt |
 | **CDN** | Global edge caching for static assets |
 
+### GitHub -> Vercel CI/CD
+
+A GitHub Actions workflow is included at `.github/workflows/vercel-deploy.yml` to automate:
+
+- **Preview deployments** for pull requests
+- **Production deployments** for pushes to `main`
+
+Configure the following repository secrets in GitHub (`Settings -> Secrets and variables -> Actions`):
+
+| Secret | Description |
+|:---|:---|
+| `VERCEL_TOKEN` | Personal/team token used by the Vercel CLI |
+| `VERCEL_ORG_ID` | Vercel team or user scope ID |
+| `VERCEL_PROJECT_ID` | Target Vercel project ID |
+
+To retrieve IDs from an already linked local project:
+
+```bash
+vercel link
+cat .vercel/project.json
+```
+
 Custom domain and enterprise deployment options available on request.
 
 ---
