@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
@@ -64,6 +64,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [openNotifications, setOpenNotifications] = useState(false);
   const [sessionRetryCount, setSessionRetryCount] = useState(0);
+  const loaderStartedAtRef = useRef<number>(Date.now());
 
   // App-level biometric/password lock — activates when app is minimized or backgrounded
   const appLock = useAppLock();
@@ -71,6 +72,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const unread = notifications.length;
 
   useEffect(() => {
+    loaderStartedAtRef.current = Date.now();
     void initialize();
   }, [initialize]);
 
@@ -264,8 +266,9 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
   );
 
   const showBlockingShellLoader = !hydrated || (initializing && !userId);
+  const loaderExceededFallbackWindow = showBlockingShellLoader && (Date.now() - loaderStartedAtRef.current > 15_000);
 
-  if (showBlockingShellLoader) {
+  if (showBlockingShellLoader && !loaderExceededFallbackWindow) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background p-4 text-sm text-muted-foreground">
         <div className="w-full max-w-sm rounded-[2rem] border border-border/70 bg-card/82 p-5 text-center shadow-soft backdrop-blur-xl">
@@ -282,6 +285,33 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
             <div className="h-14 animate-pulse rounded-2xl bg-muted/65" />
             <div className="h-14 animate-pulse rounded-2xl bg-muted/45" />
             <div className="h-14 animate-pulse rounded-2xl bg-muted/65" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loaderExceededFallbackWindow && !userId) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background p-4 text-sm text-muted-foreground">
+        <div className="w-full max-w-sm rounded-2xl border border-border/70 bg-card/80 p-4 shadow-soft">
+          <ErrorCard
+            message={language === "bn"
+              ? "সেশন রিস্টোর হতে বেশি সময় লাগছে। আবার লগইন করুন।"
+              : "Session restore is taking too long. Please sign in again."}
+            onRetry={() => {
+              setSessionRetryCount((count) => count + 1);
+              void initialize();
+            }}
+            retryLabel={language === "bn" ? "আবার চেষ্টা করুন" : "Retry session"}
+          />
+          <div className="mt-4 flex gap-2">
+            <Button className="flex-1" onClick={() => router.replace("/login")}>
+              {language === "bn" ? "লগইন" : "Sign in"}
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => router.refresh()}>
+              {language === "bn" ? "রিলোড" : "Reload"}
+            </Button>
           </div>
         </div>
       </div>

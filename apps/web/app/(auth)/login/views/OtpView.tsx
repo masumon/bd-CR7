@@ -22,6 +22,7 @@ type OtpViewProps = {
   resendTimer: number;
   loading: boolean;
   error: string;
+  notice?: string;
   success: boolean;
 };
 
@@ -40,6 +41,7 @@ export function OtpView({
   resendTimer,
   loading,
   error,
+  notice = "",
   success,
 }: OtpViewProps) {
   return (
@@ -54,6 +56,11 @@ export function OtpView({
 
         <div className="glass-bdcr7 rounded-3xl p-5 space-y-4">
           {error && <div className="bdcr7-error"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span>{error}</span></div>}
+          {notice && (
+            <div className="rounded-xl border border-emerald-400/30 bg-emerald-900/20 px-3 py-2 text-xs text-emerald-300">
+              {notice}
+            </div>
+          )}
           {success && <div className="bdcr7-success"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 bdcr7-check-in" /><span>ওটিপি যাচাই সম্পন্ন! লগইন করা হচ্ছে...</span></div>}
 
           <AnimatePresence mode="wait">

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Fingerprint, KeyRound, Loader2, ShieldCheck, ShieldX } from "lucide-react";
-import { ensureBiometricCredential, isWebAuthnSupported, verifyBiometricAssertion } from "@/lib/webauthn";
+import { isWebAuthnSupported, listBiometricCredentials, verifyBiometricAssertion } from "@/lib/webauthn";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { getErrorMessage } from "@/lib/errorUtils";
@@ -142,12 +142,30 @@ export function AppLockScreen({ onUnlock }: Props) {
         return;
       }
 
-      await ensureBiometricCredential(accessToken, uid, userEmail);
+      const enrolled = await listBiometricCredentials(uid).catch(() => []);
+      if (!enrolled.length) {
+        setError("এই ডিভাইসে বায়োমেট্রিক/পাসকি সেটআপ নেই। পাসওয়ার্ড দিয়ে আনলক করুন।");
+        setStep("password");
+        return;
+      }
+
       await verifyBiometricAssertion(accessToken);
       setStep("success");
       setTimeout(onUnlock, 600);
     } catch (err) {
-      setError(getErrorMessage(err) || "বায়োমেট্রিক যাচাই ব্যর্থ হয়েছে।");
+      const message = getErrorMessage(err) || "বায়োমেট্রিক যাচাই ব্যর্থ হয়েছে।";
+      const lowered = message.toLowerCase();
+      if (
+        lowered.includes("not trusted")
+        || lowered.includes("credential not found")
+        || lowered.includes("no cryptographic")
+        || lowered.includes("missing")
+      ) {
+        setError("বায়োমেট্রিক যাচাই ব্যর্থ হয়েছে। পাসওয়ার্ড দিয়ে আনলক করুন।");
+        setStep("password");
+        return;
+      }
+      setError(message);
       setStep("failed");
     }
   }, [token, userId, onUnlock]);

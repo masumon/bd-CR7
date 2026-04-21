@@ -152,6 +152,7 @@ function LoginPageController() {
                 resendTimer={flow.otp.resendTimer}
                 loading={flow.otp.loading}
                 error={flow.otp.error}
+                notice={flow.otp.notice}
                 success={flow.otp.success}
               />
             )}
